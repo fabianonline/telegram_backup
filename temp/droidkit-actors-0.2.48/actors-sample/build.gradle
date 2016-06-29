@@ -1,0 +1,60 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:0.9.+'
+    }
+}
+apply plugin: 'android'
+
+repositories {
+    mavenCentral()
+    maven { url "https://oss.sonatype.org/content/groups/public/" }
+}
+
+android {
+    compileSdkVersion 19
+    buildToolsVersion "20.0.0"
+
+    defaultConfig {
+        minSdkVersion 9
+        targetSdkVersion 19
+        versionCode apkVersionCode
+        versionName apkVersionName
+    }
+
+    signingConfigs {
+        release {
+        
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            runProguard false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+        }
+    }
+
+    if (project.hasProperty('androidStore') &&
+            project.hasProperty('androidStorePass') &&
+            project.hasProperty('androidAliasPass')&&
+            project.hasProperty('androidAlias')) {
+        android.signingConfigs.release.storeFile = file(androidStore)
+        android.signingConfigs.release.storePassword = androidStorePass
+        android.signingConfigs.release.keyAlias = androidAlias
+        android.signingConfigs.release.keyPassword = androidAliasPass
+    } else {
+        buildTypes.release.signingConfig = null
+    }
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile 'com.android.support:appcompat-v7:19.+'
+    // compile project(":actors-android")
+    compile project(":actors")
+    compile project(":actors-android")
+}

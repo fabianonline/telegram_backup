@@ -1,0 +1,7 @@
+actors/build
+actors-sample/build
+.idea
+.gradle
+*.iml
+
+local.properties

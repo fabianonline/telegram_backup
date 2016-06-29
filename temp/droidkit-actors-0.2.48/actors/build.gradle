@@ -1,0 +1,74 @@
+apply plugin: 'java'
+apply plugin: 'maven'
+apply plugin: 'signing'
+
+sourceCompatibility = 1.6
+group = 'com.droidkit'
+version = libVersion
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from 'build/docs/javadoc'
+}
+
+task sourcesJar(type: Jar) {
+    from sourceSets.main.allSource
+    classifier = 'sources'
+}
+
+artifacts {
+    archives jar
+
+    archives javadocJar
+    archives sourcesJar
+}
+
+if (project.hasProperty("ossrhUsername") && project.hasProperty("ossrhPassword")) {
+
+    signing {
+        sign configurations.archives
+    }
+
+    uploadArchives {
+        repositories {
+            mavenDeployer {
+                beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+                repository(url:
+                       isRelease ?
+                               "https://oss.sonatype.org/service/local/staging/deploy/maven2/":
+                                "https://oss.sonatype.org/content/repositories/snapshots/") {
+                    authentication(userName: ossrhUsername, password: ossrhPassword)
+                }
+
+                pom.project {
+                    name 'DroidKit-Actors'
+                    packaging 'jar'
+                    description 'DroidKit Actors is simple actor model implementation for java and Android'
+                    url 'https://github.com/secretapphd/droidkit-actors'
+
+                    scm {
+                        url 'scm:git@github.com:secretapphd/droidkit-actors.git'
+                        connection 'scm:git@github.com:secretapphd/droidkit-actors.git'
+                        developerConnection 'scm:git@github.com:secretapphd/droidkit-actors.git'
+                    }
+
+                    licenses {
+                        license {
+                            name 'The MIT License (MIT)'
+                            url 'http://opensource.org/licenses/MIT'
+                            distribution 'repo'
+                        }
+                    }
+
+                    developers {
+                        developer {
+                            id 'ex3ndr'
+                            name 'Stepan Korshakov'
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
