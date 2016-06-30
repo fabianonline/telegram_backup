@@ -1,1 +1,29 @@
 apply plugin: 'java'
+apply plugin: 'application'
+
+mainClassName= 'de.fabianonline.telegram_backup.Main'
+
+repositories {
+	mavenCentral()
+	maven { 
+		url "https://jitpack.io"
+	}
+}
+
+dependencies {
+	compile 'com.github.badoualy:kotlogram:0.0.6'
+}
+
+run {
+	standardInput = System.in
+}
+
+jar {
+	manifest {
+		attributes "Main-Class": "$mainClassName"
+	}
+	
+	from {
+		configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+	}
+}

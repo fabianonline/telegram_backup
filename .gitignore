@@ -1,0 +1,5 @@
+build/
+.rgadle/
+.gradle/
+auth.dat
+dc.dat
