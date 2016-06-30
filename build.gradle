@@ -1,7 +1,7 @@
 apply plugin: 'java'
 apply plugin: 'application'
 
-mainClassName= 'de.fabianonline.telegram_backup.Main'
+mainClassName= 'de.fabianonline.telegram_backup.CommandLineRunner'
 
 repositories {
 	mavenCentral()
@@ -12,6 +12,7 @@ repositories {
 
 dependencies {
 	compile 'com.github.badoualy:kotlogram:0.0.6'
+	compile 'org.xerial:sqlite-jdbc:3.8.11.2'
 }
 
 run {

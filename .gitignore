@@ -3,3 +3,4 @@ build/
 .gradle/
 auth.dat
 dc.dat
+data/

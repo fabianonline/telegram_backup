@@ -9,9 +9,10 @@ class Config {
     public static final String APP_SYSVER = "1.0";
     public static final String APP_APPVER = "0.1";
     public static final String APP_LANG = "en";
-
-    public static final File FILE_AUTH_KEY = new File("auth.dat");
-    public static final File FILE_DC = new File("dc.dat");
-    public static final File FILE_SALT = new File("salt.dat");
+    
+    public static final String FILE_BASE = "data";
+    public static final String FILE_NAME_AUTH_KEY = "auth.dat";
+    public static final String FILE_NAME_DC = "dc.dat";
+    public static final String FILE_NAME_DB = "database.sqlite";
 }
 

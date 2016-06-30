@@ -89,4 +89,6 @@ class UserManager {
 		}
 		return sb.toString();
 	}
+	
+	public TLUser getUser() { return this.user; }
 }
