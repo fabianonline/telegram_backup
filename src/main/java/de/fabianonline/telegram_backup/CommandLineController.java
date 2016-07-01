@@ -59,7 +59,7 @@ public class CommandLineController {
 					String pw = new Scanner(System.in).nextLine();
 					user.verifyPassword(pw);
 				}
-				storage.setPrefix(user.getUser().getPhone());
+				storage.setPrefix("+" + user.getUser().getPhone());
 				
 				System.out.println("Next time, please run this tool with '--account " + user.getUser().getPhone() + " to use this account.");
 			}
@@ -67,7 +67,7 @@ public class CommandLineController {
 			System.out.println("You are logged in as " + user.getUserString());
 			
 			DownloadManager d = new DownloadManager(user, client);
-			d.downloadMessages();
+			d.downloadMessages(options.limit_messages);
 			d.downloadMedia();
 		} catch (RpcErrorException e) {
 			e.printStackTrace();
@@ -85,7 +85,8 @@ public class CommandLineController {
 		System.out.println("  --account <x>                   Use account <x>.");
 		System.out.println("  --login                         Login to an existing telegram account.");
 		System.out.println("  --debug                         Show (lots of) debug information.");
-		System.out.println("  --list-accounts                 List all existing accounts");
+		System.out.println("  --list-accounts                 List all existing accounts ");
+		System.out.println("  --limit-messages <x>            Downloads at most the most recent <x> messages.");
 		
 		System.exit(0);
 	}
@@ -121,6 +122,7 @@ public class CommandLineController {
 		public boolean cmd_login = false;
 		public boolean cmd_debug = false;
 		public boolean cmd_list_accounts = false;
+		public Integer limit_messages = null;
 		
 		public CommandLineOptions(String[] args) {
 			String last_cmd = null;
@@ -129,6 +131,7 @@ public class CommandLineController {
 				if (last_cmd != null) {
 					switch(last_cmd) {
 						case "--account": this.account=arg; break;
+						case "--limit-messages": this.limit_messages=Integer.parseInt(arg); break;
 					}
 					last_cmd = null;
 					continue;
@@ -140,6 +143,7 @@ public class CommandLineController {
 					case "--login": this.cmd_login=true; break;
 					case "--debug": this.cmd_debug=true; break;
 					case "--list-accounts": this.cmd_list_accounts=true; break;
+					case "--limit-messages": last_cmd=arg; continue;
 					default: throw new RuntimeException("Unknown command " + arg);
 				}
 			}

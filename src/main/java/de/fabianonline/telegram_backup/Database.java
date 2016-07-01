@@ -1,16 +1,7 @@
 package de.fabianonline.telegram_backup;
 
-import com.github.badoualy.telegram.tl.api.TLMessage;
-import com.github.badoualy.telegram.tl.api.TLMessageEmpty;
-import com.github.badoualy.telegram.tl.api.TLMessageService;
+import com.github.badoualy.telegram.tl.api.*;
 import com.github.badoualy.telegram.tl.core.TLVector;
-import com.github.badoualy.telegram.tl.api.TLAbsMessage;
-import com.github.badoualy.telegram.tl.api.TLMessageMediaEmpty;
-import com.github.badoualy.telegram.tl.api.TLAbsPeer;
-import com.github.badoualy.telegram.tl.api.TLPeerUser;
-import com.github.badoualy.telegram.tl.api.TLPeerChat;
-import com.github.badoualy.telegram.tl.api.TLPeerChannel;
-import com.github.badoualy.telegram.tl.api.TLApiContext;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -25,7 +16,7 @@ import java.io.ByteArrayOutputStream;
 import java.util.LinkedList;
 
 import de.fabianonline.telegram_backup.UserManager;
-
+import de.fabianonline.telegram_backup.StickerConverter;
 
 class Database {
 	private Connection conn;
@@ -41,10 +32,7 @@ class Database {
 		}
 		
 		String path = "jdbc:sqlite:" +
-			Config.FILE_BASE +
-			File.separatorChar +
-			user_manager.getUser().getPhone() +
-			File.separatorChar +
+			user_manager.getFileBase() +
 			Config.FILE_NAME_DB;
 		
 		try {
@@ -74,6 +62,7 @@ class Database {
 			System.out.println("Database version: " + version);
 			
 			if (version==0) {
+				System.out.println("  Updating to version 1...");
 				stmt.executeUpdate("CREATE TABLE messages ("
 						+ "id INTEGER PRIMARY KEY ASC, "
 						+ "dialog_id INTEGER, "
@@ -83,6 +72,7 @@ class Database {
 						+ "text TEXT, "
 						+ "time TEXT, "
 						+ "has_media BOOLEAN, "
+						+ "sticker TEXT, "
 						+ "data BLOB)");
 				stmt.executeUpdate("CREATE TABLE dialogs ("
 						+ "id INTEGER PRIMARY KEY ASC, "
@@ -98,6 +88,8 @@ class Database {
 				stmt.executeUpdate("INSERT INTO database_versions (version) VALUES (1)");
 				version = 1;
 			}
+			
+			System.out.println("Database is ready.");
 		} catch (SQLException e) {
 			System.out.println(e.getSQLState());
 			e.printStackTrace();
@@ -118,9 +110,9 @@ class Database {
 		try {
 			PreparedStatement ps = conn.prepareStatement(
 				"INSERT INTO messages " +
-				"(id, dialog_id, from_id, type, text, time, has_media, data) " + 
+				"(id, dialog_id, from_id, type, text, time, has_media, data, sticker) " + 
 				"VALUES " +
-				"(?,  ?,         ?,       ?,    ?,    ?,    ?,         ?)");
+				"(?,  ?,         ?,       ?,    ?,    ?,    ?,         ?,    ?)");
 			for (TLAbsMessage abs : all) {
 				if (abs instanceof TLMessage) {
 					TLMessage msg = (TLMessage) abs;
@@ -150,6 +142,7 @@ class Database {
 						} else if (msg.getMedia() instanceof TLMessageMediaPhoto) {
 							text = ((TLMessageMediaPhoto)msg.getMedia()).getCaption();
 						}
+						System.out.println("" + msg.getId() + ": >" + text + "<");
 					}
 					ps.setString(5, text);
 					ps.setString(6, ""+msg.getDate());
@@ -157,6 +150,24 @@ class Database {
 					ByteArrayOutputStream stream = new ByteArrayOutputStream();
 					msg.serializeBody(stream);
 					ps.setBytes(8, stream.toByteArray());
+					String sticker = null;
+					if (msg.getMedia()!=null && msg.getMedia() instanceof TLMessageMediaDocument) {
+						TLMessageMediaDocument md = (TLMessageMediaDocument)msg.getMedia();
+						if (md.getDocument() instanceof TLDocument) {
+							for (TLAbsDocumentAttribute attr : ((TLDocument)md.getDocument()).getAttributes()) {
+								if (attr instanceof TLDocumentAttributeSticker) {
+									sticker = StickerConverter.makeFilename((TLDocumentAttributeSticker)attr);
+									break;
+								}
+							}
+						}
+					}
+					if (sticker != null) {
+						System.out.println("" + msg.getId() + ": >" + msg.getMessage() + "< " + sticker);
+						ps.setString(9, sticker);
+					} else {
+						ps.setNull(9, Types.VARCHAR);
+					}
 					ps.addBatch();
 				} else if (abs instanceof TLMessageService) {
 					// Ignore service messages.

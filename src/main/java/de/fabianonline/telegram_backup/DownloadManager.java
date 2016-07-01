@@ -2,6 +2,7 @@ package de.fabianonline.telegram_backup;
 
 import de.fabianonline.telegram_backup.UserManager;
 import de.fabianonline.telegram_backup.Database;
+import de.fabianonline.telegram_backup.StickerConverter;
 
 import com.github.badoualy.telegram.api.TelegramClient;
 import com.github.badoualy.telegram.tl.core.TLIntVector;
@@ -10,6 +11,7 @@ import com.github.badoualy.telegram.tl.api.messages.TLAbsDialogs;
 import com.github.badoualy.telegram.tl.api.*;
 import com.github.badoualy.telegram.tl.api.upload.TLFile;
 import com.github.badoualy.telegram.tl.exception.RpcErrorException;
+import com.github.badoualy.telegram.tl.api.request.TLRequestUploadGetFile;
 
 import java.io.IOException;
 import java.io.File;
@@ -28,7 +30,7 @@ class DownloadManager {
 		this.db = new Database(u);
 	}
 	
-	public void downloadMessages() throws RpcErrorException, IOException {
+	public void downloadMessages(Integer limit) throws RpcErrorException, IOException {
 		System.out.print("Downloading dialogs... ");
 		TLAbsDialogs dialogs = client.messagesGetDialogs(
 			0,
@@ -43,6 +45,12 @@ class DownloadManager {
 		System.out.println("Top message ID is " + max_message_id);
 		int max_database_id = db.getTopMessageID();
 		System.out.println("Top message ID in database is " + max_database_id);
+		
+		if (limit != null) {
+			System.out.println("Limit is set to " + limit);
+			max_database_id = Math.max(max_database_id, max_message_id-limit);
+			System.out.println("New top message id 'in database' is " + max_database_id);
+		}
 		
 		int start_id = max_database_id + 1;
 		int current_start_id = start_id;
@@ -75,29 +83,99 @@ class DownloadManager {
 			TLAbsMessageMedia media = msg.getMedia();
 			
 			if (media instanceof TLMessageMediaPhoto) {
-				TLMessageMediaPhoto p = (TLMessageMediaPhoto) media;
-				if (p.getPhoto() instanceof TLPhoto) {
-					TLPhoto photo = (TLPhoto) p.getPhoto();
-					TLPhotoSize size = null;
-					for (TLAbsPhotoSize s : photo.getSizes()) {
-						if (s instanceof TLPhotoSize) {
-							TLPhotoSize s2 = (TLPhotoSize) s;
-							if (size == null || (s2.getW()>size.getW() && s2.getH()>size.getH())) {
-								size = s2;
-							}
-						}
+				this.downloadMessageMediaPhoto(msg, (TLMessageMediaPhoto)media);
+			} else if (media instanceof TLMessageMediaDocument) {
+				this.downloadMessageMediaDocument(msg, (TLMessageMediaDocument)media);
+			} else if (media instanceof TLMessageMediaVideo) {
+				this.downloadMessageMediaVideo(msg, (TLMessageMediaVideo)media);
+			} else if (media instanceof TLMessageMediaEmpty) {
+				// do nothing
+			} else if (media instanceof TLMessageMediaUnsupported) {
+				// do nothing
+			} else if (media instanceof TLMessageMediaGeo) {
+				// do nothing
+			} else if (media instanceof TLMessageMediaWebPage) {
+				// do nothing
+			} else if (media instanceof TLMessageMediaContact) {
+				// do nothing
+			} else if (media instanceof TLMessageMediaVenue) {
+				// do nothing
+			} else {
+				throw new RuntimeException("Unexpected " + media.getClass().getName());
+			}
+		}
+	}
+	
+	private void downloadMessageMediaPhoto(TLMessage msg, TLMessageMediaPhoto p) throws RpcErrorException, IOException {
+		if (p.getPhoto() instanceof TLPhoto) {
+			TLPhoto photo = (TLPhoto) p.getPhoto();
+			TLPhotoSize size = null;
+			for (TLAbsPhotoSize s : photo.getSizes()) {
+				if (s instanceof TLPhotoSize) {
+					TLPhotoSize s2 = (TLPhotoSize) s;
+					if (size == null || (s2.getW()>size.getW() && s2.getH()>size.getH())) {
+						size = s2;
 					}
-					if (size==null) {
-						throw new RuntimeException("Could not find a size for a photo.");
-					}
-					if (size.getLocation() instanceof TLFileLocation) {
-						this.downloadPhoto(msg.getId(), (TLFileLocation)size.getLocation());
-						return;
-					}
-				} else {
-					throw new RuntimeException("Got an unexpected " + p.getPhoto().getClass().getName());
 				}
 			}
+			if (size==null) {
+				throw new RuntimeException("Could not find a size for a photo.");
+			}
+			if (size.getLocation() instanceof TLFileLocation) {
+				this.downloadPhoto(msg.getId(), (TLFileLocation)size.getLocation());
+			}
+		} else {
+			throw new RuntimeException("Got an unexpected " + p.getPhoto().getClass().getName());
+		}
+	}
+	
+	private void downloadMessageMediaDocument(TLMessage msg, TLMessageMediaDocument d) throws RpcErrorException, IOException {
+		if (d.getDocument() instanceof TLDocument) {
+			TLDocument doc = (TLDocument)d.getDocument();
+			//Determine files extension
+			String original_filename = null;
+			TLDocumentAttributeSticker sticker = null;
+			
+			String ext = null;
+			for(TLAbsDocumentAttribute attr : doc.getAttributes()) {
+				if (attr instanceof TLDocumentAttributeFilename) {
+					original_filename = ((TLDocumentAttributeFilename)attr).getFileName();
+				} else if (attr instanceof TLDocumentAttributeSticker) {
+					sticker = (TLDocumentAttributeSticker)attr;
+				}
+			}
+			if (original_filename != null) {
+				int i = original_filename.lastIndexOf('.');
+				if (i>0) ext = original_filename.substring(i+1);
+			}
+			if (ext==null) {
+				int i = doc.getMimeType().lastIndexOf('/');
+				String type = doc.getMimeType().substring(i+1).toLowerCase();
+				if (type.equals("unknown")) {
+					ext = "dat";
+				} else {
+					ext = type;
+				}
+			}
+			String filename;
+			if (sticker != null) {
+				filename = StickerConverter.makeFilenameWithPath(sticker);
+			} else {
+				filename = this.makeFilename(msg.getId(), ext);
+			}
+			
+			this.downloadDocument(filename, doc);
+		} else {
+			throw new RuntimeException("Got an unexpected " + d.getDocument().getClass().getName());
+		}
+	}
+	
+	private void downloadMessageMediaVideo(TLMessage msg, TLMessageMediaVideo v) throws RpcErrorException, IOException {
+		if (v.getVideo() instanceof TLVideo) {
+			TLVideo vid = (TLVideo)v.getVideo();
+			int i = vid.getMimeType().lastIndexOf('/');
+			String ext = vid.getMimeType().substring(i+1).toLowerCase();
+			this.downloadVideo(this.makeFilename(msg.getId(), ext), vid);
 		}
 	}
 	
@@ -117,26 +195,64 @@ class DownloadManager {
 		this.downloadFile(this.makeFilename(msgId, "jpg"), loc);
 	}
 	
+	private void downloadDocument(String filename, TLDocument doc) throws RpcErrorException, IOException {
+		TLInputDocumentFileLocation loc = new TLInputDocumentFileLocation();
+		loc.setId(doc.getId());
+		loc.setAccessHash(doc.getAccessHash());
+		this.downloadFileFromDc(filename, loc, doc.getDcId());
+	}
+	
+	private void downloadVideo(String filename, TLVideo vid) throws RpcErrorException, IOException {
+		TLInputDocumentFileLocation loc = new TLInputDocumentFileLocation();
+		loc.setId(vid.getId());
+		loc.setAccessHash(vid.getAccessHash());
+		this.downloadFileFromDc(filename, loc, vid.getDcId());
+	}
+	
 	private String makeFilename(int id, String ext) {
-		String path = Config.FILE_BASE + 
-			File.separatorChar + 
+		String path = this.user.getFileBase() + 
 			Config.FILE_FILES_BASE +
 			File.separatorChar;
 		new File(path).mkdirs();
 		if (ext!=null) return path + id + "." + ext;
 		return path + id + ".dat";
 	}
-		
 	
-	private void downloadFile(String target, TLInputFileLocation loc) throws RpcErrorException, IOException {
-		FileOutputStream fos = new FileOutputStream(target);
-		int offset = 0;
-		TLFile response;
-		do {
-			response = this.client.uploadGetFile(loc, offset, Config.FILE_DOWNLOAD_BLOCK_SIZE);
-			offset += Config.FILE_DOWNLOAD_BLOCK_SIZE;
-			fos.write(response.getBytes().getData());
-		} while(response.getBytes().getLength() == Config.FILE_DOWNLOAD_BLOCK_SIZE);
-		fos.close();
+	private void downloadFile(String target, TLAbsInputFileLocation loc) throws RpcErrorException, IOException {
+		downloadFileFromDc(target, loc, null);
+	}
+	
+	private void downloadFileFromDc(String target, TLAbsInputFileLocation loc, Integer dcID) throws RpcErrorException, IOException {
+		// Don't download already existing files.
+		if (new File(target).isFile()) return;
+		
+		FileOutputStream fos = null;
+		try {
+			fos = new FileOutputStream(target);
+			int offset = 0;
+			TLFile response;
+			do {
+				TLRequestUploadGetFile req = new TLRequestUploadGetFile(loc, offset, Config.FILE_DOWNLOAD_BLOCK_SIZE);
+				if (dcID==null) {
+					response = (TLFile)this.client.executeRpcQuery(req);
+				} else {
+					response = (TLFile)this.client.executeRpcQuery(req, dcID);
+				}
+				offset += Config.FILE_DOWNLOAD_BLOCK_SIZE;
+				fos.write(response.getBytes().getData());
+				try { Thread.sleep(Config.DELAY_AFTER_GET_FILE); } catch(InterruptedException e) {}
+			} while(response.getBytes().getLength() == Config.FILE_DOWNLOAD_BLOCK_SIZE);
+			fos.close();
+		} catch (java.io.IOException ex) {
+			if (fos!=null) fos.close();
+			new File(target).delete();
+			System.out.println("IOException happened while downloading " + target);
+			throw ex;
+		} catch (RpcErrorException ex) {
+			if (fos!=null) fos.close();
+			new File(target).delete();
+			System.out.println("RpcErrorException happened while downloading " + target);
+			throw ex;
+		}
 	}
 }

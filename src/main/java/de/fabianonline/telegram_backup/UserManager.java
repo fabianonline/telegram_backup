@@ -13,6 +13,7 @@ import com.github.badoualy.telegram.tl.core.TLBytes;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.io.IOException;
+import java.io.File;
 
 class UserManager {
 	public TLUser user = null;
@@ -91,4 +92,8 @@ class UserManager {
 	}
 	
 	public TLUser getUser() { return this.user; }
+	
+	public String getFileBase() {
+		return Config.FILE_BASE + File.separatorChar + "+" + this.user.getPhone() + File.separatorChar;
+	}
 }
