@@ -14,5 +14,8 @@ class Config {
     public static final String FILE_NAME_AUTH_KEY = "auth.dat";
     public static final String FILE_NAME_DC = "dc.dat";
     public static final String FILE_NAME_DB = "database.sqlite";
+    public static final String FILE_FILES_BASE = "files";
+    
+    public static final int FILE_DOWNLOAD_BLOCK_SIZE = 1024*1024;
 }
 

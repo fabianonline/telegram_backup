@@ -64,10 +64,11 @@ public class CommandLineController {
 				System.out.println("Next time, please run this tool with '--account " + user.getUser().getPhone() + " to use this account.");
 			}
 			
-			System.out.println("You are now signed in as " + user.getUserString());
+			System.out.println("You are logged in as " + user.getUserString());
 			
-			DownloadManager d = new DownloadManager(user);
+			DownloadManager d = new DownloadManager(user, client);
 			d.downloadMessages();
+			d.downloadMedia();
 		} catch (RpcErrorException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
