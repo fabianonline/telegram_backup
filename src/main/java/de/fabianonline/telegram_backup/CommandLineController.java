@@ -5,24 +5,18 @@ import com.github.badoualy.telegram.api.TelegramApp;
 import com.github.badoualy.telegram.api.TelegramClient;
 import com.github.badoualy.telegram.tl.exception.RpcErrorException;
 
-import de.fabianonline.telegram_backup.Config;
-import de.fabianonline.telegram_backup.ApiStorage;
-import de.fabianonline.telegram_backup.UserManager;
-import de.fabianonline.telegram_backup.DownloadManager;
-import de.fabianonline.telegram_backup.CommandLineDownloadProgress;
-
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.Scanner;
 
 public class CommandLineController {
 	private ApiStorage storage;
-	private CommandLineOptions options;
 	public TelegramApp app;
 	public UserManager user = null;
 	
-	public CommandLineController(String[] args) {
-		options = new CommandLineOptions(args);
+	public CommandLineController(CommandLineOptions options) {
+
 		if (options.cmd_help) this.show_help();
 		if (options.cmd_list_accounts) this.list_accounts();
 		if (options.account==null && !options.cmd_login) {
@@ -95,17 +89,12 @@ public class CommandLineController {
 	
 	private void list_accounts() {
 		System.out.println("List of available accounts:");
-		int count = 0;
-		File folder = new File(Config.FILE_BASE);
-		File[] files = folder.listFiles();
-		for (File f : files) {
-			if (f.isDirectory()) {
-				count++;
-				System.out.println("  " + f.getName());
+		List<String> accounts = Utils.getAccounts();
+		if (accounts.size()>0) {
+			for (String str : accounts) {
+				System.out.println("    " + str);
 			}
-		}
-		if (count>0) {
-			System.out.println("Use '--acount <x>' to use one of those accounts.");
+			System.out.println("Use '--account <x>' to use one of those accounts.");
 		} else {
 			System.out.println("NO ACCOUNTS FOUND");
 			System.out.println("Use '--login' to login to a telegram account.");
@@ -118,40 +107,4 @@ public class CommandLineController {
 		System.exit(1);
 	}
 	
-	private class CommandLineOptions {
-		public String account = null;
-		public boolean cmd_help = false;
-		public boolean cmd_login = false;
-		public boolean cmd_debug = false;
-		public boolean cmd_list_accounts = false;
-		public Integer limit_messages = null;
-		
-		public CommandLineOptions(String[] args) {
-			String last_cmd = null;
-			
-			for (String arg : args) {
-				if (last_cmd != null) {
-					switch(last_cmd) {
-						case "--account": this.account=arg; break;
-						case "--limit-messages": this.limit_messages=Integer.parseInt(arg); break;
-					}
-					last_cmd = null;
-					continue;
-				}
-				
-				switch(arg) {
-					case "--account": last_cmd=arg; continue;
-					case "--help": this.cmd_help=true; break;
-					case "--login": this.cmd_login=true; break;
-					case "--debug": this.cmd_debug=true; break;
-					case "--list-accounts": this.cmd_list_accounts=true; break;
-					case "--limit-messages": last_cmd=arg; continue;
-					default: throw new RuntimeException("Unknown command " + arg);
-				}
-			}
-			if (last_cmd != null) {
-				CommandLineController.show_error("Command " + last_cmd + " had no parameter set.");
-			}
-		}
-	}
 }
