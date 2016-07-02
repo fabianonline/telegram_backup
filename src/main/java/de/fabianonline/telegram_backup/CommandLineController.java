@@ -9,6 +9,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Scanner;
+import java.util.Vector;
 
 public class CommandLineController {
 	private ApiStorage storage;
@@ -19,18 +20,34 @@ public class CommandLineController {
 
 		if (options.cmd_help) this.show_help();
 		if (options.cmd_list_accounts) this.list_accounts();
-		if (options.account==null && !options.cmd_login) {
-			show_error("You neither used --login nor did you give an account using --account. You need to use one of those two.\nPlease have a look at --help.");
-		}
 		
 		app = new TelegramApp(Config.APP_ID, Config.APP_HASH, Config.APP_MODEL, Config.APP_SYSVER, Config.APP_APPVER, Config.APP_LANG);
 		if (options.cmd_debug) Kotlogram.setDebugLogEnabled(true);
-		
-		if (options.account != null && !options.cmd_login) {
-			storage = new ApiStorage(options.account);
+
+		String account = null;
+		Vector<String> accounts = Utils.getAccounts();
+		if (options.cmd_login) {
+			// do nothing
+		} else if (options.account!=null) {
+			boolean found = false;
+			for (String acc : accounts) if (acc.equals(options.account)) found=true;
+			if (!found) {
+				show_error("Couldn't find account '" + options.account + "'. Maybe you want to use '--login' first?");
+			}
+			account = options.account;
+		} else if (accounts.size()==0) {
+			System.out.println("No accounts found. Starting login process...");
+			options.cmd_login = true;
+		} else if (accounts.size()==1) {
+			account = accounts.firstElement();
+			System.out.println("Using only available account: " + account);
 		} else {
-			storage = new ApiStorage(null);
+			show_error("You didn't specify which account to use.\n" +
+				"Use '--account <x>' to use account <x>.\n" +
+				"Use '--list-accounts' to see all available accounts.");
 		}
+		
+		storage = new ApiStorage(account);
 		TelegramClient client = Kotlogram.getDefaultClient(app, storage);
 		
 		try {
