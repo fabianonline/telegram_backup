@@ -127,7 +127,7 @@ class DownloadManager {
 				throw new RuntimeException("Could not find a size for a photo.");
 			}
 			if (size.getLocation() instanceof TLFileLocation) {
-				boolean res = this.downloadPhoto(msg.getId(), (TLFileLocation)size.getLocation());
+				boolean res = this.downloadPhoto(msg.getId(), (TLFileLocation)size.getLocation(), size.getSize());
 				prog.onMediaDownloadedPhoto(res);
 			}
 		} else {
@@ -198,27 +198,27 @@ class DownloadManager {
 		return a; 
 	}
 	
-	private boolean downloadPhoto(int msgId, TLFileLocation src) throws RpcErrorException, IOException {
+	private boolean downloadPhoto(int msgId, TLFileLocation src, int size) throws RpcErrorException, IOException {
 		TLInputFileLocation loc = new TLInputFileLocation();
 		loc.setVolumeId(src.getVolumeId());
 		loc.setLocalId(src.getLocalId());
 		loc.setSecret(src.getSecret());
 		
-		return this.downloadFile(this.makeFilename(msgId, "jpg"), loc);
+		return this.downloadFile(this.makeFilename(msgId, "jpg"), loc, size);
 	}
 	
 	private boolean downloadDocument(String filename, TLDocument doc) throws RpcErrorException, IOException {
 		TLInputDocumentFileLocation loc = new TLInputDocumentFileLocation();
 		loc.setId(doc.getId());
 		loc.setAccessHash(doc.getAccessHash());
-		return this.downloadFileFromDc(filename, loc, doc.getDcId());
+		return this.downloadFileFromDc(filename, loc, doc.getDcId(), doc.getSize());
 	}
 	
 	private boolean downloadVideo(String filename, TLVideo vid) throws RpcErrorException, IOException {
 		TLInputDocumentFileLocation loc = new TLInputDocumentFileLocation();
 		loc.setId(vid.getId());
 		loc.setAccessHash(vid.getAccessHash());
-		return this.downloadFileFromDc(filename, loc, vid.getDcId());
+		return this.downloadFileFromDc(filename, loc, vid.getDcId(), vid.getSize());
 	}
 	
 	private String makeFilename(int id, String ext) {
@@ -230,11 +230,11 @@ class DownloadManager {
 		return path + id + ".dat";
 	}
 	
-	private boolean downloadFile(String target, TLAbsInputFileLocation loc) throws RpcErrorException, IOException {
-		return downloadFileFromDc(target, loc, null);
+	private boolean downloadFile(String target, TLAbsInputFileLocation loc, int size) throws RpcErrorException, IOException {
+		return downloadFileFromDc(target, loc, null, size);
 	}
 	
-	private boolean downloadFileFromDc(String target, TLAbsInputFileLocation loc, Integer dcID) throws RpcErrorException, IOException {
+	private boolean downloadFileFromDc(String target, TLAbsInputFileLocation loc, Integer dcID, int size) throws RpcErrorException, IOException {
 		// Don't download already existing files.
 		if (new File(target).isFile()) return false;
 		
@@ -248,12 +248,16 @@ class DownloadManager {
 				if (dcID==null) {
 					response = (TLFile)this.client.executeRpcQuery(req);
 				} else {
-					response = (TLFile)this.client.executeRpcQuery(req, dcID);
+					response = (TLFile) this.client.executeRpcQuery(req, dcID);
 				}
-				offset += Config.FILE_DOWNLOAD_BLOCK_SIZE;
+				offset += response.getBytes().getData().length;
 				fos.write(response.getBytes().getData());
 				try { Thread.sleep(Config.DELAY_AFTER_GET_FILE); } catch(InterruptedException e) {}
-			} while(response.getBytes().getLength() == Config.FILE_DOWNLOAD_BLOCK_SIZE);
+			} while(offset < size && response.getBytes().getData().length>0);
+			if (offset < size) {
+				System.out.println("Requested file " + target + " with " + size + " bytes, but got only " + offset + " bytes.");
+				System.exit(1);
+			}
 			fos.close();
 			return true;
 		} catch (java.io.IOException ex) {
