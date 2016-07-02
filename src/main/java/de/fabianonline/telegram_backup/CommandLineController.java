@@ -9,6 +9,7 @@ import de.fabianonline.telegram_backup.Config;
 import de.fabianonline.telegram_backup.ApiStorage;
 import de.fabianonline.telegram_backup.UserManager;
 import de.fabianonline.telegram_backup.DownloadManager;
+import de.fabianonline.telegram_backup.CommandLineDownloadProgress;
 
 import java.io.File;
 import java.io.IOException;
@@ -61,12 +62,13 @@ public class CommandLineController {
 				}
 				storage.setPrefix("+" + user.getUser().getPhone());
 				
-				System.out.println("Next time, please run this tool with '--account " + user.getUser().getPhone() + " to use this account.");
+				System.out.println("Please run this tool with '--account +" + user.getUser().getPhone() + " to use this account.");
+				System.exit(0);
 			}
 			
 			System.out.println("You are logged in as " + user.getUserString());
 			
-			DownloadManager d = new DownloadManager(user, client);
+			DownloadManager d = new DownloadManager(user, client, new CommandLineDownloadProgress());
 			d.downloadMessages(options.limit_messages);
 			d.downloadMedia();
 		} catch (RpcErrorException e) {

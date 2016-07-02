@@ -142,7 +142,6 @@ class Database {
 						} else if (msg.getMedia() instanceof TLMessageMediaPhoto) {
 							text = ((TLMessageMediaPhoto)msg.getMedia()).getCaption();
 						}
-						System.out.println("" + msg.getId() + ": >" + text + "<");
 					}
 					ps.setString(5, text);
 					ps.setString(6, ""+msg.getDate());
@@ -163,7 +162,6 @@ class Database {
 						}
 					}
 					if (sticker != null) {
-						System.out.println("" + msg.getId() + ": >" + msg.getMessage() + "< " + sticker);
 						ps.setString(9, sticker);
 					} else {
 						ps.setNull(9, Types.VARCHAR);
