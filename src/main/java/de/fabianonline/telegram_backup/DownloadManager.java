@@ -275,11 +275,12 @@ class DownloadManager {
 				fos.write(response.getBytes().getData());
 				try { Thread.sleep(Config.DELAY_AFTER_GET_FILE); } catch(InterruptedException e) {}
 			} while(offset < size && response.getBytes().getData().length>0);
+			fos.close();
 			if (offset < size) {
 				System.out.println("Requested file " + target + " with " + size + " bytes, but got only " + offset + " bytes.");
+				new File(target).delete();
 				System.exit(1);
 			}
-			fos.close();
 			return true;
 		} catch (java.io.IOException ex) {
 			if (fos!=null) fos.close();
