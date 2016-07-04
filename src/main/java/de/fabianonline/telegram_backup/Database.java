@@ -68,19 +68,21 @@ class Database {
 						+ "dialog_id INTEGER, "
 						+ "to_id INTEGER, "
 						+ "from_id INTEGER, "
-						+ "type TEXT, "
+						+ "from_type TEXT, "
 						+ "text TEXT, "
 						+ "time TEXT, "
 						+ "has_media BOOLEAN, "
 						+ "sticker TEXT, "
-						+ "data BLOB)");
+						+ "data BLOB,"
+						+ "type TEXT)");
 				stmt.executeUpdate("CREATE TABLE dialogs ("
 						+ "id INTEGER PRIMARY KEY ASC, "
 						+ "name TEXT, "
 						+ "type TEXT)");
 				stmt.executeUpdate("CREATE TABLE people ("
 						+ "id INTEGER PRIMARY KEY ASC, "
-						+ "name TEXT, "
+						+ "first_name TEXT, "
+						+ "last_name TEXT, "
 						+ "username TEXT, "
 						+ "type TEXT)");
 				stmt.executeUpdate("CREATE TABLE database_versions ("
@@ -106,13 +108,18 @@ class Database {
 		}
 	}
 	
-	public void save(TLVector<TLAbsMessage> all) {
+	public void saveMessages(TLVector<TLAbsMessage> all) {
 		try {
 			PreparedStatement ps = conn.prepareStatement(
-				"INSERT INTO messages " +
-				"(id, dialog_id, from_id, type, text, time, has_media, data, sticker) " + 
+				"INSERT OR REPLACE INTO messages " +
+				"(id, dialog_id, from_id, from_type, text, time, has_media, data, sticker, type) " +
 				"VALUES " +
-				"(?,  ?,         ?,       ?,    ?,    ?,    ?,         ?,    ?)");
+				"(?,  ?,         ?,       ?,         ?,    ?,    ?,         ?,    ?,       ?)");
+			PreparedStatement ps_insert_or_ignore = conn.prepareStatement(
+				"INSERT OR IGNORE INTO messages " +
+				"(id, dialog_id, from_id, from_type, text, time, has_media, data, sticker, type) " +
+				"VALUES " +
+				"(?,  ?,         ?,       ?,         ?,    ?,    ?,         ?,    ?,       ?)");
 			for (TLAbsMessage abs : all) {
 				if (abs instanceof TLMessage) {
 					TLMessage msg = (TLMessage) abs;
@@ -166,20 +173,33 @@ class Database {
 					} else {
 						ps.setNull(9, Types.VARCHAR);
 					}
+					ps.setString(10, "message");
 					ps.addBatch();
 				} else if (abs instanceof TLMessageService) {
-					// Ignore service messages.
+					ps_insert_or_ignore.setInt(1, abs.getId());
+					ps_insert_or_ignore.setNull(2, Types.INTEGER);
+					ps_insert_or_ignore.setNull(3, Types.INTEGER);
+					ps_insert_or_ignore.setNull(4, Types.VARCHAR);
+					ps_insert_or_ignore.setNull(5, Types.VARCHAR);
+					ps_insert_or_ignore.setNull(6, Types.INTEGER);
+					ps_insert_or_ignore.setNull(7, Types.BOOLEAN);
+					ps_insert_or_ignore.setNull(8, Types.BLOB);
+					ps_insert_or_ignore.setNull(9, Types.VARCHAR);
+					ps_insert_or_ignore.setString(10, "service_message");
+					ps_insert_or_ignore.addBatch();
 				} else if (abs instanceof TLMessageEmpty) {
 					TLMessageEmpty msg = (TLMessageEmpty) abs;
-					ps.setInt(1, msg.getId());
-					ps.setNull(2, Types.INTEGER);
-					ps.setNull(3, Types.INTEGER);
-					ps.setNull(4, Types.VARCHAR);
-					ps.setNull(5, Types.VARCHAR);
-					ps.setNull(6, Types.INTEGER);
-					ps.setNull(7, Types.BOOLEAN);
-					ps.setNull(8, Types.BLOB);
-					ps.addBatch();
+					ps_insert_or_ignore.setInt(1, msg.getId());
+					ps_insert_or_ignore.setNull(2, Types.INTEGER);
+					ps_insert_or_ignore.setNull(3, Types.INTEGER);
+					ps_insert_or_ignore.setNull(4, Types.VARCHAR);
+					ps_insert_or_ignore.setNull(5, Types.VARCHAR);
+					ps_insert_or_ignore.setNull(6, Types.INTEGER);
+					ps_insert_or_ignore.setNull(7, Types.BOOLEAN);
+					ps_insert_or_ignore.setNull(8, Types.BLOB);
+					ps_insert_or_ignore.setNull(9, Types.VARCHAR);
+					ps_insert_or_ignore.setString(10, "empty_message");
+					ps_insert_or_ignore.addBatch();
 				} else {
 					throw new RuntimeException("Unexpected Message type: " + abs.getClass().getName());
 				}
@@ -187,6 +207,114 @@ class Database {
 			conn.setAutoCommit(false);
 			ps.executeBatch();
 			ps.clearBatch();
+			ps_insert_or_ignore.executeBatch();
+			ps_insert_or_ignore.clearBatch();
+			conn.commit();
+			conn.setAutoCommit(true);
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException("Exception shown above happened.");
+		}
+	}
+
+	public void saveChats(TLVector<TLAbsChat> all) {
+		try {
+			PreparedStatement ps_insert_or_replace = conn.prepareStatement(
+				"INSERT OR REPLACE INTO dialogs " +
+					"(id, name, type) "+
+					"VALUES " +
+					"(?,  ?,    ?)");
+			PreparedStatement ps_insert_or_ignore = conn.prepareStatement(
+				"INSERT OR IGNORE INTO dialogs " +
+					"(id, name, type) "+
+					"VALUES " +
+					"(?,  ?,    ?)");
+
+			for(TLAbsChat abs : all) {
+				ps_insert_or_replace.setInt(1, abs.getId());
+				ps_insert_or_ignore.setInt(1, abs.getId());
+				if (abs instanceof TLChatEmpty) {
+					ps_insert_or_ignore.setNull(2, Types.VARCHAR);
+					ps_insert_or_ignore.setString(3, "empty_chat");
+					ps_insert_or_ignore.addBatch();
+				} else if (abs instanceof TLChatForbidden) {
+					ps_insert_or_replace.setString(2, ((TLChatForbidden)abs).getTitle());
+					ps_insert_or_replace.setString(3, "chat");
+					ps_insert_or_replace.addBatch();
+				} else if (abs instanceof TLChannelForbidden) {
+					ps_insert_or_replace.setString(2, ((TLChannelForbidden)abs).getTitle());
+					ps_insert_or_replace.setString(3, "channel");
+					ps_insert_or_replace.addBatch();
+				} else if (abs instanceof TLChat) {
+					ps_insert_or_replace.setString(2, ((TLChat) abs).getTitle());
+					ps_insert_or_replace.setString(3, "chat");
+					ps_insert_or_replace.addBatch();
+				} else if (abs instanceof TLChannel) {
+					ps_insert_or_replace.setString(2, ((TLChannel)abs).getTitle());
+					ps_insert_or_replace.setString(3, "channel");
+					ps_insert_or_replace.addBatch();
+				} else {
+					throw new RuntimeException("Unexpected " + abs.getClass().getName());
+				}
+			}
+			conn.setAutoCommit(false);
+			ps_insert_or_ignore.executeBatch();
+			ps_insert_or_ignore.clearBatch();
+			ps_insert_or_replace.executeBatch();
+			ps_insert_or_replace.clearBatch();
+			conn.commit();
+			conn.setAutoCommit(true);
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException("Exception shown above happened.");
+		}
+	}
+
+	public void saveUsers(TLVector<TLAbsUser> all) {
+		/*
+		("
+						+ "id INTEGER PRIMARY KEY ASC, "
+						+ "first_name TEXT, "
+						+ "last_name TEXT, "
+						+ "username TEXT, "
+						+ "type TEXT)
+		 */
+		try {
+			PreparedStatement ps_insert_or_replace = conn.prepareStatement(
+				"INSERT OR REPLACE INTO people " +
+					"(id, first_name, last_name, username, type) " +
+					"VALUES " +
+					"(?,  ?,          ?,         ?,        ?)");
+			PreparedStatement ps_insert_or_ignore = conn.prepareStatement(
+				"INSERT OR IGNORE INTO people " +
+					"(id, first_name, last_name, username, type) " +
+					"VALUES " +
+					"(?,  ?,          ?,         ?,        ?)");
+			for (TLAbsUser abs : all) {
+				if (abs instanceof TLUser) {
+					TLUser user = (TLUser)abs;
+					ps_insert_or_replace.setInt(1, user.getId());
+					ps_insert_or_replace.setString(2, user.getFirstName());
+					ps_insert_or_replace.setString(3, user.getLastName());
+					ps_insert_or_replace.setString(4, user.getUsername());
+					ps_insert_or_replace.setString(5, "user");
+					ps_insert_or_replace.addBatch();
+				} else if (abs instanceof TLUserEmpty) {
+					ps_insert_or_ignore.setInt(1, abs.getId());
+					ps_insert_or_ignore.setNull(2, Types.VARCHAR);
+					ps_insert_or_ignore.setNull(3, Types.VARCHAR);
+					ps_insert_or_ignore.setNull(4, Types.VARCHAR);
+					ps_insert_or_ignore.setString(5, "empty_user");
+					ps_insert_or_ignore.addBatch();
+				} else {
+					throw new RuntimeException("Unexpected " + abs.getClass().getName());
+				}
+			}
+			conn.setAutoCommit(false);
+			ps_insert_or_ignore.executeBatch();
+			ps_insert_or_ignore.clearBatch();
+			ps_insert_or_replace.executeBatch();
+			ps_insert_or_replace.clearBatch();
 			conn.commit();
 			conn.setAutoCommit(true);
 		} catch (Exception e) {

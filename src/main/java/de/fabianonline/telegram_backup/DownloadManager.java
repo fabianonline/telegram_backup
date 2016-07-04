@@ -75,7 +75,9 @@ class DownloadManager {
 			
 			TLAbsMessages response = client.messagesGetMessages(ids);
 			prog.onMessageDownloaded(response.getMessages().size());
-			db.save(response.getMessages());
+			db.saveMessages(response.getMessages());
+			db.saveChats(response.getChats());
+			db.saveUsers(response.getUsers());
 			try {
 				Thread.sleep(Config.DELAY_AFTER_GET_MESSAGES);
 			} catch (InterruptedException e) {}
