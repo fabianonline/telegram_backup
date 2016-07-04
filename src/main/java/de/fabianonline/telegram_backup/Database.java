@@ -90,6 +90,13 @@ class Database {
 				stmt.executeUpdate("INSERT INTO database_versions (version) VALUES (1)");
 				version = 1;
 			}
+			if (version==1) {
+				System.out.println("  Updating to version 2...");
+				stmt.executeUpdate("ALTER TABLE people RENAME TO 'users'");
+				stmt.executeUpdate("ALTER TABLE users ADD COLUMN phone TEXT");
+				stmt.executeUpdate("INSERT INTO database_versions (version) VALUES (2)");
+				version = 2;
+			}
 			
 			System.out.println("Database is ready.");
 		} catch (SQLException e) {
@@ -271,25 +278,17 @@ class Database {
 	}
 
 	public void saveUsers(TLVector<TLAbsUser> all) {
-		/*
-		("
-						+ "id INTEGER PRIMARY KEY ASC, "
-						+ "first_name TEXT, "
-						+ "last_name TEXT, "
-						+ "username TEXT, "
-						+ "type TEXT)
-		 */
 		try {
 			PreparedStatement ps_insert_or_replace = conn.prepareStatement(
-				"INSERT OR REPLACE INTO people " +
-					"(id, first_name, last_name, username, type) " +
+				"INSERT OR REPLACE INTO users " +
+					"(id, first_name, last_name, username, type, phone) " +
 					"VALUES " +
-					"(?,  ?,          ?,         ?,        ?)");
+					"(?,  ?,          ?,         ?,        ?,    ?)");
 			PreparedStatement ps_insert_or_ignore = conn.prepareStatement(
-				"INSERT OR IGNORE INTO people " +
-					"(id, first_name, last_name, username, type) " +
+				"INSERT OR IGNORE INTO users " +
+					"(id, first_name, last_name, username, type, phone) " +
 					"VALUES " +
-					"(?,  ?,          ?,         ?,        ?)");
+					"(?,  ?,          ?,         ?,        ?,    ?)");
 			for (TLAbsUser abs : all) {
 				if (abs instanceof TLUser) {
 					TLUser user = (TLUser)abs;
@@ -298,6 +297,7 @@ class Database {
 					ps_insert_or_replace.setString(3, user.getLastName());
 					ps_insert_or_replace.setString(4, user.getUsername());
 					ps_insert_or_replace.setString(5, "user");
+					ps_insert_or_replace.setString(6, user.getPhone());
 					ps_insert_or_replace.addBatch();
 				} else if (abs instanceof TLUserEmpty) {
 					ps_insert_or_ignore.setInt(1, abs.getId());
@@ -305,6 +305,7 @@ class Database {
 					ps_insert_or_ignore.setNull(3, Types.VARCHAR);
 					ps_insert_or_ignore.setNull(4, Types.VARCHAR);
 					ps_insert_or_ignore.setString(5, "empty_user");
+					ps_insert_or_ignore.setNull(6, Types.VARCHAR);
 					ps_insert_or_ignore.addBatch();
 				} else {
 					throw new RuntimeException("Unexpected " + abs.getClass().getName());
