@@ -16,7 +16,7 @@ class Config {
     public static final String FILE_NAME_DB = "database.sqlite";
     public static final String FILE_FILES_BASE = "files";
     public static final String FILE_STICKER_BASE = "stickers";
-    
+
     public static final int FILE_DOWNLOAD_BLOCK_SIZE = 10*1024*1024;
     
     public static final int DELAY_AFTER_GET_MESSAGES = 200;

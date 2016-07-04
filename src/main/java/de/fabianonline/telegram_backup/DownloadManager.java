@@ -35,21 +35,15 @@ class DownloadManager {
 	}
 	
 	public void downloadMessages(Integer limit) throws RpcErrorException, IOException {
-		System.out.print("Downloading dialogs... ");
-		TLAbsDialogs dialogs = client.messagesGetDialogs(
+		System.out.println("Downloading most recent dialog... ");
+		int max_message_id = client.messagesGetDialogs(
 			0,
 			0,
 			new TLInputPeerEmpty(),
-			100);
-		System.out.println("Got " + dialogs.getDialogs().size() + " dialogs.");
-		int max_message_id = -1;
-		for(TLAbsDialog dialog : dialogs.getDialogs()) {
-			max_message_id = Math.max(max_message_id, dialog.getTopMessage());
-		}
+			1).getDialogs().get(0).getTopMessage();
 		System.out.println("Top message ID is " + max_message_id);
 		int max_database_id = db.getTopMessageID();
 		System.out.println("Top message ID in database is " + max_database_id);
-		
 		if (limit != null) {
 			System.out.println("Limit is set to " + limit);
 			max_database_id = Math.max(max_database_id, max_message_id-limit);
