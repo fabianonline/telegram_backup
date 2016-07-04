@@ -10,7 +10,7 @@ class Config {
     public static final String APP_APPVER = "0.1";
     public static final String APP_LANG = "en";
     
-    public static final String FILE_BASE = "data";
+    public static String FILE_BASE = System.getProperty("user.home") + File.separatorChar + ".telegram_backup";
     public static final String FILE_NAME_AUTH_KEY = "auth.dat";
     public static final String FILE_NAME_DC = "dc.dat";
     public static final String FILE_NAME_DB = "database.sqlite";

@@ -17,6 +17,11 @@ public class CommandLineController {
 	public UserManager user = null;
 	
 	public CommandLineController(CommandLineOptions options) {
+		if (options.target != null) {
+			Config.FILE_BASE = options.target;
+		}
+		
+		System.out.println("Target directory for files: " + Config.FILE_BASE);
 
 		if (options.cmd_help) this.show_help();
 		if (options.cmd_list_accounts) this.list_accounts();
@@ -94,12 +99,13 @@ public class CommandLineController {
 	
 	private void show_help() {
 		System.out.println("Valid options are:");
-		System.out.println("  --help                          Shows this help.");
-		System.out.println("  --account <x>                   Use account <x>.");
-		System.out.println("  --login                         Login to an existing telegram account.");
-		System.out.println("  --debug                         Show (lots of) debug information.");
-		System.out.println("  --list-accounts                 List all existing accounts ");
-		System.out.println("  --limit-messages <x>            Downloads at most the most recent <x> messages.");
+		System.out.println("  -h, --help                   Shows this help.");
+		System.out.println("  -a, --account <x>            Use account <x>.");
+		System.out.println("  -l, --login                  Login to an existing telegram account.");
+		System.out.println("      --debug                  Show (lots of) debug information.");
+		System.out.println("  -A, --list-accounts          List all existing accounts ");
+		System.out.println("      --limit-messages <x>     Downloads at most the most recent <x> messages.");
+		System.out.println("  -t, --target <x>             Target directory for the files.");
 		
 		System.exit(0);
 	}

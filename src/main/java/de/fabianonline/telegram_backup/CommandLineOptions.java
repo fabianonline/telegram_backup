@@ -8,6 +8,7 @@ class CommandLineOptions {
 	public boolean cmd_debug = false;
 	public boolean cmd_list_accounts = false;
 	public Integer limit_messages = null;
+	public String target = null;
 
 	public CommandLineOptions(String[] args) {
 		String last_cmd = null;
@@ -21,6 +22,9 @@ class CommandLineOptions {
 					case "--limit-messages":
 						this.limit_messages = Integer.parseInt(arg);
 						break;
+					case "--target":
+						this.target = arg;
+						break;
 				}
 				last_cmd = null;
 				continue;
@@ -28,18 +32,22 @@ class CommandLineOptions {
 
 			switch (arg) {
 				case "--account":
-					last_cmd = arg;
+				case "-a":
+					last_cmd = "--account";
 					continue;
 				case "--help":
+				case "-h":
 					this.cmd_help = true;
 					break;
 				case "--login":
+				case "-l":
 					this.cmd_login = true;
 					break;
 				case "--debug":
 					this.cmd_debug = true;
 					break;
 				case "--list-accounts":
+				case "-A":
 					this.cmd_list_accounts = true;
 					break;
 				case "--limit-messages":
@@ -48,6 +56,10 @@ class CommandLineOptions {
 				case "--console":
 					this.cmd_console = true;
 					break;
+				case "--target":
+				case "-t":
+					last_cmd = "--target";
+					continue;
 				default:
 					throw new RuntimeException("Unknown command " + arg);
 			}
