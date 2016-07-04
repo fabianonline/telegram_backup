@@ -77,7 +77,7 @@ class DownloadManager {
 			prog.onMessageDownloaded(response.getMessages().size());
 			db.save(response.getMessages());
 			try {
-				Thread.sleep(750);
+				Thread.sleep(Config.DELAY_AFTER_GET_MESSAGES);
 			} catch (InterruptedException e) {}
 		}
 		

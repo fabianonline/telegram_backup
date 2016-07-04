@@ -19,6 +19,7 @@ class Config {
     
     public static final int FILE_DOWNLOAD_BLOCK_SIZE = 10*1024*1024;
     
+    public static final int DELAY_AFTER_GET_MESSAGES = 200;
     public static final int DELAY_AFTER_GET_FILE = 200;
 }
 
