@@ -96,6 +96,8 @@ class DownloadManager {
 				this.downloadMessageMediaDocument(msg, (TLMessageMediaDocument)media);
 			} else if (media instanceof TLMessageMediaVideo) {
 				this.downloadMessageMediaVideo(msg, (TLMessageMediaVideo)media);
+			} else if (media instanceof TLMessageMediaAudio) {
+				this.downloadMessageMediaAudio(msg, (TLMessageMediaAudio)media);
 			} else if (media instanceof TLMessageMediaEmpty ||
 				media instanceof TLMessageMediaUnsupported ||
 				media instanceof TLMessageMediaGeo ||
@@ -191,6 +193,16 @@ class DownloadManager {
 		}
 	}
 	
+	private void downloadMessageMediaAudio(TLMessage msg, TLMessageMediaAudio a) throws RpcErrorException, IOException {
+		if (a.getAudio() instanceof TLAudio) {
+			TLAudio audio = (TLAudio)a.getAudio();
+			int i = audio.getMimeType().lastIndexOf('/');
+			String ext = audio.getMimeType().substring(i+1).toLowerCase();
+			boolean res = this.downloadAudio(this.makeFilename(msg.getId(), ext), audio);
+			prog.onMediaDownloadedAudio(res);
+		}
+	}
+	
 	private ArrayList<Integer> makeIdList(int start, int end) {
 		if (start > end) throw new RuntimeException("start and end reversed");
 		ArrayList<Integer> a = new ArrayList<Integer>(end - start + 1);
@@ -219,6 +231,13 @@ class DownloadManager {
 		loc.setId(vid.getId());
 		loc.setAccessHash(vid.getAccessHash());
 		return this.downloadFileFromDc(filename, loc, vid.getDcId(), vid.getSize());
+	}
+	
+	private boolean downloadAudio(String filename, TLAudio audio) throws RpcErrorException, IOException {
+		TLInputDocumentFileLocation loc = new TLInputDocumentFileLocation();
+		loc.setId(audio.getId());
+		loc.setAccessHash(audio.getAccessHash());
+		return this.downloadFileFromDc(filename, loc, audio.getDcId(), audio.getSize());
 	}
 	
 	private String makeFilename(int id, String ext) {

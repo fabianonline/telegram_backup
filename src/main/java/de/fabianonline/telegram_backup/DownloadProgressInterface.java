@@ -11,5 +11,6 @@ interface DownloadProgressInterface {
 	public void onMediaDownloadedDocument(boolean n);
 	public void onMediaDownloadedSticker(boolean n);
 	public void onMediaDownloadedOther(boolean n);
+	public void onMediaDownloadedAudio(boolean n);
 	public void onMediaDownloadFinished();
 }

@@ -17,6 +17,7 @@ class CommandLineDownloadProgress implements DownloadProgressInterface {
 	public void onMediaDownloadedDocument(boolean n) { show(n, 'D'); }
 	public void onMediaDownloadedSticker(boolean n) { show(n, 'S'); }
 	public void onMediaDownloadedOther(boolean n) { show(n, ' '); }
+	public void onMediaDownloadedAudio(boolean n) { show(n, 'A'); }
 	public void onMediaDownloadFinished() { showNewLine(); System.out.println("Done."); }
 	
 	private void show(boolean n, char letter) { System.out.print(n ? letter : '.'); i++; if (i % 50 == 0) showNewLine();}
