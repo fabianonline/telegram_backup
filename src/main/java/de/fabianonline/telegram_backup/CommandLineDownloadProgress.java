@@ -16,7 +16,7 @@ class CommandLineDownloadProgress implements DownloadProgressInterface {
 		System.out.println("Checking and downloading media.");
 		System.out.println("Legend:");
 		System.out.println("'V' - Video         'P' - Photo         'D' - Document");
-		System.out.println("'S' - Sticker       'A' - Audio");
+		System.out.println("'S' - Sticker       'A' - Audio         'e' - Empty file");
 		System.out.println("'.' - Previously downloaded file");
 		System.out.println("' ' - Ignored media type (location or website, for example)");
 		System.out.println("" + count + " Files to check / download");    
@@ -28,6 +28,7 @@ class CommandLineDownloadProgress implements DownloadProgressInterface {
 	public void onMediaDownloadedSticker(boolean n) { show(n, 'S'); }
 	public void onMediaDownloadedOther(boolean n) { show(n, ' '); }
 	public void onMediaDownloadedAudio(boolean n) { show(n, 'A'); }
+	public void onMediaDownloadedEmpty(boolean n) { show(true, 'e'); }
 	public void onMediaDownloadFinished() { showNewLine(); System.out.println("Done."); }
 	
 	private void show(boolean n, char letter) { System.out.print(n ? letter : '.'); i++; if (i % 50 == 0) showNewLine();}

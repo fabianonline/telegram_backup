@@ -7,6 +7,7 @@ import de.fabianonline.telegram_backup.DownloadProgressInterface;
 
 import com.github.badoualy.telegram.api.TelegramClient;
 import com.github.badoualy.telegram.tl.core.TLIntVector;
+import com.github.badoualy.telegram.tl.core.TLObject;
 import com.github.badoualy.telegram.tl.api.messages.TLAbsMessages;
 import com.github.badoualy.telegram.tl.api.messages.TLAbsDialogs;
 import com.github.badoualy.telegram.tl.api.*;
@@ -134,6 +135,8 @@ class DownloadManager {
 				boolean res = this.downloadPhoto(msg.getId(), (TLFileLocation)size.getLocation(), size.getSize());
 				prog.onMediaDownloadedPhoto(res);
 			}
+		} else if (p.getPhoto() instanceof TLPhotoEmpty) {
+			downloadEmptyObject(p.getPhoto());
 		} else {
 			throw new RuntimeException("Got an unexpected " + p.getPhoto().getClass().getName());
 		}
@@ -180,6 +183,8 @@ class DownloadManager {
 			} else {
 				prog.onMediaDownloadedDocument(res);
 			}
+		} else if (d.getDocument() instanceof TLDocumentEmpty) {
+			downloadEmptyObject(d.getDocument());
 		} else {
 			throw new RuntimeException("Got an unexpected " + d.getDocument().getClass().getName());
 		}
@@ -192,6 +197,10 @@ class DownloadManager {
 			String ext = vid.getMimeType().substring(i+1).toLowerCase();
 			boolean res = this.downloadVideo(this.makeFilename(msg.getId(), ext), vid);
 			prog.onMediaDownloadedVideo(res);
+		} else if (v.getVideo() instanceof TLVideoEmpty) {
+			downloadEmptyObject(v.getVideo());
+		} else {
+			throw new RuntimeException("Got an unexpected " + v.getVideo().getClass().getName());
 		}
 	}
 	
@@ -202,6 +211,10 @@ class DownloadManager {
 			String ext = audio.getMimeType().substring(i+1).toLowerCase();
 			boolean res = this.downloadAudio(this.makeFilename(msg.getId(), ext), audio);
 			prog.onMediaDownloadedAudio(res);
+		} else if (a.getAudio() instanceof TLAudioEmpty) {
+			downloadEmptyObject(a.getAudio());
+		} else {
+			throw new RuntimeException("Got an unexpected " + a.getAudio().getClass().getName());
 		}
 	}
 	
@@ -240,6 +253,10 @@ class DownloadManager {
 		loc.setId(audio.getId());
 		loc.setAccessHash(audio.getAccessHash());
 		return this.downloadFileFromDc(filename, loc, audio.getDcId(), audio.getSize());
+	}
+	
+	private void downloadEmptyObject(TLObject obj) {
+		prog.onMediaDownloadedEmpty(true);
 	}
 	
 	private String makeFilename(int id, String ext) {
