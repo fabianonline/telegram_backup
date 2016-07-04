@@ -17,13 +17,21 @@ public class CommandLineController {
 	public UserManager user = null;
 	
 	public CommandLineController(CommandLineOptions options) {
+		if (options.cmd_version) {
+			System.out.println("Telegram_Backup v" + Config.APP_APPVER);
+			System.out.println("by Fabian Schlenz");
+			System.exit(0);
+		} else if (options.cmd_help) {
+			this.show_help();
+		}
+		
 		if (options.target != null) {
 			Config.FILE_BASE = options.target;
 		}
 		
 		System.out.println("Target directory for files: " + Config.FILE_BASE);
 
-		if (options.cmd_help) this.show_help();
+		
 		if (options.cmd_list_accounts) this.list_accounts();
 		
 		app = new TelegramApp(Config.APP_ID, Config.APP_HASH, Config.APP_MODEL, Config.APP_SYSVER, Config.APP_APPVER, Config.APP_LANG);

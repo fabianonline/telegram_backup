@@ -7,7 +7,7 @@ class Config {
 	public static final String APP_HASH = "16e4ff955cd0adfc058f95ca564f562d";
     public static final String APP_MODEL = "Desktop";
     public static final String APP_SYSVER = "1.0";
-    public static final String APP_APPVER = "0.1";
+    public static final String APP_APPVER = "1.0";
     public static final String APP_LANG = "en";
     
     public static String FILE_BASE = System.getProperty("user.home") + File.separatorChar + ".telegram_backup";

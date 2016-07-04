@@ -9,6 +9,7 @@ class CommandLineOptions {
 	public boolean cmd_list_accounts = false;
 	public Integer limit_messages = null;
 	public String target = null;
+	public boolean cmd_version = false;
 
 	public CommandLineOptions(String[] args) {
 		String last_cmd = null;
@@ -31,35 +32,33 @@ class CommandLineOptions {
 			}
 
 			switch (arg) {
-				case "--account":
-				case "-a":
-					last_cmd = "--account";
-					continue;
-				case "--help":
-				case "-h":
-					this.cmd_help = true;
-					break;
-				case "--login":
-				case "-l":
-					this.cmd_login = true;
-					break;
+				case "-a": case "--account":
+					last_cmd = "--account";              continue;
+					
+				case "-h": case "--help":
+					this.cmd_help = true;                break;
+					
+				case "-l": case "--login":
+					this.cmd_login = true;               break;
+					
 				case "--debug":
-					this.cmd_debug = true;
-					break;
-				case "--list-accounts":
-				case "-A":
-					this.cmd_list_accounts = true;
-					break;
+					this.cmd_debug = true;               break;
+					
+				case "-A": case "--list-accounts":
+					this.cmd_list_accounts = true;       break;
+					
 				case "--limit-messages":
-					last_cmd = arg;
-					continue;
+					last_cmd = arg;                      continue;
+					
 				case "--console":
-					this.cmd_console = true;
-					break;
-				case "--target":
-				case "-t":
-					last_cmd = "--target";
-					continue;
+					this.cmd_console = true;             break;
+					
+				case "-t": case "--target":
+					last_cmd = "--target";               continue;
+					
+				case "-V": case "--version":
+					this.cmd_version = true;             continue;
+					
 				default:
 					throw new RuntimeException("Unknown command " + arg);
 			}
