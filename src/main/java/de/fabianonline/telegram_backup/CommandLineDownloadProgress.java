@@ -31,7 +31,7 @@ class CommandLineDownloadProgress implements DownloadProgressInterface {
 	public void onMediaDownloadedEmpty(boolean n) { show(true, 'e'); }
 	public void onMediaDownloadFinished() { showNewLine(); System.out.println("Done."); }
 	
-	private void show(boolean n, char letter) { System.out.print(n ? letter : '.'); i++; if (i % 50 == 0) showNewLine();}
+	private void show(boolean n, char letter) { System.out.print(n ? letter : '.'); i++; if (i % 100 == 0) showNewLine();}
 	private void showNewLine() { System.out.println(" - " + i + "/" + mediaCount); }
 }
 	

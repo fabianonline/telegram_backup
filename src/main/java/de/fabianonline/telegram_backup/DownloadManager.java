@@ -50,35 +50,58 @@ class DownloadManager {
 			System.out.println("New top message id 'in database' is " + max_database_id);
 		}
 		
-		int start_id = max_database_id + 1;
-		int current_start_id = start_id;
-		int end_id = max_message_id;
-		if (start_id > end_id) {
+		if (max_database_id == max_message_id) {
 			System.out.println("No new messages to download.");
-			return;
-		}
-		
-		prog.onMessageDownloadStart(end_id - current_start_id + 1);
-		
-		while (current_start_id <= end_id) {
-			int my_end_id = Math.min(current_start_id+99, end_id);
-			ArrayList<Integer> a = makeIdList(current_start_id, my_end_id);
-			TLIntVector ids = new TLIntVector();
-			ids.addAll(a);
-			my_end_id = ids.get(ids.size()-1);
-			current_start_id = my_end_id + 1;
+		} else if (max_database_id > max_message_id) {
+			throw new RuntimeException("max_database_id is bigger then max_message_id. This shouldn't be aple to happen. Ever.");
+		} else {
+			int start_id = max_database_id + 1;
+			int current_start_id = start_id;
+			int end_id = max_message_id;
 			
-			TLAbsMessages response = client.messagesGetMessages(ids);
-			prog.onMessageDownloaded(response.getMessages().size());
-			db.saveMessages(response.getMessages());
-			db.saveChats(response.getChats());
-			db.saveUsers(response.getUsers());
-			try {
-				Thread.sleep(Config.DELAY_AFTER_GET_MESSAGES);
-			} catch (InterruptedException e) {}
+			prog.onMessageDownloadStart(end_id - current_start_id + 1);
+			
+			while (current_start_id <= end_id) {
+				int my_end_id = Math.min(current_start_id+99, end_id);
+				ArrayList<Integer> a = makeIdList(current_start_id, my_end_id);
+				TLIntVector ids = new TLIntVector();
+				ids.addAll(a);
+				my_end_id = ids.get(ids.size()-1);
+				current_start_id = my_end_id + 1;
+				
+				TLAbsMessages response = client.messagesGetMessages(ids);
+				prog.onMessageDownloaded(response.getMessages().size());
+				db.saveMessages(response.getMessages());
+				db.saveChats(response.getChats());
+				db.saveUsers(response.getUsers());
+				try {
+					Thread.sleep(Config.DELAY_AFTER_GET_MESSAGES);
+				} catch (InterruptedException e) {}
+			}
+			
+			prog.onMessageDownloadFinished();
 		}
 		
-		prog.onMessageDownloadFinished();
+		System.out.println("Checking message database for completeness...");
+		if (db.getMessageCount() != db.getTopMessageID()) {
+			LinkedList<Integer> ids = db.getMissingIDs();
+			System.out.println("Downloading " + ids.size() + " messages that are missing in your database.");
+			prog.onMessageDownloadStart(ids.size());
+			while (ids.size()>0) {
+				TLIntVector vector = new TLIntVector();
+				for (int i=0; i<100; i++) {
+					if (ids.size()==0) break;
+					vector.add(ids.remove());
+				}
+				TLAbsMessages response = client.messagesGetMessages(vector);
+				prog.onMessageDownloaded(response.getMessages().size());
+				db.saveMessages(response.getMessages());
+				db.saveChats(response.getChats());
+				db.saveUsers(response.getUsers());
+				try { Thread.sleep(Config.DELAY_AFTER_GET_MESSAGES); } catch (InterruptedException e) {}
+			}
+			prog.onMessageDownloadFinished();
+		}
 	}
 	
 	public void downloadMedia() throws RpcErrorException, IOException {

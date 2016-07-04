@@ -14,6 +14,7 @@ import java.io.File;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.LinkedList;
+import java.sql.Array;
 
 import de.fabianonline.telegram_backup.UserManager;
 import de.fabianonline.telegram_backup.StickerConverter;
@@ -112,6 +113,42 @@ class Database {
 			return rs.getInt(1);
 		} catch (SQLException e) {
 			return 0;
+		}
+	}
+	
+	public int getMessageCount() {
+		try {
+			ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM messages");
+			rs.next();
+			return rs.getInt(1);
+		} catch (SQLException e) {
+			throw new RuntimeException("Could not get count of messages.");
+		}
+	}
+	
+	public LinkedList<Integer> getMissingIDs() {
+		try {
+			LinkedList<Integer> missing = new LinkedList<Integer>();
+			int max = getTopMessageID();
+			ResultSet rs = stmt.executeQuery("SELECT id FROM messages ORDER BY id");
+			rs.next();
+			int id=rs.getInt(1);
+			for (int i=1; i<=max; i++) {
+				if (i==id) {
+					rs.next();
+					if (rs.isClosed()) {
+						id = Integer.MAX_VALUE;
+					} else {
+						id=rs.getInt(1);
+					}
+				} else if (i<id) {
+					missing.add(i);
+				}
+			}
+			return missing;
+		} catch(SQLException e) {
+			e.printStackTrace();
+			throw new RuntimeException("Could not get list of ids.");
 		}
 	}
 	
