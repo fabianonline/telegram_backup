@@ -125,9 +125,10 @@ class DownloadManager {
 				this.downloadMessageMediaVideo(msg, (TLMessageMediaVideo)media);
 			} else if (media instanceof TLMessageMediaAudio) {
 				this.downloadMessageMediaAudio(msg, (TLMessageMediaAudio)media);
+			} else if (media instanceof TLMessageMediaGeo) {
+				this.downloadMessageMediaGeo(msg, (TLMessageMediaGeo)media);
 			} else if (media instanceof TLMessageMediaEmpty ||
 				media instanceof TLMessageMediaUnsupported ||
-				media instanceof TLMessageMediaGeo ||
 				media instanceof TLMessageMediaWebPage ||
 				media instanceof TLMessageMediaContact ||
 				media instanceof TLMessageMediaVenue) {
@@ -242,6 +243,20 @@ class DownloadManager {
 		}
 	}
 	
+	private void downloadMessageMediaGeo(TLMessage msg, TLMessageMediaGeo g) throws IOException {
+		if (g.getGeo() instanceof TLGeoPoint) {
+			TLGeoPoint geo = (TLGeoPoint)g.getGeo();
+			String url = "https://maps.googleapis.com/maps/api/staticmap?center=" +
+				geo.getLat() + "," + geo.getLong() + "&zoom=14&size=300x150&scale=2&format=png&key=" + Config.SECRET_GMAPS;
+			boolean res = downloadExternalFile(this.makeFilename(msg.getId(), "png"), url);
+			prog.onMediaDownloadedGeo(res);
+		} else if (g.getGeo() instanceof TLGeoPointEmpty) {
+			downloadEmptyObject(g.getGeo());
+		} else {
+			throw new RuntimeException("Got an unexpected " + g.getGeo().getClass().getName());
+		}
+	}
+	
 	private ArrayList<Integer> makeIdList(int start, int end) {
 		if (start > end) throw new RuntimeException("start and end reversed");
 		ArrayList<Integer> a = new ArrayList<Integer>(end - start + 1);
@@ -334,5 +349,11 @@ class DownloadManager {
 			System.out.println("RpcErrorException happened while downloading " + target);
 			throw ex;
 		}
+	}
+	
+	private boolean downloadExternalFile(String target, String url) throws IOException {
+		if (new File(target).isFile()) return false;
+		FileUtils.copyURLToFile(new URL(url), new File(target), 5000, 5000);
+		return true;
 	}
 }

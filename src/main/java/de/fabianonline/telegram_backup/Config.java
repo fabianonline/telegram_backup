@@ -21,5 +21,7 @@ class Config {
     
     public static final int DELAY_AFTER_GET_MESSAGES = 200;
     public static final int DELAY_AFTER_GET_FILE = 200;
+    
+    public static final String SECRET_GMAPS = "AIzaSyBEtUDhCQKEH6i2Mn1GAiQ9M_tLN0vxHIs";
 }
 
