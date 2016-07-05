@@ -17,7 +17,7 @@ public class GUIController {
 	}
 
 	private void showAccountChooserDialog() {
-		JDialog accountChooser = new JDialog();
+		final JDialog accountChooser = new JDialog();
 		accountChooser.setTitle("Choose account");
 		accountChooser.setSize(400, 200);
 		JPanel vert = new JPanel();
@@ -30,7 +30,7 @@ public class GUIController {
 		JPanel bottom = new JPanel(new GridLayout(1, 2));
 		JButton btnAddAccount = new JButton("Add account");
 		bottom.add(btnAddAccount);
-		JButton btnLogin = new JButton("Login");
+		final JButton btnLogin = new JButton("Login");
 		btnLogin.setEnabled(false);
 		bottom.add(btnLogin);
 		vert.add(bottom, BorderLayout.SOUTH);
