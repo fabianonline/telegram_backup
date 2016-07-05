@@ -439,7 +439,7 @@ class Database {
 	
 	private void getMessagesForExport(String type, Integer id, ChatMessageProcessor p) {
 		try {
-			ResultSet rs = stmt.executeQuery("SELECT messages.id, text, time, has_media, " +
+			ResultSet rs = stmt.executeQuery("SELECT messages.id, text, time*1000, has_media, " +
 				"sticker, first_name, last_name, username FROM messages, users WHERE " +
 				"users.id=messages.from_id AND dialog_id=" + id + " AND from_type='" + type + "' " +
 				"ORDER BY messages.id");

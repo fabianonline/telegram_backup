@@ -68,7 +68,7 @@ class HTMLExporter {
 		}
 		
 		public void process(Database.Message msg) {
-			w.println("" + msg.text + "<br>");
+			w.println("" + String.format("%1$tF %1$tT", msg.time) + " - " + msg.text + "<br>");
 		}
 	}
 		
