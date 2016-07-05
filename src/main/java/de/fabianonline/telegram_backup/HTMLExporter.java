@@ -10,8 +10,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.LinkedList;
 
-import org.javatuples.Triplet;
-
 class HTMLExporter {
 	public void export(UserManager user) {
 		try {

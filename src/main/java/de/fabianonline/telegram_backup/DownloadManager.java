@@ -38,6 +38,33 @@ class DownloadManager {
 	}
 	
 	public void downloadMessages(Integer limit) throws RpcErrorException, IOException {
+		boolean completed = true;
+		do {
+			completed = true;
+			try {
+				_downloadMessages(limit);
+			} catch (RpcErrorException e) {
+				if (e.getTag().startsWith("420: FLOOD_WAIT_")) {
+					completed = false;
+					Config.DELAY_AFTER_GET_MESSAGES = 1500;
+					int delay = Integer.parseInt(e.getTag().substring(16));
+					System.out.println("");
+					System.out.println("Telegram complained about us (okay, me) making too many requests in too short time.");
+					System.out.println("So we now have to wait a bit. Telegram asked us to wait for " + delay + " seconds, which");
+					System.out.println("is about " + ((delay / 60) + 1) + " minutes.");
+					System.out.println("So I'm going to do that now. If you don't want to wait, you can quit by pressing");
+					System.out.println("Ctrl+C. You can restart me at any time and I will just continue to download your");
+					System.out.println("messages and media. But be advised that just restarting me is not going to change");
+					System.out.println("the fact that Telegram won't talk to me until then.");
+					try { Thread.sleep((delay + 60) * 1000); } catch(InterruptedException e2) {}
+				} else {
+					throw e;
+				}
+			}
+		} while (!completed);
+	}
+	
+	public void _downloadMessages(Integer limit) throws RpcErrorException, IOException {
 		System.out.println("Downloading most recent dialog... ");
 		int max_message_id = client.messagesGetDialogs(
 			0,
@@ -71,7 +98,6 @@ class DownloadManager {
 				ids.addAll(a);
 				my_end_id = ids.get(ids.size()-1);
 				current_start_id = my_end_id + 1;
-				
 				TLAbsMessages response = client.messagesGetMessages(ids);
 				prog.onMessageDownloaded(response.getMessages().size());
 				db.saveMessages(response.getMessages());
@@ -112,6 +138,33 @@ class DownloadManager {
 	}
 	
 	public void downloadMedia() throws RpcErrorException, IOException {
+		boolean completed = true;
+		do {
+			completed = true;
+			try {
+				_downloadMedia();
+			} catch (RpcErrorException e) {
+				if (e.getTag().startsWith("420: FLOOD_WAIT_")) {
+					completed = false;
+					Config.DELAY_AFTER_GET_FILE = 1500;
+					int delay = Integer.parseInt(e.getTag().substring(16));
+					System.out.println("");
+					System.out.println("Telegram complained about us (okay, me) making too many requests in too short time.");
+					System.out.println("So we now have to wait a bit. Telegram asked us to wait for " + delay + " seconds, which");
+					System.out.println("is about " + ((delay / 60) + 1) + " minutes.");
+					System.out.println("So I'm going to do that now. If you don't want to wait, you can quit by pressing");
+					System.out.println("Ctrl+C. You can restart me at any time and I will just continue to download your");
+					System.out.println("messages and media. But be advised that just restarting me is not going to change");
+					System.out.println("the fact that Telegram won't talk to me until then.");
+					try { Thread.sleep((delay + 60) * 1000); } catch(InterruptedException e2) {}
+				} else {
+					throw e;
+				}
+			}
+		} while (!completed);
+	}
+	
+	private void _downloadMedia() throws RpcErrorException, IOException {
 		LinkedList<TLMessage> messages = this.db.getMessagesWithMedia();
 		prog.onMediaDownloadStart(messages.size());
 		for (TLMessage msg : messages) {
