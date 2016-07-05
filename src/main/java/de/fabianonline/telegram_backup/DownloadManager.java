@@ -21,6 +21,7 @@ import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.net.URL;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.io.FileUtils;
 
@@ -60,11 +61,18 @@ class DownloadManager {
 				} else {
 					throw e;
 				}
+			} catch (TimeoutException e) {
+				completed = false;
+				System.out.println("");
+				System.out.println("Telegram took too long to respond to our request.");
+				System.out.println("I'm going to wait a minute and then try again.");
+				try { Thread.sleep(60*1000); } catch(InterruptedException e2) {}
+				System.out.println("");
 			}
 		} while (!completed);
 	}
 	
-	public void _downloadMessages(Integer limit) throws RpcErrorException, IOException {
+	public void _downloadMessages(Integer limit) throws RpcErrorException, IOException, TimeoutException {
 		System.out.println("Downloading most recent dialog... ");
 		int max_message_id = client.messagesGetDialogs(
 			0,
@@ -157,14 +165,22 @@ class DownloadManager {
 					System.out.println("messages and media. But be advised that just restarting me is not going to change");
 					System.out.println("the fact that Telegram won't talk to me until then.");
 					try { Thread.sleep((delay + 60) * 1000); } catch(InterruptedException e2) {}
+					System.out.println("");
 				} else {
 					throw e;
 				}
+			} catch (TimeoutException e) {
+				completed = false;
+				System.out.println("");
+				System.out.println("Telegram took too long to respond to our request.");
+				System.out.println("I'm going to wait a minute and then try again.");
+				try { Thread.sleep(60*1000); } catch(InterruptedException e2) {}
+				System.out.println("");
 			}
 		} while (!completed);
 	}
 	
-	private void _downloadMedia() throws RpcErrorException, IOException {
+	private void _downloadMedia() throws RpcErrorException, IOException, TimeoutException {
 		LinkedList<TLMessage> messages = this.db.getMessagesWithMedia();
 		prog.onMediaDownloadStart(messages.size());
 		for (TLMessage msg : messages) {
