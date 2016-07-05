@@ -9,7 +9,7 @@ public class Utils {
 		Vector<String> accounts = new Vector<String>();
 		File folder = new File(Config.FILE_BASE);
 		File[] files = folder.listFiles();
-		for (File f : files) {
+		if (files != null) for (File f : files) {
 			if (f.isDirectory() && f.getName().startsWith("+")) {
 				accounts.add(f.getName());
 			}
