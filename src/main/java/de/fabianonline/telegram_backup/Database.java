@@ -10,11 +10,11 @@ import java.sql.SQLException;
 import java.sql.ResultSet;
 import java.sql.PreparedStatement;
 import java.sql.Types;
+import java.sql.Time;
 import java.io.File;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.LinkedList;
-import java.sql.Array;
 
 import de.fabianonline.telegram_backup.UserManager;
 import de.fabianonline.telegram_backup.StickerConverter;
@@ -97,6 +97,21 @@ class Database {
 				stmt.executeUpdate("ALTER TABLE users ADD COLUMN phone TEXT");
 				stmt.executeUpdate("INSERT INTO database_versions (version) VALUES (2)");
 				version = 2;
+			}
+			if (version==2) {
+				System.out.println("  Updating to version 3...");
+				stmt.executeUpdate("ALTER TABLE dialogs RENAME TO 'chats'");
+				stmt.executeUpdate("INSERT INTO database_versions (version) VALUES (3)");
+				version = 3;
+			}
+			if (version==3) {
+				System.out.println("  Updating to version 4...");
+				stmt.executeUpdate("CREATE TABLE messages_new (id INTEGER PRIMARY KEY ASC, dialog_id INTEGER, to_id INTEGER, from_id INTEGER, from_type TEXT, text TEXT, time INTEGER, has_media BOOLEAN, sticker TEXT, data BLOB,type TEXT);");
+				stmt.executeUpdate("INSERT INTO messages_new SELECT * FROM messages");
+				stmt.executeUpdate("DROP TABLE messages");
+				stmt.executeUpdate("ALTER TABLE messages_new RENAME TO 'messages'");
+				stmt.executeUpdate("INSERT INTO database_versions (version) VALUES (4)");
+				version = 4;
 			}
 			
 			System.out.println("Database is ready.");
@@ -264,12 +279,12 @@ class Database {
 	public void saveChats(TLVector<TLAbsChat> all) {
 		try {
 			PreparedStatement ps_insert_or_replace = conn.prepareStatement(
-				"INSERT OR REPLACE INTO dialogs " +
+				"INSERT OR REPLACE INTO chats " +
 					"(id, name, type) "+
 					"VALUES " +
 					"(?,  ?,    ?)");
 			PreparedStatement ps_insert_or_ignore = conn.prepareStatement(
-				"INSERT OR IGNORE INTO dialogs " +
+				"INSERT OR IGNORE INTO chats " +
 					"(id, name, type) "+
 					"VALUES " +
 					"(?,  ?,    ?)");
@@ -377,5 +392,128 @@ class Database {
 			e.printStackTrace();
 			throw new RuntimeException("Exception occured. See above.");
 		}
+	}
+	
+	public LinkedList<Chat> getListOfChatsForExport() {
+		LinkedList<Chat> list = new LinkedList<Chat>();
+		try {
+			ResultSet rs = stmt.executeQuery("SELECT chats.id, chats.name, COUNT(messages.id) as c "+
+				"FROM chats, messages WHERE messages.from_type='chat' AND messages.dialog_id=chats.id "+
+				"GROUP BY chats.id ORDER BY c DESC");
+			while (rs.next()) {
+				list.add(new Chat(rs.getInt(1), rs.getString(2), rs.getInt(3)));
+			}
+			rs.close();
+			return list;
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException("Exception above!");
+		}
+	}
+	
+	public LinkedList<Dialog> getListOfDialogsForExport() {
+		LinkedList<Dialog> list = new LinkedList<Dialog>();
+		try {
+			ResultSet rs = stmt.executeQuery(
+				"SELECT users.id, first_name, last_name, username, COUNT(messages.id) as c " +
+				"FROM users, messages WHERE messages.from_type='user' AND messages.dialog_id=users.id " +
+				"GROUP BY users.id ORDER BY c DESC");
+			while (rs.next()) {
+				list.add(new Dialog(rs.getInt(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getInt(5)));
+			}
+			rs.close();
+			return list;
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException("Exception above!");
+		}
+	}
+	
+	public void getMessagesForExport(Dialog d, ChatMessageProcessor p) {
+		getMessagesForExport("user", d.id, p);
+	}
+	
+	public void getMessagesForExport(Chat c, ChatMessageProcessor p) {
+		getMessagesForExport("chat", c.id, p);
+	}
+	
+	private void getMessagesForExport(String type, Integer id, ChatMessageProcessor p) {
+		try {
+			ResultSet rs = stmt.executeQuery("SELECT messages.id, text, time, has_media, " +
+				"sticker, first_name, last_name, username FROM messages, users WHERE " +
+				"users.id=messages.from_id AND dialog_id=" + id + " AND from_type='" + type + "' " +
+				"ORDER BY messages.id");
+			while (rs.next()) {
+				Message m = new Message(
+					rs.getInt(1),
+					rs.getString(2),
+					rs.getTime(3),
+					rs.getBoolean(4),
+					rs.getString(5),
+					rs.getString(6),
+					rs.getString(7),
+					rs.getString(8));
+				p.process(m);
+			}
+			rs.close();
+		} catch(Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException("Exception above!");
+		}
+	}
+	
+	
+	public class Dialog {
+		public int id;
+		public String first_name;
+		public String last_name;
+		public String username;
+		public int count;
+		
+		public Dialog (int id, String first_name, String last_name, String username, int count) {
+			this.id = id;
+			this.first_name = first_name;
+			this.last_name = last_name;
+			this.username = username;
+			this.count = count;
+		}
+	}
+	
+	public class Chat {
+		public int id;
+		public String name;
+		public int count;
+		
+		public Chat(int id, String name, int count) {
+			this.id = id;
+			this.name = name;
+			this.count = count;
+		}
+	}
+	
+	public class Message {
+		public int id;
+		public String text;
+		public Time time;
+		public boolean has_media;
+		public String sticker;
+		public String first_name;
+		public String last_name;
+		public String username;
+		
+		public Message(int i, String t, Time t2, boolean m, String st, String n1, String n2, String n3) {
+			this.id = i;
+			this.text = t;
+			this.time = t2;
+			this.has_media = m;
+			this.sticker = st;
+			this.first_name = n1;
+			this.last_name = n2;
+			this.username = n3;
+		}
+	}
+	
+	public interface ChatMessageProcessor {
+		public void process(Message msg);
 	}
 }

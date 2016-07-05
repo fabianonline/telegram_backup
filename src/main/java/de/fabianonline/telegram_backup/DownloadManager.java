@@ -20,6 +20,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.LinkedList;
+import java.net.URL;
+
+import org.apache.commons.io.FileUtils;
 
 class DownloadManager {
 	UserManager user;
@@ -84,23 +87,27 @@ class DownloadManager {
 		
 		System.out.println("Checking message database for completeness...");
 		if (db.getMessageCount() != db.getTopMessageID()) {
-			LinkedList<Integer> ids = db.getMissingIDs();
-			System.out.println("Downloading " + ids.size() + " messages that are missing in your database.");
-			prog.onMessageDownloadStart(ids.size());
-			while (ids.size()>0) {
-				TLIntVector vector = new TLIntVector();
-				for (int i=0; i<100; i++) {
-					if (ids.size()==0) break;
-					vector.add(ids.remove());
+			if (limit != null) {
+				System.out.println("You are missing messages in your database. But since you're using '--limit-messages', I won't download these now.");
+			} else {
+				LinkedList<Integer> ids = db.getMissingIDs();
+				System.out.println("Downloading " + ids.size() + " messages that are missing in your database.");
+				prog.onMessageDownloadStart(ids.size());
+				while (ids.size()>0) {
+					TLIntVector vector = new TLIntVector();
+					for (int i=0; i<100; i++) {
+						if (ids.size()==0) break;
+						vector.add(ids.remove());
+					}
+					TLAbsMessages response = client.messagesGetMessages(vector);
+					prog.onMessageDownloaded(response.getMessages().size());
+					db.saveMessages(response.getMessages());
+					db.saveChats(response.getChats());
+					db.saveUsers(response.getUsers());
+					try { Thread.sleep(Config.DELAY_AFTER_GET_MESSAGES); } catch (InterruptedException e) {}
 				}
-				TLAbsMessages response = client.messagesGetMessages(vector);
-				prog.onMessageDownloaded(response.getMessages().size());
-				db.saveMessages(response.getMessages());
-				db.saveChats(response.getChats());
-				db.saveUsers(response.getUsers());
-				try { Thread.sleep(Config.DELAY_AFTER_GET_MESSAGES); } catch (InterruptedException e) {}
+				prog.onMessageDownloadFinished();
 			}
-			prog.onMessageDownloadFinished();
 		}
 	}
 	

@@ -29,9 +29,8 @@ public class CommandLineController {
 			Config.FILE_BASE = options.target;
 		}
 		
-		System.out.println("Target directory for files: " + Config.FILE_BASE);
+		System.out.println("Base directory for files: " + Config.FILE_BASE);
 
-		
 		if (options.cmd_list_accounts) this.list_accounts();
 		
 		app = new TelegramApp(Config.APP_ID, Config.APP_HASH, Config.APP_MODEL, Config.APP_SYSVER, Config.APP_APPVER, Config.APP_LANG);
@@ -60,11 +59,22 @@ public class CommandLineController {
 				"Use '--list-accounts' to see all available accounts.");
 		}
 		
+		
 		storage = new ApiStorage(account);
 		TelegramClient client = Kotlogram.getDefaultClient(app, storage);
 		
 		try {
 			user = new UserManager(client);
+			
+			if (options.export != null) {
+				if (options.export.toLowerCase().equals("html")) {
+					(new HTMLExporter()).export(user);
+					System.exit(0);
+				} else {
+					show_error("Unknown export format.");
+				}
+			}
+		
 			
 			if (options.cmd_login) {
 				System.out.println("Please enter your phone number in international format.");
@@ -114,6 +124,8 @@ public class CommandLineController {
 		System.out.println("  -A, --list-accounts          List all existing accounts ");
 		System.out.println("      --limit-messages <x>     Downloads at most the most recent <x> messages.");
 		System.out.println("  -t, --target <x>             Target directory for the files.");
+		System.out.println("  -e, --export <format>        Export the database. Valid formats are:");
+		System.out.println("                               html - Creates HTML files.");
 		
 		System.exit(0);
 	}

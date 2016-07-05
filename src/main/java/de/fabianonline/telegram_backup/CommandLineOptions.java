@@ -10,6 +10,7 @@ class CommandLineOptions {
 	public Integer limit_messages = null;
 	public String target = null;
 	public boolean cmd_version = false;
+	public String export = null;
 
 	public CommandLineOptions(String[] args) {
 		String last_cmd = null;
@@ -25,6 +26,9 @@ class CommandLineOptions {
 						break;
 					case "--target":
 						this.target = arg;
+						break;
+					case "--export":
+						this.export = arg;
 						break;
 				}
 				last_cmd = null;
@@ -57,7 +61,10 @@ class CommandLineOptions {
 					last_cmd = "--target";               continue;
 					
 				case "-V": case "--version":
-					this.cmd_version = true;             continue;
+					this.cmd_version = true;             break;
+				
+				case "-e": case "--export":
+					last_cmd = "--export";               continue;
 					
 				default:
 					throw new RuntimeException("Unknown command " + arg);
