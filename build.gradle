@@ -3,6 +3,9 @@ apply plugin: 'application'
 
 mainClassName= 'de.fabianonline.telegram_backup.CommandLineRunner'
 
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+
 repositories {
 	mavenCentral()
 	maven { 
