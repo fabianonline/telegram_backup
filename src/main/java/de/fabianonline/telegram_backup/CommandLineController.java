@@ -118,6 +118,7 @@ public class CommandLineController {
 			client.close();
 		}
 		System.out.println("----- EXIT -----");
+		System.out.println("If this program doesn't exit by itself, please press Ctrl-C now.");
 	}
 	
 	private void show_help() {
