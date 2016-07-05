@@ -91,7 +91,7 @@ class DownloadManager {
 		if (max_database_id == max_message_id) {
 			System.out.println("No new messages to download.");
 		} else if (max_database_id > max_message_id) {
-			throw new RuntimeException("max_database_id is bigger then max_message_id. This shouldn't be aple to happen. Ever.");
+			throw new RuntimeException("max_database_id is bigger then max_message_id. This shouldn't happen. But the telegram api nonetheless does that sometimes. Just ignore this error, wait a few seconds and then try again.");
 		} else {
 			int start_id = max_database_id + 1;
 			int current_start_id = start_id;
