@@ -11,6 +11,7 @@ class CommandLineOptions {
 	public String target = null;
 	public boolean cmd_version = false;
 	public String export = null;
+	public boolean cmd_license = false;
 
 	public CommandLineOptions(String[] args) {
 		String last_cmd = null;
@@ -65,6 +66,9 @@ class CommandLineOptions {
 				
 				case "-e": case "--export":
 					last_cmd = "--export";               continue;
+				
+				case "--license":
+					this.cmd_license = true;             break;
 					
 				default:
 					throw new RuntimeException("Unknown command " + arg);
