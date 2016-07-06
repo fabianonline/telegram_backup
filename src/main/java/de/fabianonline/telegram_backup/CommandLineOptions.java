@@ -28,6 +28,7 @@ class CommandLineOptions {
 	public boolean cmd_version = false;
 	public String export = null;
 	public boolean cmd_license = false;
+	public boolean cmd_daemon = false;
 
 	public CommandLineOptions(String[] args) {
 		String last_cmd = null;
@@ -85,6 +86,9 @@ class CommandLineOptions {
 				
 				case "--license":
 					this.cmd_license = true;             break;
+				
+				case "-d": case "--daemon":
+					this.cmd_daemon = true;              break;
 					
 				default:
 					throw new RuntimeException("Unknown command " + arg);

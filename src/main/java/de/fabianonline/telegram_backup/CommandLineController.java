@@ -16,6 +16,8 @@
 
 package de.fabianonline.telegram_backup;
 
+import de.fabianonline.telegram_backup.TelegramUpdateHandler;
+
 import com.github.badoualy.telegram.api.Kotlogram;
 import com.github.badoualy.telegram.api.TelegramApp;
 import com.github.badoualy.telegram.api.TelegramClient;
@@ -82,7 +84,8 @@ public class CommandLineController {
 		
 		
 		storage = new ApiStorage(account);
-		TelegramClient client = Kotlogram.getDefaultClient(app, storage);
+		TelegramUpdateHandler handler = new TelegramUpdateHandler();
+		TelegramClient client = Kotlogram.getDefaultClient(app, storage, Kotlogram.PROD_DC4, handler);
 		
 		try {
 			user = new UserManager(client);
@@ -112,10 +115,15 @@ public class CommandLineController {
 		} catch (IOException e) {
 			e.printStackTrace();
 		} finally {
-			client.close();
+			if (options.cmd_daemon) {
+				handler.setUser(user);
+				System.out.println("DAEMON mode requested - keeping running.");
+			} else {
+				client.close();
+				System.out.println("----- EXIT -----");
+				System.out.println("If this program doesn't exit by itself, please press Ctrl-C now.");
+			}
 		}
-		System.out.println("----- EXIT -----");
-		System.out.println("If this program doesn't exit by itself, please press Ctrl-C now.");
 	}
 	
 	private void cmd_login() throws RpcErrorException, IOException {
@@ -167,6 +175,7 @@ public class CommandLineController {
 		System.out.println("  -e, --export <format>        Export the database. Valid formats are:");
 		System.out.println("                               html - Creates HTML files.");
 		System.out.println("      --license                Displays the license of this program.");
+		System.out.println("  -d, --daemon                 Keep running and automatically save new messages.");
 	}
 	
 	private void list_accounts() {

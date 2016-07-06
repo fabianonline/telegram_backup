@@ -182,30 +182,32 @@ class DownloadManager {
 		LinkedList<TLMessage> messages = this.db.getMessagesWithMedia();
 		prog.onMediaDownloadStart(messages.size());
 		for (TLMessage msg : messages) {
-			TLAbsMessageMedia media = msg.getMedia();
-			
-			if (media instanceof TLMessageMediaPhoto) {
-				this.downloadMessageMediaPhoto(msg, (TLMessageMediaPhoto)media);
-			} else if (media instanceof TLMessageMediaDocument) {
-				this.downloadMessageMediaDocument(msg, (TLMessageMediaDocument)media);
-			} else if (media instanceof TLMessageMediaVideo) {
-				this.downloadMessageMediaVideo(msg, (TLMessageMediaVideo)media);
-			} else if (media instanceof TLMessageMediaAudio) {
-				this.downloadMessageMediaAudio(msg, (TLMessageMediaAudio)media);
-			} else if (media instanceof TLMessageMediaGeo) {
-				this.downloadMessageMediaGeo(msg, (TLMessageMediaGeo)media);
-			} else if (media instanceof TLMessageMediaEmpty ||
-				media instanceof TLMessageMediaUnsupported ||
-				media instanceof TLMessageMediaWebPage ||
-				media instanceof TLMessageMediaContact ||
-				media instanceof TLMessageMediaVenue) {
-				prog.onMediaDownloadedOther(true);
-				// do nothing
-			} else {
-				throw new RuntimeException("Unexpected " + media.getClass().getName());
-			}
+			downloadSingleMessageMedia(msg, msg.getMedia());
 		}
 		prog.onMediaDownloadFinished();
+	}
+	
+	public void downloadSingleMessageMedia(TLMessage msg, TLAbsMessageMedia media) throws RpcErrorException, IOException {
+		if (media instanceof TLMessageMediaPhoto) {
+			this.downloadMessageMediaPhoto(msg, (TLMessageMediaPhoto)media);
+		} else if (media instanceof TLMessageMediaDocument) {
+			this.downloadMessageMediaDocument(msg, (TLMessageMediaDocument)media);
+		} else if (media instanceof TLMessageMediaVideo) {
+			this.downloadMessageMediaVideo(msg, (TLMessageMediaVideo)media);
+		} else if (media instanceof TLMessageMediaAudio) {
+			this.downloadMessageMediaAudio(msg, (TLMessageMediaAudio)media);
+		} else if (media instanceof TLMessageMediaGeo) {
+			this.downloadMessageMediaGeo(msg, (TLMessageMediaGeo)media);
+		} else if (media instanceof TLMessageMediaEmpty ||
+			media instanceof TLMessageMediaUnsupported ||
+			media instanceof TLMessageMediaWebPage ||
+			media instanceof TLMessageMediaContact ||
+			media instanceof TLMessageMediaVenue) {
+			prog.onMediaDownloadedOther(true);
+			// do nothing
+		} else {
+			throw new RuntimeException("Unexpected " + media.getClass().getName());
+		}
 	}
 	
 	private void downloadMessageMediaPhoto(TLMessage msg, TLMessageMediaPhoto p) throws RpcErrorException, IOException {

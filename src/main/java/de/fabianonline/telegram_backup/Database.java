@@ -41,7 +41,12 @@ class Database {
 	private UserManager user_manager;
 	
 	public Database(UserManager user_manager) {
+		this(user_manager, true);
+	}
+	
+	public Database(UserManager user_manager, boolean update_db) {
 		this.user_manager = user_manager;
+		System.out.println("Opening database...");
 		try {
 			Class.forName("org.sqlite.JDBC");
 		} catch(ClassNotFoundException e) {
@@ -59,12 +64,14 @@ class Database {
 			CommandLineController.show_error("Could not connect to SQLITE database.");
 		}
 		
-		this.init();
+		this.init(update_db);
+		System.out.println("Database is ready.");
 	}
 	
-	private void init() {
+	private void init(boolean update_db) {
+		if (!update_db) return;
+		
 		try {
-			System.out.println("Opening database...");
 			int version;
 			ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='database_versions'");
 			rs.next();
@@ -137,7 +144,6 @@ class Database {
 				version = 5;
 			}
 			
-			System.out.println("Database is ready.");
 		} catch (SQLException e) {
 			System.out.println(e.getSQLState());
 			e.printStackTrace();
@@ -203,7 +209,7 @@ class Database {
 		}
 	}
 	
-	public void saveMessages(TLVector<TLAbsMessage> all) {
+	public synchronized void saveMessages(TLVector<TLAbsMessage> all) {
 		try {
 			PreparedStatement ps = conn.prepareStatement(
 				"INSERT OR REPLACE INTO messages " +
@@ -312,7 +318,7 @@ class Database {
 		}
 	}
 
-	public void saveChats(TLVector<TLAbsChat> all) {
+	public synchronized void saveChats(TLVector<TLAbsChat> all) {
 		try {
 			PreparedStatement ps_insert_or_replace = conn.prepareStatement(
 				"INSERT OR REPLACE INTO chats " +
@@ -365,7 +371,7 @@ class Database {
 		}
 	}
 
-	public void saveUsers(TLVector<TLAbsUser> all) {
+	public synchronized void saveUsers(TLVector<TLAbsUser> all) {
 		try {
 			PreparedStatement ps_insert_or_replace = conn.prepareStatement(
 				"INSERT OR REPLACE INTO users " +
