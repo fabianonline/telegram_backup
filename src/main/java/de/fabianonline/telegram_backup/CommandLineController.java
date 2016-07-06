@@ -98,26 +98,7 @@ public class CommandLineController {
 		
 			
 			if (options.cmd_login) {
-				System.out.println("Please enter your phone number in international format.");
-				System.out.println("Example: +4917077651234");
-				System.out.print("> ");
-				String phone = new Scanner(System.in).nextLine();
-				user.sendCodeToPhoneNumber(phone);
-				
-				System.out.println("Telegram sent you a code. Please enter it here.");
-				System.out.print("> ");
-				String code = new Scanner(System.in).nextLine();
-				user.verifyCode(code);
-				
-				if (user.isPasswordNeeded()) {
-					System.out.println("We also need your account password.");
-					System.out.print("> ");
-					String pw = new Scanner(System.in).nextLine();
-					user.verifyPassword(pw);
-				}
-				storage.setPrefix("+" + user.getUser().getPhone());
-				
-				System.out.println("Please run this tool with '--account +" + user.getUser().getPhone() + " to use this account.");
+				cmd_login();
 				System.exit(0);
 			}
 			
@@ -135,6 +116,43 @@ public class CommandLineController {
 		}
 		System.out.println("----- EXIT -----");
 		System.out.println("If this program doesn't exit by itself, please press Ctrl-C now.");
+	}
+	
+	private void cmd_login() throws RpcErrorException, IOException {
+		System.out.println("Please enter your phone number in international format.");
+		System.out.println("Example: +4917077651234");
+		String phone = getLine();
+		user.sendCodeToPhoneNumber(phone);
+		
+		System.out.println("Telegram sent you a code. Please enter it here.");
+		String code = getLine();
+		user.verifyCode(code);
+		
+		if (user.isPasswordNeeded()) {
+			System.out.println("We also need your account password.");
+			String pw = getPassword();
+			user.verifyPassword(pw);
+		}
+		storage.setPrefix("+" + user.getUser().getPhone());
+		
+		System.out.println("Please run this tool with '--account +" + user.getUser().getPhone() + " to use this account.");
+	}
+	
+	private String getLine() {
+		if (System.console()!=null) {
+			return System.console().readLine("> ");
+		} else {
+			System.out.print("> ");
+			return new Scanner(System.in).nextLine();
+		}
+	}
+	
+	private String getPassword() {
+		if (System.console()!=null) {
+			return String.valueOf(System.console().readPassword("> "));
+		} else {
+			return getLine();
+		}
 	}
 	
 	private void show_help() {
