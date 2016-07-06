@@ -51,6 +51,42 @@ link](https://www.amazon.de/ref=as_li_ss_tl?ie=UTF8&linkCode=ll2&tag=telegrambac
 pay any more, but I will get a few percent of your purchase's worth from
 amazon.
 
+## Frequently asked questions
+### Why do I see error messages?
+The library I'm using to access Telegram has some small bugs. One of those
+is the display of meaningless (because they are being acted accordingly upon)
+error messages. Those include:
+* `Exception in thread "pool-x-thread-y" java.lang.Error:
+java.nio.channels.ClosedChannelException`
+* Something containing `AUTH_ERROR`
+You can just ignore these messages.
+
+Basically, if the tool is continuing to run after error messages are shown,
+you can just ignore the messages.
+Either way, even if Telegram_Backup would "miss" some files or messages,
+this will be detected at the next run of this program and then tried again.
+
+### Where do you save the files?
+The files are being saved in your User directory in a folder named
+`telegram_backup`. Under windows, this would typically be under
+`C:\Users\<username>\telegram_backup`. Linux users should look unter
+`/home/<username>/telegram_backup`.
+
+You can change this directory by supplying `--target <dir>` when calling
+Telegram_Backup.
+
+### What are those files and folders?
+In the folder `telegram_backup` is one folder named `stickers`, which will
+hold all sticker images you've received. Then there is a folder for each
+account, named after the phone number associated with that account.
+
+In these folders you will find `auth.dat` and `dc.dat`, which contain
+authentication data. There is `database.sqlite` which is a SQLite3 database
+containing all your messages and other data. The folder `files` contains all
+media files, named after the ID of the message they belong to. Last but not
+least the folder `export` contains exported data.
+
+
 ## Attribution
 This tool uses libraries from other developers which are covered by other licenses,
 which are:
