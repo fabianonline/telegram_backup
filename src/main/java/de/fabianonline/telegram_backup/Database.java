@@ -64,6 +64,7 @@ class Database {
 	
 	private void init() {
 		try {
+			System.out.println("Opening database...");
 			int version;
 			ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='database_versions'");
 			rs.next();
@@ -122,12 +123,18 @@ class Database {
 			}
 			if (version==3) {
 				System.out.println("  Updating to version 4...");
-				stmt.executeUpdate("CREATE TABLE messages_new (id INTEGER PRIMARY KEY ASC, dialog_id INTEGER, to_id INTEGER, from_id INTEGER, from_type TEXT, text TEXT, time INTEGER, has_media BOOLEAN, sticker TEXT, data BLOB,type TEXT);");
+				stmt.executeUpdate("CREATE TABLE messages_new (id INTEGER PRIMARY KEY ASC, dialog_id INTEGER, to_id INTEGER, from_id INTEGER, from_type TEXT, text TEXT, time INTEGER, has_media BOOLEAN, sticker TEXT, data BLOB, type TEXT);");
 				stmt.executeUpdate("INSERT INTO messages_new SELECT * FROM messages");
 				stmt.executeUpdate("DROP TABLE messages");
 				stmt.executeUpdate("ALTER TABLE messages_new RENAME TO 'messages'");
 				stmt.executeUpdate("INSERT INTO database_versions (version) VALUES (4)");
 				version = 4;
+			}
+			if (version==4) {
+				System.out.println("  Updating to version 5...");
+				stmt.executeUpdate("CREATE TABLE runs (id INTEGER PRIMARY KEY ASC, time INTEGER, start_id INTEGER, end_id INTEGER, count_missing INTEGER)");
+				stmt.executeUpdate("INSERT INTO database_versions (version) VALUES (5)");
+				version = 5;
 			}
 			
 			System.out.println("Database is ready.");
@@ -145,6 +152,19 @@ class Database {
 		} catch (SQLException e) {
 			return 0;
 		}
+	}
+	
+	public void logRun(int start_id, int end_id, int count) {
+		try {
+			PreparedStatement ps = conn.prepareStatement("INSERT INTO runs "+
+				"(time,        start_id, end_id, count_missing) "+
+				"VALUES "+
+				"(DateTime('now'),    ?,        ?,      ?            )");
+			ps.setInt(1, start_id);
+			ps.setInt(2, end_id);
+			ps.setInt(3, count);
+			ps.execute();
+		} catch (SQLException e) {}
 	}
 	
 	public int getMessageCount() {

@@ -125,12 +125,14 @@ class DownloadManager {
 			prog.onMessageDownloadFinished();
 		}
 		
+		int count_missing = 0;
 		System.out.println("Checking message database for completeness...");
 		if (db.getMessageCount() != db.getTopMessageID()) {
 			if (limit != null) {
 				System.out.println("You are missing messages in your database. But since you're using '--limit-messages', I won't download these now.");
 			} else {
 				LinkedList<Integer> ids = db.getMissingIDs();
+				count_missing = ids.size();
 				System.out.println("Downloading " + ids.size() + " messages that are missing in your database.");
 				prog.onMessageDownloadStart(ids.size());
 				while (ids.size()>0) {
@@ -149,6 +151,7 @@ class DownloadManager {
 				prog.onMessageDownloadFinished();
 			}
 		}
+		db.logRun(Math.min(max_database_id + 1, max_message_id), max_message_id, count_missing);
 	}
 	
 	public void downloadMedia() throws RpcErrorException, IOException {
