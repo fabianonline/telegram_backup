@@ -172,15 +172,20 @@ class DownloadManager {
 					completed = false;
 					Config.DELAY_AFTER_GET_FILE = 1500;
 					int delay = Integer.parseInt(e.getTag().substring(16));
+					int minutes = (delay/60)+1;
+					int wait = (minutes / 5) * 5 + 5;
 					System.out.println("");
-					System.out.println("Telegram complained about us (okay, me) making too many requests in too short time.");
-					System.out.println("So we now have to wait a bit. Telegram asked us to wait for " + delay + " seconds, which");
-					System.out.println("is about " + ((delay / 60) + 1) + " minutes.");
-					System.out.println("So I'm going to do that now. If you don't want to wait, you can quit by pressing");
-					System.out.println("Ctrl+C. You can restart me at any time and I will just continue to download your");
-					System.out.println("messages and media. But be advised that just restarting me is not going to change");
-					System.out.println("the fact that Telegram won't talk to me until then.");
-					try { Thread.sleep((delay + 60) * 1000); } catch(InterruptedException e2) {}
+					System.out.println(
+						"Telegram complained about us (okay, me) making too many requests in too short time by\n" +
+						"sending us \"" + e.getTag() + "\" as an error. So we now have to wait a bit. Telegram\n" +
+						"asked us to wait for " + delay + " seconds, which is about " + minutes + " minutes.\n" +
+						"I'm adding a few minutes to let the API recover, so we are going to wait for " + wait + " mins.\n" +
+						"\n" +
+						"So I'm going to do just that for now. If you don't want to wait, you can quit by pressing\n" +
+						"Ctrl+C. You can restart me at any time and I will just continue to download your\n" +
+						"messages and media. But be advised that just restarting me is not going to change\n" +
+						"the fact that Telegram won't talk to me until then.");
+					try { Thread.sleep(wait * 60 * 1000); } catch(InterruptedException e2) {}
 					System.out.println("");
 				} else {
 					throw e;

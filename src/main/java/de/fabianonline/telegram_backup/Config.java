@@ -36,7 +36,7 @@ class Config {
     public static final int FILE_DOWNLOAD_BLOCK_SIZE = 10*1024*1024;
     
     public static int DELAY_AFTER_GET_MESSAGES = 200;
-    public static int DELAY_AFTER_GET_FILE = 750;
+    public static int DELAY_AFTER_GET_FILE = 1000;
     
     public static final String SECRET_GMAPS = "AIzaSyBEtUDhCQKEH6i2Mn1GAiQ9M_tLN0vxHIs";
 }
