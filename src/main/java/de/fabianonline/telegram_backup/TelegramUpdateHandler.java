@@ -27,15 +27,16 @@ import de.fabianonline.telegram_backup.UserManager;
 class TelegramUpdateHandler implements UpdateCallback {
 	private UserManager user = null;
 	private Database db = null;
+	public boolean debug = false;
 	
 	public void setUser(UserManager user) { this.user = user; this.db = new Database(user, false);}
 	
 	public void onUpdates(TelegramClient c, TLUpdates u) {
 		if (db==null) return;
-		System.out.println("onUpdates - " + u.getUpdates().size() + " Updates, " + u.getUsers().size() + " Users, " + u.getChats().size() + " Chats");
+		if (debug) System.out.println("onUpdates - " + u.getUpdates().size() + " Updates, " + u.getUsers().size() + " Users, " + u.getChats().size() + " Chats");
 		for(TLAbsUpdate update : u.getUpdates()) {
 			processUpdate(update, c);
-			System.out.println("  " + update.getClass().getName());
+			if (debug) System.out.println("  " + update.getClass().getName());
 		}
 		db.saveUsers(u.getUsers());
 		db.saveChats(u.getChats());
@@ -43,7 +44,7 @@ class TelegramUpdateHandler implements UpdateCallback {
 	
 	public void onUpdatesCombined(TelegramClient c, TLUpdatesCombined u) {
 		if (db==null) return;
-		System.out.println("onUpdatesCombined");
+		if (debug) System.out.println("onUpdatesCombined");
 		for(TLAbsUpdate update : u.getUpdates()) {
 			processUpdate(update, c);
 		}
@@ -53,14 +54,14 @@ class TelegramUpdateHandler implements UpdateCallback {
 		
 	public void onUpdateShort(TelegramClient c, TLUpdateShort u) {
 		if (db==null) return;
-		System.out.println("onUpdateShort");
+		if (debug) System.out.println("onUpdateShort");
 		processUpdate(u.getUpdate(), c);
-		System.out.println("  " + u.getUpdate().getClass().getName());
+		if (debug) System.out.println("  " + u.getUpdate().getClass().getName());
 	}
 	
 	public void onShortChatMessage(TelegramClient c, TLUpdateShortChatMessage m) {
 		if (db==null) return;
-		System.out.println("onShortChatMessage - " + m.getMessage());
+		if (debug) System.out.println("onShortChatMessage - " + m.getMessage());
 		TLMessage msg = new TLMessage(
 			m.getUnread(),
 			m.getOut(),
@@ -82,11 +83,12 @@ class TelegramUpdateHandler implements UpdateCallback {
 		TLVector<TLAbsMessage> vector = new TLVector<TLAbsMessage>(TLAbsMessage.class);
 		vector.add(msg);
 		db.saveMessages(vector);
+		System.out.print('.');
 	}
 	
 	public void onShortMessage(TelegramClient c, TLUpdateShortMessage m) {
 		if (db==null) return;
-		System.out.println("onShortMessage - " + m.getOut() + " - " + m.getUserId() + " - " + m.getMessage());
+		if (debug) System.out.println("onShortMessage - " + m.getOut() + " - " + m.getUserId() + " - " + m.getMessage());
 		int from_id, to_id;
 		if (m.getOut()==true) {
 			from_id = user.getUser().getId();
@@ -116,6 +118,7 @@ class TelegramUpdateHandler implements UpdateCallback {
 		TLVector<TLAbsMessage> vector = new TLVector<TLAbsMessage>(TLAbsMessage.class);
 		vector.add(msg);
 		db.saveMessages(vector);
+		System.out.print('.');
 	}
 	
 	public void onShortSentMessage(TelegramClient c, TLUpdateShortSentMessage m) { if (db==null) return; System.out.println("onShortSentMessage"); }
@@ -127,6 +130,7 @@ class TelegramUpdateHandler implements UpdateCallback {
 			TLVector<TLAbsMessage> vector = new TLVector<TLAbsMessage>(TLAbsMessage.class);
 			vector.add(abs_msg);
 			db.saveMessages(vector);
+			System.out.print('.');
 			if (abs_msg instanceof TLMessage && ((TLMessage)abs_msg).getMedia()!=null) {
 				try {
 					new DownloadManager(user, client, new CommandLineDownloadProgress()).downloadSingleMessageMedia((TLMessage)abs_msg, ((TLMessage)abs_msg).getMedia());
