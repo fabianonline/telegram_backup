@@ -18,7 +18,7 @@ package de.fabianonline.telegram_backup;
 
 import java.io.File;
 
-class Config {
+public class Config {
 	public static final int APP_ID = 32860;
 	public static final String APP_HASH = "16e4ff955cd0adfc058f95ca564f562d";
     public static final String APP_MODEL = "Desktop";

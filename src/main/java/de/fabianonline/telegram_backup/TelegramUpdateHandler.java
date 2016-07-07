@@ -23,6 +23,8 @@ import com.github.badoualy.telegram.tl.core.TLVector;
 
 import de.fabianonline.telegram_backup.Database;
 import de.fabianonline.telegram_backup.UserManager;
+import de.fabianonline.telegram_backup.mediafilemanager.AbstractMediaFileManager;
+import de.fabianonline.telegram_backup.mediafilemanager.FileManagerFactory;
 
 class TelegramUpdateHandler implements UpdateCallback {
 	private UserManager user = null;
@@ -131,13 +133,16 @@ class TelegramUpdateHandler implements UpdateCallback {
 			vector.add(abs_msg);
 			db.saveMessages(vector);
 			System.out.print('.');
-			if (abs_msg instanceof TLMessage && ((TLMessage)abs_msg).getMedia()!=null) {
-				try {
-					new DownloadManager(user, client, new CommandLineDownloadProgress()).downloadSingleMessageMedia((TLMessage)abs_msg, ((TLMessage)abs_msg).getMedia());
-				} catch (Exception e) {
-					System.out.println("We got an exception while downloading media, but we're going to ignore it.");
-					System.out.println("Here it is anyway:");
-					e.printStackTrace();
+			if (abs_msg instanceof TLMessage) {
+				AbstractMediaFileManager fm = FileManagerFactory.getFileManager((TLMessage)abs_msg, user, client);
+				if (fm != null && !fm.isEmpty() && !fm.isDownloaded()) {
+					try {
+						fm.download();
+					} catch (Exception e) {
+						System.out.println("We got an exception while downloading media, but we're going to ignore it.");
+						System.out.println("Here it is anyway:");
+						e.printStackTrace();
+					}
 				}
 			}
 		} else {

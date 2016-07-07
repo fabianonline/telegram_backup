@@ -17,6 +17,7 @@
 package de.fabianonline.telegram_backup;
 
 import de.fabianonline.telegram_backup.DownloadProgressInterface;
+import de.fabianonline.telegram_backup.mediafilemanager.AbstractMediaFileManager;
 
 class CommandLineDownloadProgress implements DownloadProgressInterface {
 	private int mediaCount = 0;
@@ -38,17 +39,18 @@ class CommandLineDownloadProgress implements DownloadProgressInterface {
 		System.out.println("" + count + " Files to check / download");    
 	}
 	
-	public void onMediaDownloadedVideo(boolean n) { show(n, 'V'); }
-	public void onMediaDownloadedPhoto(boolean n) { show(n, 'P'); }
-	public void onMediaDownloadedDocument(boolean n) { show(n, 'D'); }
-	public void onMediaDownloadedSticker(boolean n) { show(n, 'S'); }
-	public void onMediaDownloadedOther(boolean n) { show(n, ' '); }
-	public void onMediaDownloadedAudio(boolean n) { show(n, 'A'); }
-	public void onMediaDownloadedGeo(boolean n) { show(n, 'G'); }
-	public void onMediaDownloadedEmpty(boolean n) { show(true, 'e'); }
+	public void onMediaDownloaded(AbstractMediaFileManager fm) {
+		show(fm.getLetter().toUpperCase());
+	}
+	
+	public void onMediaDownloadedEmpty() { show("e"); }
+	public void onMediaAlreadyPresent(AbstractMediaFileManager fm) {
+		show(".");
+	}
+	
 	public void onMediaDownloadFinished() { showNewLine(); System.out.println("Done."); }
 	
-	private void show(boolean n, char letter) { System.out.print(n ? letter : '.'); i++; if (i % 100 == 0) showNewLine();}
+	private void show(String letter) { System.out.print(letter); i++; if (i % 100 == 0) showNewLine();}
 	private void showNewLine() { System.out.println(" - " + i + "/" + mediaCount); }
 }
 	

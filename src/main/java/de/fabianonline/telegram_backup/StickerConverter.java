@@ -20,7 +20,7 @@ import com.github.badoualy.telegram.tl.api.*;
 import java.lang.StringBuilder;
 import java.io.File;
 
-class StickerConverter {
+public class StickerConverter {
 	public static String makeFilenameWithPath(TLDocumentAttributeSticker attr) {
 		StringBuilder file = new StringBuilder();
 		file.append(makePath());
