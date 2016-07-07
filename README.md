@@ -6,6 +6,10 @@ Licensed under GPLv3
 This is a small Java app that allows you to download all your history from
 Telegram's servers and keep a local copy of them.
 
+## Download
+You can find the whole app packed into one fat jar file under
+[releases](https://github.com/fabianonline/telegram_backup/releases).
+
 ## Features
 * You can use multiple accounts with this tool.
 * Messages are saved in a SQLite database; media (documents, photos, videos,
