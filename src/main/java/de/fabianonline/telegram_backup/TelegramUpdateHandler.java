@@ -31,6 +31,7 @@ class TelegramUpdateHandler implements UpdateCallback {
 	public void setUser(UserManager user) { this.user = user; this.db = new Database(user, false);}
 	
 	public void onUpdates(TelegramClient c, TLUpdates u) {
+		if (db==null) return;
 		System.out.println("onUpdates - " + u.getUpdates().size() + " Updates, " + u.getUsers().size() + " Users, " + u.getChats().size() + " Chats");
 		for(TLAbsUpdate update : u.getUpdates()) {
 			processUpdate(update, c);
@@ -41,6 +42,7 @@ class TelegramUpdateHandler implements UpdateCallback {
 	}
 	
 	public void onUpdatesCombined(TelegramClient c, TLUpdatesCombined u) {
+		if (db==null) return;
 		System.out.println("onUpdatesCombined");
 		for(TLAbsUpdate update : u.getUpdates()) {
 			processUpdate(update, c);
@@ -50,12 +52,14 @@ class TelegramUpdateHandler implements UpdateCallback {
 	}
 		
 	public void onUpdateShort(TelegramClient c, TLUpdateShort u) {
+		if (db==null) return;
 		System.out.println("onUpdateShort");
 		processUpdate(u.getUpdate(), c);
 		System.out.println("  " + u.getUpdate().getClass().getName());
 	}
 	
 	public void onShortChatMessage(TelegramClient c, TLUpdateShortChatMessage m) {
+		if (db==null) return;
 		System.out.println("onShortChatMessage - " + m.getMessage());
 		TLMessage msg = new TLMessage(
 			m.getUnread(),
@@ -81,6 +85,7 @@ class TelegramUpdateHandler implements UpdateCallback {
 	}
 	
 	public void onShortMessage(TelegramClient c, TLUpdateShortMessage m) {
+		if (db==null) return;
 		System.out.println("onShortMessage - " + m.getOut() + " - " + m.getUserId() + " - " + m.getMessage());
 		int from_id, to_id;
 		if (m.getOut()==true) {
@@ -113,8 +118,8 @@ class TelegramUpdateHandler implements UpdateCallback {
 		db.saveMessages(vector);
 	}
 	
-	public void onShortSentMessage(TelegramClient c, TLUpdateShortSentMessage m) { System.out.println("onShortSentMessage"); }
-	public void onUpdateTooLong(TelegramClient c) { System.out.println("onUpdateTooLong"); }
+	public void onShortSentMessage(TelegramClient c, TLUpdateShortSentMessage m) { if (db==null) return; System.out.println("onShortSentMessage"); }
+	public void onUpdateTooLong(TelegramClient c) { if (db==null) return; System.out.println("onUpdateTooLong"); }
 	
 	private void processUpdate(TLAbsUpdate update, TelegramClient client) {
 		if (update instanceof TLUpdateNewMessage) {
