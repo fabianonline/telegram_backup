@@ -16,6 +16,7 @@ repositories {
 dependencies {
 	compile 'com.github.badoualy:kotlogram:0.0.6'
 	compile 'org.xerial:sqlite-jdbc:3.8.11.2'
+	compile 'com.github.spullara.mustache.java:compiler:0.8.18'
 }
 
 run {
@@ -30,4 +31,8 @@ jar {
 	from {
 		configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
 	}
+	
+	includes [
+		"*.mustache"
+	]
 }

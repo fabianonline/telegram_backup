@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Telegram Backup for {{user.getUserString}}</title>
+</head>
+
+<body>
+	<h1>Telegram Backup</h1>
+	<h2>{{user.getUserString}}</h2>
+	
+	<h3>Dialogs</h3>
+	<ul class="dialogs">
+		{{#dialogs}}
+			<li>
+				<a href="dialogs/user_{{id}}.html">
+					<span class="name">{{first_name}} {{last_name}}</span>
+					{{#username}}<span class="username">(@{{username}})</span>{{/username}}
+					<span class="count">({{count}})</span>
+				</a>
+			</li>
+		{{/dialogs}}
+	</ul>
+	
+	<h3>Chats</h3>
+	<ul class="chats">
+		{{#chats}}
+			<li>
+				<a href="dialogs/chat_{{id}}.html">
+					<span class="name">{{name}}</span>
+					<span class="count">({{count}})</span>
+				</a>
+			</li>
+		{{/chats}}
+	</ul>
+</body>
+</html>

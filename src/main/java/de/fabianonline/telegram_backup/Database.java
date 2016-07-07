@@ -32,10 +32,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.LinkedList;
 
-import de.fabianonline.telegram_backup.UserManager;
-import de.fabianonline.telegram_backup.StickerConverter;
-
-class Database {
+public class Database {
 	private Connection conn;
 	private Statement stmt;
 	private UserManager user_manager;

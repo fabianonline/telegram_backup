@@ -31,7 +31,7 @@ import java.security.NoSuchAlgorithmException;
 import java.io.IOException;
 import java.io.File;
 
-class UserManager {
+public class UserManager {
 	public TLUser user = null;
 	public String phone = null;
 	private String code = null;

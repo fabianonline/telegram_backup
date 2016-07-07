@@ -94,5 +94,9 @@ least the folder `export` contains exported data.
 ## Attribution
 This tool uses libraries from other developers which are covered by other licenses,
 which are:
-* [Kotlogram](https://github.com/badoualy/kotlogram) by Yannick Badoual, licensed under MIT License.
-* [SQLite JDBC](https://bitbucket.org/xerial/sqlite-jdbc) by Taro L. Saito, licensed under Apache License version 2.0.
+* [Kotlogram](https://github.com/badoualy/kotlogram) by Yannick Badoual, licensed
+  under MIT License.
+* [SQLite JDBC](https://bitbucket.org/xerial/sqlite-jdbc) by Taro L. Saito,
+  licensed under Apache License version 2.0.
+* [Mustache.java](https://github.com/spullara/mustache.java) by RightTime,
+  Inc., licensed under Apache License version 2.0.

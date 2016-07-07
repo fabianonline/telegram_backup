@@ -17,6 +17,7 @@
 package de.fabianonline.telegram_backup;
 
 import de.fabianonline.telegram_backup.TelegramUpdateHandler;
+import de.fabianonline.telegram_backup.exporter.HTMLExporter;
 
 import com.github.badoualy.telegram.api.Kotlogram;
 import com.github.badoualy.telegram.api.TelegramApp;
