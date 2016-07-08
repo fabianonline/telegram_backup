@@ -117,7 +117,7 @@ public class CommandLineController {
 			e.printStackTrace();
 		} finally {
 			if (options.cmd_daemon) {
-				handler.setUser(user);
+				handler.setUser(user, client);
 				System.out.println("DAEMON mode requested - keeping running.");
 			} else {
 				client.close();

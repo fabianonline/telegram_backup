@@ -43,6 +43,7 @@ import org.apache.commons.io.FileUtils;
 
 public class FileManagerFactory {
 	public static AbstractMediaFileManager getFileManager(TLMessage m, UserManager u, TelegramClient c) {
+		if (m==null) return null;
 		TLAbsMessageMedia media = m.getMedia();
 		if (media==null) return null;
 		

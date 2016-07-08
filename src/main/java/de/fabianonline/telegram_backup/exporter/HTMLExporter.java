@@ -34,7 +34,7 @@ import com.github.mustachejava.MustacheFactory;
 public class HTMLExporter {
 	public void export(UserManager user) {
 		try {
-			Database db = new Database(user);
+			Database db = new Database(user, null);
 			
 			// Create base dir
 			String base = user.getFileBase() + "export" + File.separatorChar + "html" + File.separatorChar;
@@ -76,17 +76,5 @@ public class HTMLExporter {
 			throw new RuntimeException("Exception above!");
 		}
 	}
-	
-	class ChatLineWriter implements Database.ChatMessageProcessor {
-		PrintWriter w;
-		
-		public ChatLineWriter(PrintWriter w) {
-			this.w = w;
-		}
-		
-		public void process(Database.Message msg) {
-			w.println("" + String.format("%1$tF %1$tT", msg.time) + " - " + msg.text + "<br>");
-		}
-	}
-		
+//			w.println("" + String.format("%1$tF %1$tT", msg.time) + " - " + msg.text + "<br>");
 }

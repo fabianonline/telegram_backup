@@ -53,7 +53,7 @@ public class DownloadManager {
 		this.user = u;
 		this.client = c;
 		this.prog = p;
-		this.db = new Database(u);
+		this.db = new Database(u, c);
 	}
 	
 	public void downloadMessages(Integer limit) throws RpcErrorException, IOException {

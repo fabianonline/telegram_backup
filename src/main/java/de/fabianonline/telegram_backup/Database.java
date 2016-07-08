@@ -18,31 +18,41 @@ package de.fabianonline.telegram_backup;
 
 import com.github.badoualy.telegram.tl.api.*;
 import com.github.badoualy.telegram.tl.core.TLVector;
+import com.github.badoualy.telegram.api.TelegramClient;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
 import java.sql.SQLException;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.PreparedStatement;
 import java.sql.Types;
 import java.sql.Time;
 import java.io.File;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.LinkedList;
+import java.util.LinkedHashMap;
+import java.util.HashMap;
+
+import de.fabianonline.telegram_backup.mediafilemanager.AbstractMediaFileManager;
+import de.fabianonline.telegram_backup.mediafilemanager.FileManagerFactory;
 
 public class Database {
 	private Connection conn;
 	private Statement stmt;
 	private UserManager user_manager;
+	private TelegramClient client;
 	
-	public Database(UserManager user_manager) {
-		this(user_manager, true);
+	public Database(UserManager user_manager, TelegramClient client) {
+		this(user_manager, client, true);
 	}
 	
-	public Database(UserManager user_manager, boolean update_db) {
+	public Database(UserManager user_manager, TelegramClient client, boolean update_db) {
 		this.user_manager = user_manager;
+		this.client = client;
 		System.out.println("Opening database...");
 		try {
 			Class.forName("org.sqlite.JDBC");
@@ -140,6 +150,88 @@ public class Database {
 				stmt.executeUpdate("INSERT INTO database_versions (version) VALUES (5)");
 				version = 5;
 			}
+			if (version==5) {
+				System.out.println("  Updating to version 6...");
+				stmt.executeUpdate(
+					"CREATE TABLE messages_new (\n" +
+					"    id INTEGER PRIMARY KEY ASC,\n" +
+					"    message_type TEXT,\n" +
+					"    dialog_id INTEGER,\n" +
+					"    chat_id INTEGER,\n" +
+					"    sender_id INTEGER,\n" +
+					"    fwd_from_id INTEGER,\n" +
+					"    text TEXT,\n" +
+					"    time INTEGER,\n" +
+					"    has_media BOOLEAN,\n" +
+					"    media_type TEXT,\n" +
+					"    media_file TEXT,\n" +
+					"    media_size INTEGER,\n" +
+					"    media_json TEXT,\n" +
+					"    markup_json TEXT,\n" +
+					"    data BLOB)");
+				LinkedHashMap<String, String> mappings = new LinkedHashMap<String, String>();
+				mappings.put("id", "id");
+				mappings.put("message_type", "type");
+				mappings.put("dialog_id", "CASE from_type WHEN 'user' THEN dialog_id ELSE NULL END");
+				mappings.put("chat_id",   "CASE from_type WHEN 'chat' THEN dialog_id ELSE NULL END");
+				mappings.put("sender_id", "from_id");
+				mappings.put("text", "text");
+				mappings.put("time", "time");
+				mappings.put("has_media", "has_media");
+				mappings.put("data", "data");
+				StringBuilder query = new StringBuilder("INSERT INTO messages_new\n(");
+				boolean first;
+				first = true;
+				for(String s : mappings.keySet()) {
+					if (!first) query.append(", ");
+					query.append(s);
+					first = false;
+				}
+				query.append(")\nSELECT \n");
+				first = true;
+				for (String s : mappings.values()) {
+					if (!first) query.append(", ");
+					query.append(s);
+					first = false;
+				}
+				query.append("\nFROM messages");
+				stmt.executeUpdate(query.toString());
+				
+				System.out.println("    Updating the data (this might take some time)...");
+				rs = stmt.executeQuery("SELECT id, data FROM messages_new");
+				PreparedStatement ps = conn.prepareStatement("UPDATE messages_new SET fwd_from_id=?, media_type=?, media_file=?, media_size=? WHERE id=?");
+				while (rs.next()) {
+					ps.setInt(5, rs.getInt(1));
+					TLMessage msg = bytesToTLMessage(rs.getBytes(2));
+					if (msg==null || msg.getFwdFromId()==null || ! (msg.getFwdFromId() instanceof TLPeerUser)) {
+						ps.setNull(1, Types.INTEGER);
+					} else {
+						ps.setInt(1, ((TLPeerUser)msg.getFwdFromId()).getUserId());
+					}
+					AbstractMediaFileManager f = FileManagerFactory.getFileManager(msg, user_manager, client);
+					if (f==null) {
+						ps.setNull(2, Types.VARCHAR);
+						ps.setNull(3, Types.VARCHAR);
+						ps.setNull(4, Types.INTEGER);
+					} else {
+						ps.setString(2, f.getName());
+						ps.setString(3, f.getTargetFilename());
+						ps.setInt(4, f.getSize());
+					}
+					ps.addBatch();
+				}
+				rs.close();
+				conn.setAutoCommit(false);
+				ps.executeBatch();
+				conn.commit();
+				conn.setAutoCommit(true);
+				stmt.executeUpdate("DROP TABLE messages");
+				stmt.executeUpdate("ALTER TABLE messages_new RENAME TO messages");
+				stmt.executeUpdate("INSERT INTO database_versions (version) VALUES (6)");
+				version = 6;
+			}
+					
+				
 			
 		} catch (SQLException e) {
 			System.out.println(e.getSQLState());
@@ -208,38 +300,42 @@ public class Database {
 	
 	public synchronized void saveMessages(TLVector<TLAbsMessage> all) {
 		try {
-			PreparedStatement ps = conn.prepareStatement(
-				"INSERT OR REPLACE INTO messages " +
-				"(id, dialog_id, from_id, from_type, text, time, has_media, data, sticker, type) " +
+				//"(id, dialog_id, from_id, from_type, text, time, has_media, data, sticker, type) " +
+				//"VALUES " +
+				//"(?,  ?,         ?,       ?,         ?,    ?,    ?,         ?,    ?,       ?)");
+			String columns =
+				"(id, message_type, dialog_id, chat_id, sender_id, fwd_from_id, text, time, has_media, media_type, media_file, media_size, data) "+
 				"VALUES " +
-				"(?,  ?,         ?,       ?,         ?,    ?,    ?,         ?,    ?,       ?)");
-			PreparedStatement ps_insert_or_ignore = conn.prepareStatement(
-				"INSERT OR IGNORE INTO messages " +
-				"(id, dialog_id, from_id, from_type, text, time, has_media, data, sticker, type) " +
-				"VALUES " +
-				"(?,  ?,         ?,       ?,         ?,    ?,    ?,         ?,    ?,       ?)");
+				"(?,  ?,            ?,         ?,       ?,         ?,           ?,    ?,    ?,         ?,          ?,          ?,          ?)";
+				//1   2             3          4        5          6            7     8     9          10          11          12          13 
+			PreparedStatement ps = conn.prepareStatement("INSERT OR REPLACE INTO messages " + columns);
+			PreparedStatement ps_insert_or_ignore = conn.prepareStatement("INSERT OR IGNORE INTO messages " + columns);
+
 			for (TLAbsMessage abs : all) {
 				if (abs instanceof TLMessage) {
 					TLMessage msg = (TLMessage) abs;
 					ps.setInt(1, msg.getId());
+					ps.setString(2, "message");
 					TLAbsPeer peer = msg.getToId();
 					if (peer instanceof TLPeerChat) {
-						ps.setInt(2, ((TLPeerChat)peer).getChatId());
-						ps.setString(4, "chat");
-					} else if (peer instanceof TLPeerChannel) {
-						ps.setInt(2, ((TLPeerChannel)peer).getChannelId());
-						ps.setString(4, "channel");
+						ps.setNull(3, Types.INTEGER);
+						ps.setInt(4, ((TLPeerChat)peer).getChatId());
 					} else if (peer instanceof TLPeerUser) {
 						int id = ((TLPeerUser)peer).getUserId();
 						if (id==this.user_manager.getUser().getId()) {
 							id = msg.getFromId();
 						}
-						ps.setInt(2, id);
-						ps.setString(4, "user");
+						ps.setInt(3, id);
+						ps.setNull(4, Types.INTEGER);
 					} else {
 						throw new RuntimeException("Unexpected Peer type: " + peer.getClass().getName());
 					}
-					ps.setInt(3, msg.getFromId());
+					ps.setInt(5, msg.getFromId());
+					if (msg.getFwdFromId()!=null && msg.getFwdFromId() instanceof TLPeerUser) {
+						ps.setInt(6, ((TLPeerUser)msg.getFwdFromId()).getUserId());
+					} else {
+						ps.setNull(6, Types.INTEGER);
+					}
 					String text = msg.getMessage();
 					if ((text==null || text.equals("")) && msg.getMedia()!=null) {
 						if (msg.getMedia() instanceof TLMessageMediaDocument) {
@@ -248,55 +344,53 @@ public class Database {
 							text = ((TLMessageMediaPhoto)msg.getMedia()).getCaption();
 						}
 					}
-					ps.setString(5, text);
-					ps.setString(6, ""+msg.getDate());
-					ps.setBoolean(7, msg.getMedia() != null);
+					ps.setString(7, text);
+					ps.setString(8, ""+msg.getDate());
+					AbstractMediaFileManager f = FileManagerFactory.getFileManager(msg, user_manager, client);
+					if (f==null) {
+						ps.setNull(9, Types.BOOLEAN);
+						ps.setNull(10, Types.VARCHAR);
+						ps.setNull(11, Types.VARCHAR);
+						ps.setNull(12, Types.INTEGER);
+					} else {
+						ps.setBoolean(9, true);
+						ps.setString(10, f.getName());
+						ps.setString(11, f.getTargetFilename());
+						ps.setInt(12, f.getSize());
+					}
 					ByteArrayOutputStream stream = new ByteArrayOutputStream();
 					msg.serializeBody(stream);
-					ps.setBytes(8, stream.toByteArray());
-					String sticker = null;
-					if (msg.getMedia()!=null && msg.getMedia() instanceof TLMessageMediaDocument) {
-						TLMessageMediaDocument md = (TLMessageMediaDocument)msg.getMedia();
-						if (md.getDocument() instanceof TLDocument) {
-							for (TLAbsDocumentAttribute attr : ((TLDocument)md.getDocument()).getAttributes()) {
-								if (attr instanceof TLDocumentAttributeSticker) {
-									sticker = StickerConverter.makeFilename((TLDocumentAttributeSticker)attr);
-									break;
-								}
-							}
-						}
-					}
-					if (sticker != null) {
-						ps.setString(9, sticker);
-					} else {
-						ps.setNull(9, Types.VARCHAR);
-					}
-					ps.setString(10, "message");
+					ps.setBytes(13, stream.toByteArray());
 					ps.addBatch();
 				} else if (abs instanceof TLMessageService) {
 					ps_insert_or_ignore.setInt(1, abs.getId());
-					ps_insert_or_ignore.setNull(2, Types.INTEGER);
+					ps_insert_or_ignore.setString(2, "service_message");
 					ps_insert_or_ignore.setNull(3, Types.INTEGER);
-					ps_insert_or_ignore.setNull(4, Types.VARCHAR);
-					ps_insert_or_ignore.setNull(5, Types.VARCHAR);
+					ps_insert_or_ignore.setNull(4, Types.INTEGER);
+					ps_insert_or_ignore.setNull(5, Types.INTEGER);
 					ps_insert_or_ignore.setNull(6, Types.INTEGER);
-					ps_insert_or_ignore.setNull(7, Types.BOOLEAN);
-					ps_insert_or_ignore.setNull(8, Types.BLOB);
-					ps_insert_or_ignore.setNull(9, Types.VARCHAR);
-					ps_insert_or_ignore.setString(10, "service_message");
+					ps_insert_or_ignore.setNull(7, Types.VARCHAR);
+					ps_insert_or_ignore.setNull(8, Types.INTEGER);
+					ps_insert_or_ignore.setNull(9, Types.BOOLEAN);
+					ps_insert_or_ignore.setNull(10, Types.VARCHAR);
+					ps_insert_or_ignore.setNull(11, Types.VARCHAR);
+					ps_insert_or_ignore.setNull(12, Types.INTEGER);
+					ps_insert_or_ignore.setNull(13, Types.BLOB);
 					ps_insert_or_ignore.addBatch();
 				} else if (abs instanceof TLMessageEmpty) {
-					TLMessageEmpty msg = (TLMessageEmpty) abs;
-					ps_insert_or_ignore.setInt(1, msg.getId());
-					ps_insert_or_ignore.setNull(2, Types.INTEGER);
+					ps_insert_or_ignore.setInt(1, abs.getId());
+					ps_insert_or_ignore.setString(2, "empty_message");
 					ps_insert_or_ignore.setNull(3, Types.INTEGER);
-					ps_insert_or_ignore.setNull(4, Types.VARCHAR);
-					ps_insert_or_ignore.setNull(5, Types.VARCHAR);
+					ps_insert_or_ignore.setNull(4, Types.INTEGER);
+					ps_insert_or_ignore.setNull(5, Types.INTEGER);
 					ps_insert_or_ignore.setNull(6, Types.INTEGER);
-					ps_insert_or_ignore.setNull(7, Types.BOOLEAN);
-					ps_insert_or_ignore.setNull(8, Types.BLOB);
-					ps_insert_or_ignore.setNull(9, Types.VARCHAR);
-					ps_insert_or_ignore.setString(10, "empty_message");
+					ps_insert_or_ignore.setNull(7, Types.VARCHAR);
+					ps_insert_or_ignore.setNull(8, Types.INTEGER);
+					ps_insert_or_ignore.setNull(9, Types.BOOLEAN);
+					ps_insert_or_ignore.setNull(10, Types.VARCHAR);
+					ps_insert_or_ignore.setNull(11, Types.VARCHAR);
+					ps_insert_or_ignore.setNull(12, Types.INTEGER);
+					ps_insert_or_ignore.setNull(13, Types.BLOB);
 					ps_insert_or_ignore.addBatch();
 				} else {
 					throw new RuntimeException("Unexpected Message type: " + abs.getClass().getName());
@@ -420,10 +514,7 @@ public class Database {
 			LinkedList<TLMessage> list = new LinkedList<TLMessage>();
 			ResultSet rs = stmt.executeQuery("SELECT data FROM messages WHERE has_media=1");
 			while (rs.next()) {
-				ByteArrayInputStream stream = new ByteArrayInputStream(rs.getBytes(1));
-				TLMessage msg = new TLMessage();
-				msg.deserializeBody(stream, TLApiContext.getInstance());
-				list.add(msg);
+				list.add(bytesToTLMessage(rs.getBytes(1)));
 			}
 			rs.close();
 			return list;
@@ -437,7 +528,7 @@ public class Database {
 		LinkedList<Chat> list = new LinkedList<Chat>();
 		try {
 			ResultSet rs = stmt.executeQuery("SELECT chats.id, chats.name, COUNT(messages.id) as c "+
-				"FROM chats, messages WHERE messages.from_type='chat' AND messages.dialog_id=chats.id "+
+				"FROM chats, messages WHERE messages.chat_id IS NOT NULL AND messages.chat_id=chats.id "+
 				"GROUP BY chats.id ORDER BY c DESC");
 			while (rs.next()) {
 				list.add(new Chat(rs.getInt(1), rs.getString(2), rs.getInt(3)));
@@ -455,7 +546,7 @@ public class Database {
 		try {
 			ResultSet rs = stmt.executeQuery(
 				"SELECT users.id, first_name, last_name, username, COUNT(messages.id) as c " +
-				"FROM users, messages WHERE messages.from_type='user' AND messages.dialog_id=users.id " +
+				"FROM users, messages WHERE messages.dialog_id IS NOT NULL AND messages.dialog_id=users.id " +
 				"GROUP BY users.id ORDER BY c DESC");
 			while (rs.next()) {
 				list.add(new Dialog(rs.getInt(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getInt(5)));
@@ -468,38 +559,57 @@ public class Database {
 		}
 	}
 	
-	public void getMessagesForExport(Dialog d, ChatMessageProcessor p) {
-		getMessagesForExport("user", d.id, p);
+	public LinkedList<HashMap<String, Object>> getMessagesForExport(Dialog d) {
+		return getMessagesForExport("dialog_id", d.id);
 	}
 	
-	public void getMessagesForExport(Chat c, ChatMessageProcessor p) {
-		getMessagesForExport("chat", c.id, p);
+	public LinkedList<HashMap<String, Object>> getMessagesForExport(Chat c) {
+		return getMessagesForExport("chat_id", c.id);
 	}
 	
-	private void getMessagesForExport(String type, Integer id, ChatMessageProcessor p) {
+	private LinkedList<HashMap<String, Object>> getMessagesForExport(String type, Integer id) {
 		try {
-			ResultSet rs = stmt.executeQuery("SELECT messages.id, text, time*1000, has_media, " +
-				"sticker, first_name, last_name, username FROM messages, users WHERE " +
-				"users.id=messages.from_id AND dialog_id=" + id + " AND from_type='" + type + "' " +
+			ResultSet rs = stmt.executeQuery("SELECT messages.id as mid, text, time*1000 as t, has_media, " +
+				"media_type, media_file, media_size, users.first_name, users.last_name, users.username, " +
+				"users_fwd.first_name, users_fwd.last_name, users_fwd.username " +
+				"FROM messages, users LEFT JOIN users AS users_fwd ON users_fwd.id=fwd_from_id WHERE " +
+				"users.id=messages.sender_id AND " + type + "=" + id + " " +
 				"ORDER BY messages.id");
+			ResultSetMetaData meta = rs.getMetaData();
+			int columns = meta.getColumnCount();
+			LinkedList<HashMap<String, Object>> list = new LinkedList<HashMap<String, Object>>();
 			while (rs.next()) {
-				Message m = new Message(
-					rs.getInt(1),
-					rs.getString(2),
-					rs.getTime(3),
-					rs.getBoolean(4),
-					rs.getString(5),
-					rs.getString(6),
-					rs.getString(7),
-					rs.getString(8));
-				p.process(m);
+				HashMap<String, Object> h = new HashMap<String, Object>(columns);
+				for (int i=1; i<=columns; i++) {
+					h.put(meta.getColumnName(i), rs.getObject(i));
+				}
+				list.add(h);
 			}
 			rs.close();
+			return list;
 		} catch(Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("Exception above!");
 		}
 	}
+	
+	public static TLMessage bytesToTLMessage(byte[] b) {
+		try {
+			if (b==null) return null;
+			ByteArrayInputStream stream = new ByteArrayInputStream(b);
+			TLMessage msg = new TLMessage();
+			msg.deserializeBody(stream, TLApiContext.getInstance());
+			return msg;
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new RuntimeException("Could not deserialize message.");
+		}
+	}
+	
+		
+	
+	
+	
 	
 	
 	public class Dialog {
@@ -528,31 +638,5 @@ public class Database {
 			this.name = name;
 			this.count = count;
 		}
-	}
-	
-	public class Message {
-		public int id;
-		public String text;
-		public Time time;
-		public boolean has_media;
-		public String sticker;
-		public String first_name;
-		public String last_name;
-		public String username;
-		
-		public Message(int i, String t, Time t2, boolean m, String st, String n1, String n2, String n3) {
-			this.id = i;
-			this.text = t;
-			this.time = t2;
-			this.has_media = m;
-			this.sticker = st;
-			this.first_name = n1;
-			this.last_name = n2;
-			this.username = n3;
-		}
-	}
-	
-	public interface ChatMessageProcessor {
-		public void process(Message msg);
 	}
 }

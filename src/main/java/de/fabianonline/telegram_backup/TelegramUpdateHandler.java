@@ -31,7 +31,7 @@ class TelegramUpdateHandler implements UpdateCallback {
 	private Database db = null;
 	public boolean debug = false;
 	
-	public void setUser(UserManager user) { this.user = user; this.db = new Database(user, false);}
+	public void setUser(UserManager user, TelegramClient client) { this.user = user; this.db = new Database(user, client, false);}
 	
 	public void onUpdates(TelegramClient c, TLUpdates u) {
 		if (db==null) return;
