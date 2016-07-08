@@ -36,6 +36,8 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.LinkedHashMap;
 import java.util.HashMap;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 
 import de.fabianonline.telegram_backup.mediafilemanager.AbstractMediaFileManager;
 import de.fabianonline.telegram_backup.mediafilemanager.FileManagerFactory;
@@ -151,6 +153,7 @@ public class Database {
 				version = 5;
 			}
 			if (version==5) {
+				backupDatabase(5);
 				System.out.println("  Updating to version 6...");
 				stmt.executeUpdate(
 					"CREATE TABLE messages_new (\n" +
@@ -236,6 +239,20 @@ public class Database {
 		} catch (SQLException e) {
 			System.out.println(e.getSQLState());
 			e.printStackTrace();
+		}
+	}
+	
+	private void backupDatabase(int currentVersion) {
+		String filename = String.format(Config.FILE_NAME_DB_BACKUP, currentVersion);
+		System.out.println("  Creating a backup of your database as " + filename);
+		try {
+			Files.copy(
+				new File(user_manager.getFileBase() + Config.FILE_NAME_DB).toPath(),
+				new File(user_manager.getFileBase() + filename).toPath(),
+				StandardCopyOption.REPLACE_EXISTING);
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new RuntimeException("Could not create backup.");
 		}
 	}
 	
