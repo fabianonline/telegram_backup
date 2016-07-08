@@ -56,25 +56,32 @@ public class HTMLExporter {
 			mustache.execute(w, scope);
 			w.close();
 			
+			mustache = mf.compile("templates/html/chat.mustache");
+			
 			for (Database.Dialog d : dialogs) {
-				//LinkedList<HashMap<String, Object>> messages = db.getMessagesForTemplate(dialog);
+				LinkedList<HashMap<String, Object>> messages = db.getMessagesForExport(d);
+				scope.clear();
+				scope.put("dialog", d);
+				scope.put("messages", messages);
+				
+				w = new FileWriter(base + "dialogs" + File.separatorChar + "user_" + d.id + ".html");
+				mustache.execute(w, scope);
+				w.close();
 			}
-			System.exit(0);
-			/*
-				String filename = base + "dialogs" + File.separatorChar + "user_" + dialog.id + ".html";
-				final PrintWriter chatfile = new PrintWriter(new BufferedWriter(new FileWriter(filename)));
-				db.getMessagesForExport(dialog, new ChatLineWriter(chatfile));
-				chatfile.close();
-
-				String filename = base + "dialogs" + File.separatorChar + "chat_" + chat.id + ".html";
-				final PrintWriter chatfile = new PrintWriter(new BufferedWriter(new FileWriter(filename)));
-				db.getMessagesForExport(chat, new ChatLineWriter(chatfile));
-				chatfile.close();
-			*/
+			
+			for (Database.Chat c : chats) {
+				LinkedList<HashMap<String, Object>> messages = db.getMessagesForExport(c);
+				scope.clear();
+				scope.put("chat", c);
+				scope.put("messages", messages);
+				
+				w = new FileWriter(base + "dialogs" + File.separatorChar + "chat_" + c.id + ".html");
+				mustache.execute(w, scope);
+				w.close();
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new RuntimeException("Exception above!");
 		}
 	}
-//			w.println("" + String.format("%1$tF %1$tT", msg.time) + " - " + msg.text + "<br>");
 }

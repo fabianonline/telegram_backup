@@ -36,8 +36,10 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.LinkedHashMap;
 import java.util.HashMap;
+import java.util.Date;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.text.SimpleDateFormat;
 
 import de.fabianonline.telegram_backup.mediafilemanager.AbstractMediaFileManager;
 import de.fabianonline.telegram_backup.mediafilemanager.FileManagerFactory;
@@ -586,20 +588,36 @@ public class Database {
 	
 	private LinkedList<HashMap<String, Object>> getMessagesForExport(String type, Integer id) {
 		try {
-			ResultSet rs = stmt.executeQuery("SELECT messages.id as mid, text, time*1000 as t, has_media, " +
-				"media_type, media_file, media_size, users.first_name, users.last_name, users.username, " +
-				"users_fwd.first_name, users_fwd.last_name, users_fwd.username " +
+			ResultSet rs = stmt.executeQuery("SELECT messages.id as message_id, text, time*1000 as time, has_media, " +
+				"media_type, media_file, media_size, users.first_name as user_first_name, users.last_name as user_last_name, " +
+				"users.username as user_username, users.id as user_id, " +
+				"users_fwd.first_name as user_fwd_first_name, users_fwd.last_name as user_fwd_last_name, users_fwd.username as user_fwd_username " +
 				"FROM messages, users LEFT JOIN users AS users_fwd ON users_fwd.id=fwd_from_id WHERE " +
 				"users.id=messages.sender_id AND " + type + "=" + id + " " +
 				"ORDER BY messages.id");
+			SimpleDateFormat format_time = new SimpleDateFormat("HH:mm:ss");
+			SimpleDateFormat format_date = new SimpleDateFormat("d MMM yy");
 			ResultSetMetaData meta = rs.getMetaData();
 			int columns = meta.getColumnCount();
 			LinkedList<HashMap<String, Object>> list = new LinkedList<HashMap<String, Object>>();
+			String old_date = null;
 			while (rs.next()) {
 				HashMap<String, Object> h = new HashMap<String, Object>(columns);
 				for (int i=1; i<=columns; i++) {
 					h.put(meta.getColumnName(i), rs.getObject(i));
 				}
+				// Additional values to make up for Mustache's inability to format dates
+				Date d = rs.getTime("time");
+				String date = format_date.format(d);
+				h.put("formatted_time", format_time.format(d));
+				h.put("formatted_date", date);
+				if (rs.getString("media_type")!=null) {
+					h.put("media_" + rs.getString("media_type"), true);
+				}
+				h.put("from_me", rs.getInt("user_id")==user_manager.getUser().getId());
+				h.put("is_new_date", !date.equals(old_date));
+				old_date = date;
+				
 				list.add(h);
 			}
 			rs.close();
