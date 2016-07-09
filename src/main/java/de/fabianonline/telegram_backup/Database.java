@@ -543,6 +543,41 @@ public class Database {
 		}
 	}
 	
+	public int getMessagesFromUserCount() {
+		try {
+			ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM messages WHERE sender_id=" + user_manager.getUser().getId());
+			rs.next();
+			return rs.getInt(1);
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
+	public HashMap<String, Integer> getMessageTypesWithCount() {
+		HashMap<String, Integer> map = new HashMap<String, Integer>();
+		try {
+			ResultSet rs = stmt.executeQuery("SELECT message_type, COUNT(id) FROM messages GROUP BY message_type");
+			while (rs.next()) {
+				map.put(rs.getString(1), rs.getInt(2));
+			}
+			return map;
+		} catch (Exception e) { throw new RuntimeException(e); }
+	}
+	
+	public HashMap<String, Integer> getMessageMediaTypesWithCount() {
+		HashMap<String, Integer> map = new HashMap<String, Integer>();
+		try {
+			ResultSet rs = stmt.executeQuery("SELECT media_type, COUNT(id) FROM messages GROUP BY media_type");
+			while (rs.next()) {
+				String s = rs.getString(1);
+				if (s==null) s="null";
+				map.put(s, rs.getInt(2));
+			}
+			return map;
+		} catch (Exception e) { throw new RuntimeException(e); }
+	}
+			
+	
 	public LinkedList<Chat> getListOfChatsForExport() {
 		LinkedList<Chat> list = new LinkedList<Chat>();
 		try {
@@ -559,6 +594,7 @@ public class Database {
 			throw new RuntimeException("Exception above!");
 		}
 	}
+	
 	
 	public LinkedList<Dialog> getListOfDialogsForExport() {
 		LinkedList<Dialog> list = new LinkedList<Dialog>();
