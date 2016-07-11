@@ -83,11 +83,17 @@ public class DownloadManager {
 	
 	public void _downloadMessages(Integer limit) throws RpcErrorException, IOException, TimeoutException {
 		System.out.println("Downloading most recent dialog... ");
-		int max_message_id = client.messagesGetDialogs(
+		int max_message_id = 0;
+		TLAbsDialogs dialogs = client.messagesGetDialogs(
 			0,
 			0,
 			new TLInputPeerEmpty(),
-			1).getDialogs().get(0).getTopMessage();
+			100);
+		for (TLAbsDialog d : dialogs.getDialogs()) {
+			if (d.getTopMessage() > max_message_id) {
+				max_message_id = d.getTopMessage();
+			}
+		}
 		System.out.println("Top message ID is " + max_message_id);
 		int max_database_id = db.getTopMessageID();
 		System.out.println("Top message ID in database is " + max_database_id);
