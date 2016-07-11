@@ -70,12 +70,14 @@ public class PhotoFileManager extends AbstractMediaFileManager {
 	}
 	
 	public int getSize() {
-		return size.getSize();
+		if (size!=null) return size.getSize();
+		return 0;
 	}
 	
 	public String getExtension() { return "jpg"; }
 	
 	public void download() throws RpcErrorException, IOException {
+		if (isEmpty) return;
 		TLFileLocation loc = (TLFileLocation) size.getLocation();
 		DownloadManager.downloadFile(client, getTargetPathAndFilename(), getSize(), loc.getVolumeId(), loc.getLocalId(), loc.getSecret());
 	}

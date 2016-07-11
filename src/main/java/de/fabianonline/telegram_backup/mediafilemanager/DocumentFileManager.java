@@ -68,10 +68,14 @@ public class DocumentFileManager extends AbstractMediaFileManager {
 		return sticker!=null;
 	}
 	
-	public int getSize() { return doc.getSize(); }
+	public int getSize() {
+		if (doc != null) return doc.getSize();
+		return 0;
+	 }
 	
 	public String getExtension() {
 		if (extension != null) return extension;
+		if (doc == null) return "empty";
 		String ext = null;
 		String original_filename = null;
 		for(TLAbsDocumentAttribute attr : doc.getAttributes()) {
@@ -92,7 +96,9 @@ public class DocumentFileManager extends AbstractMediaFileManager {
 	}
 	
 	public void download() throws RpcErrorException, IOException {
-		DownloadManager.downloadFile(client, getTargetPathAndFilename(), getSize(), doc.getDcId(), doc.getId(), doc.getAccessHash());
+		if (doc!=null) {
+			DownloadManager.downloadFile(client, getTargetPathAndFilename(), getSize(), doc.getDcId(), doc.getId(), doc.getAccessHash());
+		}
 	}
 	
 	public String getLetter() { return "d"; }
