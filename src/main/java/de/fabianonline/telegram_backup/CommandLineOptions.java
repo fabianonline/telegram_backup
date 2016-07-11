@@ -17,18 +17,19 @@
 package de.fabianonline.telegram_backup;
 
 class CommandLineOptions {
-	public static boolean cmd_console = false;
-	public static String val_account = null;
-	public static boolean cmd_help = false;
-	public static boolean cmd_login = false;
-	public static boolean cmd_debug = false;
-	public static boolean cmd_list_accounts = false;
+	public static boolean cmd_console        = false;
+	public static boolean cmd_help           = false;
+	public static boolean cmd_login          = false;
+	public static boolean cmd_debug          = false;
+	public static boolean cmd_list_accounts  = false;
+	public static boolean cmd_version        = false;
+	public static boolean cmd_license        = false;
+	public static boolean cmd_daemon         = false;
+	
+	public static String  val_account        = null;
 	public static Integer val_limit_messages = null;
-	public static String val_target = null;
-	public static boolean cmd_version = false;
-	public static String val_export = null;
-	public static boolean cmd_license = false;
-	public static boolean cmd_daemon = false;
+	public static String  val_target         = null;
+	public static String  val_export         = null;
 
 	public static void parseOptions(String[] args) {
 		String last_cmd = null;
@@ -37,17 +38,16 @@ class CommandLineOptions {
 			if (last_cmd != null) {
 				switch (last_cmd) {
 					case "--account":
-						val_account = arg;
-						break;
+						val_account = arg;                          break;
+						
 					case "--limit-messages":
-						val_limit_messages = Integer.parseInt(arg);
-						break;
+						val_limit_messages = Integer.parseInt(arg); break;
+						
 					case "--target":
-						val_target = arg;
-						break;
+						val_target = arg;                           break;
+						
 					case "--export":
-						val_export = arg;
-						break;
+						val_export = arg;                           break;
 				}
 				last_cmd = null;
 				continue;
@@ -55,7 +55,7 @@ class CommandLineOptions {
 
 			switch (arg) {
 				case "-a": case "--account":
-					last_cmd = "--account";              continue;
+					last_cmd = "--account";         continue;
 					
 				case "-h": case "--help":
 					cmd_help = true;                break;
@@ -70,19 +70,19 @@ class CommandLineOptions {
 					cmd_list_accounts = true;       break;
 					
 				case "--limit-messages":
-					last_cmd = arg;                      continue;
+					last_cmd = arg;                 continue;
 					
 				case "--console":
 					cmd_console = true;             break;
 					
 				case "-t": case "--target":
-					last_cmd = "--target";               continue;
+					last_cmd = "--target";          continue;
 					
 				case "-V": case "--version":
 					cmd_version = true;             break;
 				
 				case "-e": case "--export":
-					last_cmd = "--export";               continue;
+					last_cmd = "--export";          continue;
 				
 				case "--license":
 					cmd_license = true;             break;
