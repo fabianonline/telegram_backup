@@ -240,7 +240,7 @@ public class Database {
 			
 		} catch (SQLException e) {
 			System.out.println(e.getSQLState());
-			e.printStackTrace();
+			throw new RuntimeException(e);
 		}
 	}
 	
