@@ -25,10 +25,7 @@ import java.awt.event.ActionListener;
 import java.util.Vector;
 
 public class GUIController {
-	private CommandLineOptions options;
-
-	public GUIController(CommandLineOptions options) {
-		this.options = options;
+	public GUIController() {
 		showAccountChooserDialog();
 	}
 

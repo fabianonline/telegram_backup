@@ -17,36 +17,36 @@
 package de.fabianonline.telegram_backup;
 
 class CommandLineOptions {
-	public boolean cmd_console = false;
-	public String account = null;
-	public boolean cmd_help = false;
-	public boolean cmd_login = false;
-	public boolean cmd_debug = false;
-	public boolean cmd_list_accounts = false;
-	public Integer limit_messages = null;
-	public String target = null;
-	public boolean cmd_version = false;
-	public String export = null;
-	public boolean cmd_license = false;
-	public boolean cmd_daemon = false;
+	public static boolean cmd_console = false;
+	public static String val_account = null;
+	public static boolean cmd_help = false;
+	public static boolean cmd_login = false;
+	public static boolean cmd_debug = false;
+	public static boolean cmd_list_accounts = false;
+	public static Integer val_limit_messages = null;
+	public static String val_target = null;
+	public static boolean cmd_version = false;
+	public static String val_export = null;
+	public static boolean cmd_license = false;
+	public static boolean cmd_daemon = false;
 
-	public CommandLineOptions(String[] args) {
+	public static void parseOptions(String[] args) {
 		String last_cmd = null;
 
 		for (String arg : args) {
 			if (last_cmd != null) {
 				switch (last_cmd) {
 					case "--account":
-						this.account = arg;
+						val_account = arg;
 						break;
 					case "--limit-messages":
-						this.limit_messages = Integer.parseInt(arg);
+						val_limit_messages = Integer.parseInt(arg);
 						break;
 					case "--target":
-						this.target = arg;
+						val_target = arg;
 						break;
 					case "--export":
-						this.export = arg;
+						val_export = arg;
 						break;
 				}
 				last_cmd = null;
@@ -58,37 +58,37 @@ class CommandLineOptions {
 					last_cmd = "--account";              continue;
 					
 				case "-h": case "--help":
-					this.cmd_help = true;                break;
+					cmd_help = true;                break;
 					
 				case "-l": case "--login":
-					this.cmd_login = true;               break;
+					cmd_login = true;               break;
 					
 				case "--debug":
-					this.cmd_debug = true;               break;
+					cmd_debug = true;               break;
 					
 				case "-A": case "--list-accounts":
-					this.cmd_list_accounts = true;       break;
+					cmd_list_accounts = true;       break;
 					
 				case "--limit-messages":
 					last_cmd = arg;                      continue;
 					
 				case "--console":
-					this.cmd_console = true;             break;
+					cmd_console = true;             break;
 					
 				case "-t": case "--target":
 					last_cmd = "--target";               continue;
 					
 				case "-V": case "--version":
-					this.cmd_version = true;             break;
+					cmd_version = true;             break;
 				
 				case "-e": case "--export":
 					last_cmd = "--export";               continue;
 				
 				case "--license":
-					this.cmd_license = true;             break;
+					cmd_license = true;             break;
 				
 				case "-d": case "--daemon":
-					this.cmd_daemon = true;              break;
+					cmd_daemon = true;              break;
 					
 				default:
 					throw new RuntimeException("Unknown command " + arg);

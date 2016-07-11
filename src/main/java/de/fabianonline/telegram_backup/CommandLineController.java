@@ -36,45 +36,45 @@ public class CommandLineController {
 	public TelegramApp app;
 	public UserManager user = null;
 	
-	public CommandLineController(CommandLineOptions options) {
-		if (options.cmd_version) {
+	public CommandLineController() {
+		if (CommandLineOptions.cmd_version) {
 			System.out.println("Telegram_Backup version " + Config.APP_APPVER + ", Copyright (C) 2016 Fabian Schlenz");
 			System.out.println("Telegram_Backup comes with ABSOLUTELY NO WARRANTY. This is free software, and you are");
 			System.out.println("welcome to redistribute it under certain conditions; run it with '--license' for details.");
 			System.exit(0);
-		} else if (options.cmd_help) {
+		} else if (CommandLineOptions.cmd_help) {
 			this.show_help();
 			System.exit(0);
-		} else if (options.cmd_license) {
+		} else if (CommandLineOptions.cmd_license) {
 			this.show_license();
 			System.exit(0);
 		}
 		
-		if (options.target != null) {
-			Config.FILE_BASE = options.target;
+		if (CommandLineOptions.val_target != null) {
+			Config.FILE_BASE = CommandLineOptions.val_target;
 		}
 		
 		System.out.println("Base directory for files: " + Config.FILE_BASE);
 
-		if (options.cmd_list_accounts) this.list_accounts();
+		if (CommandLineOptions.cmd_list_accounts) this.list_accounts();
 		
 		app = new TelegramApp(Config.APP_ID, Config.APP_HASH, Config.APP_MODEL, Config.APP_SYSVER, Config.APP_APPVER, Config.APP_LANG);
-		if (options.cmd_debug) Kotlogram.setDebugLogEnabled(true);
+		if (CommandLineOptions.cmd_debug) Kotlogram.setDebugLogEnabled(true);
 
 		String account = null;
 		Vector<String> accounts = Utils.getAccounts();
-		if (options.cmd_login) {
+		if (CommandLineOptions.cmd_login) {
 			// do nothing
-		} else if (options.account!=null) {
+		} else if (CommandLineOptions.val_account!=null) {
 			boolean found = false;
-			for (String acc : accounts) if (acc.equals(options.account)) found=true;
+			for (String acc : accounts) if (acc.equals(CommandLineOptions.val_account)) found=true;
 			if (!found) {
-				show_error("Couldn't find account '" + options.account + "'. Maybe you want to use '--login' first?");
+				show_error("Couldn't find account '" + CommandLineOptions.val_account + "'. Maybe you want to use '--login' first?");
 			}
-			account = options.account;
+			account = CommandLineOptions.val_account;
 		} else if (accounts.size()==0) {
 			System.out.println("No accounts found. Starting login process...");
-			options.cmd_login = true;
+			CommandLineOptions.cmd_login = true;
 		} else if (accounts.size()==1) {
 			account = accounts.firstElement();
 			System.out.println("Using only available account: " + account);
@@ -92,11 +92,11 @@ public class CommandLineController {
 		try {
 			user = new UserManager(client);
 			
-			if (options.export != null) {
-				if (options.export.toLowerCase().equals("html")) {
+			if (CommandLineOptions.val_export != null) {
+				if (CommandLineOptions.val_export.toLowerCase().equals("html")) {
 					(new HTMLExporter()).export(user);
 					System.exit(0);
-				} else if (options.export.toLowerCase().equals("stats")) {
+				} else if (CommandLineOptions.val_export.toLowerCase().equals("stats")) {
 					(new StatsExporter()).export(user);
 					System.exit(0);
 				} else {
@@ -105,7 +105,7 @@ public class CommandLineController {
 			}
 		
 			
-			if (options.cmd_login) {
+			if (CommandLineOptions.cmd_login) {
 				cmd_login();
 				System.exit(0);
 			}
@@ -113,14 +113,14 @@ public class CommandLineController {
 			System.out.println("You are logged in as " + user.getUserString());
 			
 			DownloadManager d = new DownloadManager(user, client, new CommandLineDownloadProgress());
-			d.downloadMessages(options.limit_messages);
+			d.downloadMessages(CommandLineOptions.val_limit_messages);
 			d.downloadMedia();
 		} catch (RpcErrorException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
 		} finally {
-			if (options.cmd_daemon) {
+			if (CommandLineOptions.cmd_daemon) {
 				handler.setUser(user, client);
 				System.out.println("DAEMON mode requested - keeping running.");
 			} else {
