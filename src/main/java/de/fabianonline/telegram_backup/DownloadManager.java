@@ -38,6 +38,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.Random;
 import java.net.URL;
 import java.util.concurrent.TimeoutException;
 
@@ -221,7 +222,8 @@ public class DownloadManager {
 			int offset = 0;
 			TLFile response;
 			do {
-				TLRequestUploadGetFile req = new TLRequestUploadGetFile(loc, offset, Config.FILE_DOWNLOAD_BLOCK_SIZE);
+				int block_size = Config.FILE_DOWNLOAD_BLOCK_SIZES[new Random().nextInt(Config.FILE_DOWNLOAD_BLOCK_SIZES.length)];
+				TLRequestUploadGetFile req = new TLRequestUploadGetFile(loc, offset, block_size);
 				if (dcID==null) {
 					response = (TLFile) client.executeRpcQuery(req);
 				} else {
