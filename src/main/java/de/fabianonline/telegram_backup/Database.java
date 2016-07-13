@@ -47,8 +47,8 @@ import de.fabianonline.telegram_backup.mediafilemanager.FileManagerFactory;
 public class Database {
 	private Connection conn;
 	private Statement stmt;
-	private UserManager user_manager;
-	private TelegramClient client;
+	public UserManager user_manager;
+	public TelegramClient client;
 	
 	public Database(UserManager user_manager, TelegramClient client) {
 		this(user_manager, client, true);
@@ -81,176 +81,20 @@ public class Database {
 	
 	private void init(boolean update_db) {
 		if (!update_db) return;
-		
-		try {
-			int version;
-			ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='database_versions'");
-			rs.next();
-			if (rs.getInt(1)==0) {
-				version = 0;
-			} else {
-				rs.close();
-				rs = stmt.executeQuery("SELECT MAX(version) FROM database_versions");
-				rs.next();
-				version = rs.getInt(1);
-				rs.close();
-			}
-			System.out.println("Database version: " + version);
-			
-			if (version==0) {
-				System.out.println("  Updating to version 1...");
-				stmt.executeUpdate("CREATE TABLE messages ("
-						+ "id INTEGER PRIMARY KEY ASC, "
-						+ "dialog_id INTEGER, "
-						+ "to_id INTEGER, "
-						+ "from_id INTEGER, "
-						+ "from_type TEXT, "
-						+ "text TEXT, "
-						+ "time TEXT, "
-						+ "has_media BOOLEAN, "
-						+ "sticker TEXT, "
-						+ "data BLOB,"
-						+ "type TEXT)");
-				stmt.executeUpdate("CREATE TABLE dialogs ("
-						+ "id INTEGER PRIMARY KEY ASC, "
-						+ "name TEXT, "
-						+ "type TEXT)");
-				stmt.executeUpdate("CREATE TABLE people ("
-						+ "id INTEGER PRIMARY KEY ASC, "
-						+ "first_name TEXT, "
-						+ "last_name TEXT, "
-						+ "username TEXT, "
-						+ "type TEXT)");
-				stmt.executeUpdate("CREATE TABLE database_versions ("
-						+ "version INTEGER)");
-				stmt.executeUpdate("INSERT INTO database_versions (version) VALUES (1)");
-				version = 1;
-			}
-			if (version==1) {
-				System.out.println("  Updating to version 2...");
-				stmt.executeUpdate("ALTER TABLE people RENAME TO 'users'");
-				stmt.executeUpdate("ALTER TABLE users ADD COLUMN phone TEXT");
-				stmt.executeUpdate("INSERT INTO database_versions (version) VALUES (2)");
-				version = 2;
-			}
-			if (version==2) {
-				System.out.println("  Updating to version 3...");
-				stmt.executeUpdate("ALTER TABLE dialogs RENAME TO 'chats'");
-				stmt.executeUpdate("INSERT INTO database_versions (version) VALUES (3)");
-				version = 3;
-			}
-			if (version==3) {
-				System.out.println("  Updating to version 4...");
-				stmt.executeUpdate("CREATE TABLE messages_new (id INTEGER PRIMARY KEY ASC, dialog_id INTEGER, to_id INTEGER, from_id INTEGER, from_type TEXT, text TEXT, time INTEGER, has_media BOOLEAN, sticker TEXT, data BLOB, type TEXT);");
-				stmt.executeUpdate("INSERT INTO messages_new SELECT * FROM messages");
-				stmt.executeUpdate("DROP TABLE messages");
-				stmt.executeUpdate("ALTER TABLE messages_new RENAME TO 'messages'");
-				stmt.executeUpdate("INSERT INTO database_versions (version) VALUES (4)");
-				version = 4;
-			}
-			if (version==4) {
-				System.out.println("  Updating to version 5...");
-				stmt.executeUpdate("CREATE TABLE runs (id INTEGER PRIMARY KEY ASC, time INTEGER, start_id INTEGER, end_id INTEGER, count_missing INTEGER)");
-				stmt.executeUpdate("INSERT INTO database_versions (version) VALUES (5)");
-				version = 5;
-			}
-			if (version==5) {
-				backupDatabase(5);
-				System.out.println("  Updating to version 6...");
-				stmt.executeUpdate(
-					"CREATE TABLE messages_new (\n" +
-					"    id INTEGER PRIMARY KEY ASC,\n" +
-					"    message_type TEXT,\n" +
-					"    dialog_id INTEGER,\n" +
-					"    chat_id INTEGER,\n" +
-					"    sender_id INTEGER,\n" +
-					"    fwd_from_id INTEGER,\n" +
-					"    text TEXT,\n" +
-					"    time INTEGER,\n" +
-					"    has_media BOOLEAN,\n" +
-					"    media_type TEXT,\n" +
-					"    media_file TEXT,\n" +
-					"    media_size INTEGER,\n" +
-					"    media_json TEXT,\n" +
-					"    markup_json TEXT,\n" +
-					"    data BLOB)");
-				LinkedHashMap<String, String> mappings = new LinkedHashMap<String, String>();
-				mappings.put("id", "id");
-				mappings.put("message_type", "type");
-				mappings.put("dialog_id", "CASE from_type WHEN 'user' THEN dialog_id ELSE NULL END");
-				mappings.put("chat_id",   "CASE from_type WHEN 'chat' THEN dialog_id ELSE NULL END");
-				mappings.put("sender_id", "from_id");
-				mappings.put("text", "text");
-				mappings.put("time", "time");
-				mappings.put("has_media", "has_media");
-				mappings.put("data", "data");
-				StringBuilder query = new StringBuilder("INSERT INTO messages_new\n(");
-				boolean first;
-				first = true;
-				for(String s : mappings.keySet()) {
-					if (!first) query.append(", ");
-					query.append(s);
-					first = false;
-				}
-				query.append(")\nSELECT \n");
-				first = true;
-				for (String s : mappings.values()) {
-					if (!first) query.append(", ");
-					query.append(s);
-					first = false;
-				}
-				query.append("\nFROM messages");
-				stmt.executeUpdate(query.toString());
-				
-				System.out.println("    Updating the data (this might take some time)...");
-				rs = stmt.executeQuery("SELECT id, data FROM messages_new");
-				PreparedStatement ps = conn.prepareStatement("UPDATE messages_new SET fwd_from_id=?, media_type=?, media_file=?, media_size=? WHERE id=?");
-				while (rs.next()) {
-					ps.setInt(5, rs.getInt(1));
-					TLMessage msg = bytesToTLMessage(rs.getBytes(2));
-					if (msg==null || msg.getFwdFromId()==null || ! (msg.getFwdFromId() instanceof TLPeerUser)) {
-						ps.setNull(1, Types.INTEGER);
-					} else {
-						ps.setInt(1, ((TLPeerUser)msg.getFwdFromId()).getUserId());
-					}
-					AbstractMediaFileManager f = FileManagerFactory.getFileManager(msg, user_manager, client);
-					if (f==null) {
-						ps.setNull(2, Types.VARCHAR);
-						ps.setNull(3, Types.VARCHAR);
-						ps.setNull(4, Types.INTEGER);
-					} else {
-						ps.setString(2, f.getName());
-						ps.setString(3, f.getTargetFilename());
-						ps.setInt(4, f.getSize());
-					}
-					ps.addBatch();
-				}
-				rs.close();
-				conn.setAutoCommit(false);
-				ps.executeBatch();
-				conn.commit();
-				conn.setAutoCommit(true);
-				stmt.executeUpdate("DROP TABLE messages");
-				stmt.executeUpdate("ALTER TABLE messages_new RENAME TO messages");
-				stmt.executeUpdate("INSERT INTO database_versions (version) VALUES (6)");
-				version = 6;
-			}
-					
-				
-			
-		} catch (SQLException e) {
-			System.out.println(e.getSQLState());
-			throw new RuntimeException(e);
-		}
+		DatabaseUpdates updates = new DatabaseUpdates(conn, this);
+		updates.doUpdates();
 	}
 	
-	private void backupDatabase(int currentVersion) {
+	public void backupDatabase(int currentVersion) {
 		String filename = String.format(Config.FILE_NAME_DB_BACKUP, currentVersion);
 		System.out.println("  Creating a backup of your database as " + filename);
 		try {
+			String src = user_manager.getFileBase() + Config.FILE_NAME_DB;
+			String dst = user_manager.getFileBase() + filename;
+			Log.debug("Copying %s to %s", src, dst);
 			Files.copy(
-				new File(user_manager.getFileBase() + Config.FILE_NAME_DB).toPath(),
-				new File(user_manager.getFileBase() + filename).toPath(),
+				new File(src).toPath(),
+				new File(dst).toPath(),
 				StandardCopyOption.REPLACE_EXISTING);
 		} catch (IOException e) {
 			e.printStackTrace();
