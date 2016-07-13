@@ -23,6 +23,19 @@ run {
 	standardInput = System.in
 }
 
+def getVersionName= { ->
+	def stdout = new ByteArrayOutputStream()
+	exec {
+		commandLine 'git', 'describe', '--tags', '--dirty'
+		standardOutput = stdout
+	}
+	return stdout.toString().trim()
+}
+
+ant.propertyfile(file: "$project.rootDir/build/resources/main/build.properties") {
+	entry(key: "version", value: getVersionName())
+}
+
 jar {
 	manifest {
 		attributes "Main-Class": "$mainClassName"
