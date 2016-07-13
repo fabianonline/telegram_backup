@@ -21,6 +21,7 @@ class CommandLineOptions {
 	public static boolean cmd_help           = false;
 	public static boolean cmd_login          = false;
 	public static boolean cmd_debug          = false;
+	public static boolean cmd_debug_telegram = false;
 	public static boolean cmd_list_accounts  = false;
 	public static boolean cmd_version        = false;
 	public static boolean cmd_license        = false;
@@ -65,6 +66,9 @@ class CommandLineOptions {
 					
 				case "--debug":
 					cmd_debug = true;               break;
+				
+				case "--debug-telegram":
+					cmd_debug_telegram = true;      break;
 					
 				case "-A": case "--list-accounts":
 					cmd_list_accounts = true;       break;

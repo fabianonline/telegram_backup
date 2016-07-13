@@ -82,18 +82,27 @@ public class DownloadManager {
 	}
 	
 	public void _downloadMessages(Integer limit) throws RpcErrorException, IOException, TimeoutException {
-		System.out.println("Downloading most recent dialog... ");
+		Log.debug("This is _downloadMessages with limit %d", limit);
+		Log.up();
+		int dialog_limit = 100;
+		Log.debug("Downloading the last %d dialogs", dialog_limit);
+		Log.up();
+		System.out.println("Downloading most recent dialogs... ");
 		int max_message_id = 0;
 		TLAbsDialogs dialogs = client.messagesGetDialogs(
 			0,
 			0,
 			new TLInputPeerEmpty(),
-			100);
+			dialog_limit);
+		Log.debug("Got %d dialogs", dialogs.getDialogs().size());
+		Log.up();
 		for (TLAbsDialog d : dialogs.getDialogs()) {
 			if (d.getTopMessage() > max_message_id) {
+				Log.debug("Updating top message id: %d => %d", max_message_id, d.getTopMessage());
 				max_message_id = d.getTopMessage();
 			}
 		}
+		Log.down();
 		System.out.println("Top message ID is " + max_message_id);
 		int max_database_id = db.getTopMessageID();
 		System.out.println("Top message ID in database is " + max_database_id);
@@ -102,6 +111,7 @@ public class DownloadManager {
 			max_database_id = Math.max(max_database_id, max_message_id-limit);
 			System.out.println("New top message id 'in database' is " + max_database_id);
 		}
+		Log.down();
 		
 		if (max_database_id == max_message_id) {
 			System.out.println("No new messages to download.");
@@ -114,29 +124,49 @@ public class DownloadManager {
 			
 			prog.onMessageDownloadStart(end_id - current_start_id + 1);
 			
+			Log.debug("Entering download loop");
+			Log.up();
 			while (current_start_id <= end_id) {
+				Log.debug("Loop");
+				Log.up();
+				Log.debug("current_start_id: %d", current_start_id);
+				Log.debug("end_id: %d", end_id);
 				int my_end_id = Math.min(current_start_id+99, end_id);
+				Log.debug("my_end_id: %d", my_end_id);
 				ArrayList<Integer> a = makeIdList(current_start_id, my_end_id);
 				TLIntVector ids = new TLIntVector();
 				ids.addAll(a);
 				my_end_id = ids.get(ids.size()-1);
+				Log.debug("my_end_id: %d", my_end_id);
 				current_start_id = my_end_id + 1;
+				Log.debug("current_start_id: %d", current_start_id);
 				TLAbsMessages response = client.messagesGetMessages(ids);
 				prog.onMessageDownloaded(response.getMessages().size());
 				db.saveMessages(response.getMessages());
 				db.saveChats(response.getChats());
 				db.saveUsers(response.getUsers());
+				Log.debug("Sleeping");
 				try {
 					Thread.sleep(Config.DELAY_AFTER_GET_MESSAGES);
 				} catch (InterruptedException e) {}
+				Log.down();
 			}
+			Log.down();
+			Log.debug("Finished.");
 			
 			prog.onMessageDownloadFinished();
 		}
 		
+		Log.debug("Searching for missing messages in the db");
+		Log.up();
 		int count_missing = 0;
 		System.out.println("Checking message database for completeness...");
-		if (db.getMessageCount() != db.getTopMessageID()) {
+		int db_count = db.getMessageCount();
+		int db_max = db.getTopMessageID();
+		Log.debug("db_count: %d", db_count);
+		Log.debug("db_max: %d", db_max);
+		
+		if (db_count != db_max) {
 			if (limit != null) {
 				System.out.println("You are missing messages in your database. But since you're using '--limit-messages', I won't download these now.");
 			} else {
@@ -144,23 +174,35 @@ public class DownloadManager {
 				count_missing = ids.size();
 				System.out.println("Downloading " + ids.size() + " messages that are missing in your database.");
 				prog.onMessageDownloadStart(ids.size());
+				Log.debug("Entering download loop");
+				Log.up();
 				while (ids.size()>0) {
+					Log.debug("Loop");
+					Log.up();
 					TLIntVector vector = new TLIntVector();
 					for (int i=0; i<100; i++) {
 						if (ids.size()==0) break;
 						vector.add(ids.remove());
 					}
+					Log.debug("vector.size(): %d", vector.size());
+					Log.debug("ids.size(): %d", ids.size());
 					TLAbsMessages response = client.messagesGetMessages(vector);
 					prog.onMessageDownloaded(response.getMessages().size());
 					db.saveMessages(response.getMessages());
 					db.saveChats(response.getChats());
 					db.saveUsers(response.getUsers());
+					Log.debug("sleep");
 					try { Thread.sleep(Config.DELAY_AFTER_GET_MESSAGES); } catch (InterruptedException e) {}
+					Log.down();
 				}
+				Log.down();
 				prog.onMessageDownloadFinished();
 			}
 		}
+		Log.down();
+		Log.debug("Logging this run");
 		db.logRun(Math.min(max_database_id + 1, max_message_id), max_message_id, count_missing);
+		Log.down();
 	}
 	
 	public void downloadMedia() throws RpcErrorException, IOException {

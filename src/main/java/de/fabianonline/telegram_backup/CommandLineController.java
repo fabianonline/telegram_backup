@@ -54,24 +54,42 @@ public class CommandLineController {
 			System.exit(0);
 		}
 		
+		Log.debug("Target dir at startup: %s", Config.FILE_BASE);
 		if (CommandLineOptions.val_target != null) {
 			Config.FILE_BASE = CommandLineOptions.val_target;
 		}
+		Log.debug("Target dir after options: %s", Config.FILE_BASE);
 		
 		System.out.println("Base directory for files: " + Config.FILE_BASE);
 
 		if (CommandLineOptions.cmd_list_accounts) this.list_accounts();
 		
+		Log.debug("Initializing TelegramApp");
 		app = new TelegramApp(Config.APP_ID, Config.APP_HASH, Config.APP_MODEL, Config.APP_SYSVER, Config.APP_APPVER, Config.APP_LANG);
-		if (CommandLineOptions.cmd_debug) Kotlogram.setDebugLogEnabled(true);
+		if (CommandLineOptions.cmd_debug_telegram) Kotlogram.setDebugLogEnabled(true);
 
+		Log.debug("Checking accounts");
+		Log.up();
 		String account = null;
 		Vector<String> accounts = Utils.getAccounts();
 		if (CommandLineOptions.cmd_login) {
+			Log.debug("Login requested, doing nothing.");
 			// do nothing
 		} else if (CommandLineOptions.val_account!=null) {
+			Log.debug("Account requested: %s", CommandLineOptions.val_account);
+			Log.debug("Checking accounts for match.");
+			Log.up();
 			boolean found = false;
-			for (String acc : accounts) if (acc.equals(CommandLineOptions.val_account)) found=true;
+			for (String acc : accounts) {
+				Log.debug("Checking %s", acc);
+				Log.up();
+				if (acc.equals(CommandLineOptions.val_account)) {
+					found=true;
+					Log.debug("Matches.");
+				}
+				Log.down();
+			}
+			Log.down();
 			if (!found) {
 				show_error("Couldn't find account '" + CommandLineOptions.val_account + "'. Maybe you want to use '--login' first?");
 			}
@@ -87,16 +105,25 @@ public class CommandLineController {
 				"Use '--account <x>' to use account <x>.\n" +
 				"Use '--list-accounts' to see all available accounts.");
 		}
+		Log.debug("accounts.size(): %d", accounts.size());
+		Log.debug("account: %s", account);
+		Log.debug("CommandLineOptions.cmd_login: %s", CommandLineOptions.cmd_login);
+		Log.down();
 		
-		
+		Log.debug("Initializing ApiStorage");
 		storage = new ApiStorage(account);
+		Log.debug("Initializing TelegramUpdateHandler");
 		TelegramUpdateHandler handler = new TelegramUpdateHandler();
+		Log.debug("Creating Client");
 		TelegramClient client = Kotlogram.getDefaultClient(app, storage, Kotlogram.PROD_DC4, handler);
 		
 		try {
+			Log.debug("Creating UserManager");
 			user = new UserManager(client);
 			
+			Log.debug("CommandLineOptions.val_export: %s", CommandLineOptions.val_export);
 			if (CommandLineOptions.val_export != null) {
+				Log.up();
 				if (CommandLineOptions.val_export.toLowerCase().equals("html")) {
 					(new HTMLExporter()).export(user);
 					System.exit(0);
@@ -108,17 +135,23 @@ public class CommandLineController {
 				}
 			}
 		
-			
+			Log.debug("CommandLineOptions.cmd_login: %s", CommandLineOptions.cmd_login);			
 			if (CommandLineOptions.cmd_login) {
+				Log.up();
 				cmd_login();
 				System.exit(0);
 			}
 			
 			System.out.println("You are logged in as " + user.getUserString());
 			
+			Log.debug("Initializing Download Manager");
+			Log.up();
 			DownloadManager d = new DownloadManager(user, client, new CommandLineDownloadProgress());
+			Log.debug("Calling DownloadManager.downloadMessages with limit %d", CommandLineOptions.val_limit_messages);
 			d.downloadMessages(CommandLineOptions.val_limit_messages);
+			Log.debug("Calling DownloadManager.downloadMedia");
 			d.downloadMedia();
+			Log.down();
 		} catch (RpcErrorException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -177,7 +210,8 @@ public class CommandLineController {
 		System.out.println("  -h, --help                   Shows this help.");
 		System.out.println("  -a, --account <x>            Use account <x>.");
 		System.out.println("  -l, --login                  Login to an existing telegram account.");
-		System.out.println("      --debug                  Show (lots of) debug information.");
+		System.out.println("      --debug                  Shows some debug information.");
+		System.out.println("      --debug-telegram         Shows lots of debug messages from the library used to access Telegram.");
 		System.out.println("  -A, --list-accounts          List all existing accounts ");
 		System.out.println("      --limit-messages <x>     Downloads at most the most recent <x> messages.");
 		System.out.println("  -t, --target <x>             Target directory for the files.");
