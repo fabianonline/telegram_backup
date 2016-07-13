@@ -162,8 +162,9 @@ public class CommandLineController {
 				System.out.println("DAEMON mode requested - keeping running.");
 			} else {
 				client.close();
+				System.out.println();
 				System.out.println("----- EXIT -----");
-				System.out.println("If this program doesn't exit by itself, please press Ctrl-C now.");
+				System.exit(0);
 			}
 		}
 	}
