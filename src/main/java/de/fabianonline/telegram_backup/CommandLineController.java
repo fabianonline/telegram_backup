@@ -37,10 +37,14 @@ public class CommandLineController {
 	public UserManager user = null;
 	
 	public CommandLineController() {
+		Log.debug("CommandLineController started. App version %s", Config.APP_APPVER);
+		System.out.println("Telegram_Backup version " + Config.APP_APPVER + ", Copyright (C) 2016 Fabian Schlenz");
+		System.out.println();
+		System.out.println("Telegram_Backup comes with ABSOLUTELY NO WARRANTY. This is free software, and you are");
+		System.out.println("welcome to redistribute it under certain conditions; run it with '--license' for details.");
+		System.out.println();
+		
 		if (CommandLineOptions.cmd_version) {
-			System.out.println("Telegram_Backup version " + Config.APP_APPVER + ", Copyright (C) 2016 Fabian Schlenz");
-			System.out.println("Telegram_Backup comes with ABSOLUTELY NO WARRANTY. This is free software, and you are");
-			System.out.println("welcome to redistribute it under certain conditions; run it with '--license' for details.");
 			System.exit(0);
 		} else if (CommandLineOptions.cmd_help) {
 			this.show_help();
