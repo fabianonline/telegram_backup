@@ -152,9 +152,7 @@ public class CommandLineController {
 			Log.debug("Calling DownloadManager.downloadMedia");
 			d.downloadMedia();
 			Log.down();
-		} catch (RpcErrorException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		} finally {
 			if (CommandLineOptions.cmd_daemon) {
