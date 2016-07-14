@@ -55,10 +55,6 @@ public class FileManagerFactory {
 				return new StickerFileManager(m, u, c);
 			}
 			return d;
-		} else if (media instanceof TLMessageMediaVideo) {
-			return new VideoFileManager(m, u, c);
-		} else if (media instanceof TLMessageMediaAudio) {
-			return new AudioFileManager(m, u, c);
 		} else if (media instanceof TLMessageMediaGeo) {
 			return new GeoFileManager(m, u, c);
 		} else if (media instanceof TLMessageMediaEmpty) {

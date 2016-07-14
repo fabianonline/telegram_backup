@@ -24,6 +24,7 @@ import de.fabianonline.telegram_backup.mediafilemanager.FileManagerFactory;
 import de.fabianonline.telegram_backup.mediafilemanager.AbstractMediaFileManager;
 
 import com.github.badoualy.telegram.api.TelegramClient;
+import com.github.badoualy.telegram.api.Kotlogram;
 import com.github.badoualy.telegram.tl.core.TLIntVector;
 import com.github.badoualy.telegram.tl.core.TLObject;
 import com.github.badoualy.telegram.tl.api.messages.TLAbsMessages;
@@ -38,6 +39,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Random;
 import java.net.URL;
 import java.util.concurrent.TimeoutException;
@@ -96,7 +98,7 @@ public class DownloadManager {
 			dialog_limit);
 		Log.debug("Got %d dialogs", dialogs.getDialogs().size());
 		Log.up();
-		for (TLAbsDialog d : dialogs.getDialogs()) {
+		for (TLDialog d : dialogs.getDialogs()) {
 			if (d.getTopMessage() > max_message_id) {
 				Log.debug("Updating top message id: %d => %d", max_message_id, d.getTopMessage());
 				max_message_id = d.getTopMessage();
@@ -119,42 +121,10 @@ public class DownloadManager {
 			throw new RuntimeException("max_database_id is bigger then max_message_id. This shouldn't happen. But the telegram api nonetheless does that sometimes. Just ignore this error, wait a few seconds and then try again.");
 		} else {
 			int start_id = max_database_id + 1;
-			int current_start_id = start_id;
 			int end_id = max_message_id;
 			
-			prog.onMessageDownloadStart(end_id - current_start_id + 1);
-			
-			Log.debug("Entering download loop");
-			Log.up();
-			while (current_start_id <= end_id) {
-				Log.debug("Loop");
-				Log.up();
-				Log.debug("current_start_id: %d", current_start_id);
-				Log.debug("end_id: %d", end_id);
-				int my_end_id = Math.min(current_start_id+99, end_id);
-				Log.debug("my_end_id: %d", my_end_id);
-				ArrayList<Integer> a = makeIdList(current_start_id, my_end_id);
-				TLIntVector ids = new TLIntVector();
-				ids.addAll(a);
-				my_end_id = ids.get(ids.size()-1);
-				Log.debug("my_end_id: %d", my_end_id);
-				current_start_id = my_end_id + 1;
-				Log.debug("current_start_id: %d", current_start_id);
-				TLAbsMessages response = client.messagesGetMessages(ids);
-				prog.onMessageDownloaded(response.getMessages().size());
-				db.saveMessages(response.getMessages());
-				db.saveChats(response.getChats());
-				db.saveUsers(response.getUsers());
-				Log.debug("Sleeping");
-				try {
-					Thread.sleep(Config.DELAY_AFTER_GET_MESSAGES);
-				} catch (InterruptedException e) {}
-				Log.down();
-			}
-			Log.down();
-			Log.debug("Finished.");
-			
-			prog.onMessageDownloadFinished();
+			List<Integer> ids = makeIdList(start_id, end_id);
+			downloadMessages(ids);
 		}
 		
 		Log.debug("Searching for missing messages in the db");
@@ -173,36 +143,47 @@ public class DownloadManager {
 				LinkedList<Integer> ids = db.getMissingIDs();
 				count_missing = ids.size();
 				System.out.println("Downloading " + ids.size() + " messages that are missing in your database.");
-				prog.onMessageDownloadStart(ids.size());
-				Log.debug("Entering download loop");
-				Log.up();
-				while (ids.size()>0) {
-					Log.debug("Loop");
-					Log.up();
-					TLIntVector vector = new TLIntVector();
-					for (int i=0; i<100; i++) {
-						if (ids.size()==0) break;
-						vector.add(ids.remove());
-					}
-					Log.debug("vector.size(): %d", vector.size());
-					Log.debug("ids.size(): %d", ids.size());
-					TLAbsMessages response = client.messagesGetMessages(vector);
-					prog.onMessageDownloaded(response.getMessages().size());
-					db.saveMessages(response.getMessages());
-					db.saveChats(response.getChats());
-					db.saveUsers(response.getUsers());
-					Log.debug("sleep");
-					try { Thread.sleep(Config.DELAY_AFTER_GET_MESSAGES); } catch (InterruptedException e) {}
-					Log.down();
-				}
-				Log.down();
-				prog.onMessageDownloadFinished();
+				
+				downloadMessages(ids);
 			}
 		}
-		Log.down();
+		
 		Log.debug("Logging this run");
 		db.logRun(Math.min(max_database_id + 1, max_message_id), max_message_id, count_missing);
 		Log.down();
+	}
+	
+	private void downloadMessages(List<Integer> ids) throws RpcErrorException, IOException {
+		prog.onMessageDownloadStart(ids.size());
+		
+		Log.debug("Entering download loop");
+		Log.up();
+		while (ids.size()>0) {
+			Log.debug("Loop");
+			Log.up();
+			TLIntVector vector = new TLIntVector();
+			for (int i=0; i<100; i++) {
+				if (ids.size()==0) break;
+				vector.add(ids.remove(0));
+			}
+			Log.debug("vector.size(): %d", vector.size());
+			Log.debug("ids.size(): %d", ids.size());
+			
+			TLAbsMessages response = client.messagesGetMessages(vector);
+			prog.onMessageDownloaded(response.getMessages().size());
+			db.saveMessages(response.getMessages(), Config.API_LAYER);
+			db.saveChats(response.getChats());
+			db.saveUsers(response.getUsers());
+			Log.debug("Sleeping");
+			try {
+				Thread.sleep(Config.DELAY_AFTER_GET_MESSAGES);
+			} catch (InterruptedException e) {}
+			Log.down();
+		}
+		Log.down();
+		Log.debug("Finished.");
+		
+		prog.onMessageDownloadFinished();
 	}
 	
 	public void downloadMedia() throws RpcErrorException, IOException {
@@ -232,6 +213,14 @@ public class DownloadManager {
 	
 	private void _downloadMedia() throws RpcErrorException, IOException, TimeoutException {
 		Log.debug("This is _downloadMedia");
+		Log.debug("Checking if there are messages in the DB with a too old API layer");
+		LinkedList<Integer> ids = db.getIdsFromQuery("SELECT id FROM messages WHERE has_media=1 AND api_layer<" + Kotlogram.API_LAYER);
+		if (ids.size()>0) {
+			System.out.println("You have " + ids.size() + " messages in your db that need an update. Doing that now.");
+			Log.debug("Found %d messages", ids.size());
+			downloadMessages(ids);
+		}
+		
 		LinkedList<TLMessage> messages = this.db.getMessagesWithMedia();
 		Log.debug("Database returned %d messages with media", messages.size());
 		prog.onMediaDownloadStart(messages.size());
@@ -259,10 +248,9 @@ public class DownloadManager {
 		prog.onMediaDownloadFinished();
 	}
 	
-	private ArrayList<Integer> makeIdList(int start, int end) {
-		if (start > end) throw new RuntimeException("start and end reversed");
-		ArrayList<Integer> a = new ArrayList<Integer>(end - start + 1);
-		for (int i=0; i<=end-start; i++) a.add(start+i);
+	private List<Integer> makeIdList(int start, int end) {
+		LinkedList<Integer> a = new LinkedList<Integer>();
+		for (int i=start; i<=end; i++) a.add(i);
 		return a; 
 	}
 	

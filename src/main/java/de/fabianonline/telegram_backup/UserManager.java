@@ -17,7 +17,7 @@
 package de.fabianonline.telegram_backup;
 
 import com.github.badoualy.telegram.api.TelegramClient;
-import com.github.badoualy.telegram.tl.api.auth.TLAbsSentCode;
+import com.github.badoualy.telegram.tl.api.auth.TLSentCode;
 import com.github.badoualy.telegram.tl.api.auth.TLAuthorization;
 import com.github.badoualy.telegram.tl.api.TLUser;
 import com.github.badoualy.telegram.tl.api.TLUserFull;
@@ -36,7 +36,7 @@ public class UserManager {
 	public String phone = null;
 	private String code = null;
 	private TelegramClient client = null;
-	private TLAbsSentCode sent_code = null;
+	private TLSentCode sent_code = null;
 	private TLAuthorization auth = null;
 	private boolean password_needed = false;
 	
@@ -54,7 +54,7 @@ public class UserManager {
 	
 	public void sendCodeToPhoneNumber(String number) throws RpcErrorException, IOException {
 		this.phone = number;
-		this.sent_code = this.client.authSendCode(this.phone, 5);
+		this.sent_code = this.client.authSendCode(false, this.phone, true);
 	}
 	
 	public void verifyCode(String code) throws RpcErrorException, IOException {
@@ -72,7 +72,7 @@ public class UserManager {
 	
 	public void verifyPassword(String pw) throws RpcErrorException, IOException {
 		byte[] password = pw.getBytes("UTF-8");
-		byte[] salt = ((TLPassword)client.executeRpcQuery(new TLRequestAccountGetPasswordWithCurrentSalt())).getCurrentSalt().getData();
+		byte[] salt = ((TLPassword)client.accountGetPassword()).getCurrentSalt().getData();
 		MessageDigest md = null;
 		try {
 			md = MessageDigest.getInstance("SHA-256");

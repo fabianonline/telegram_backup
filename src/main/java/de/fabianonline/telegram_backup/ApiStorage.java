@@ -17,8 +17,9 @@
 package de.fabianonline.telegram_backup;
 
 import com.github.badoualy.telegram.api.TelegramApiStorage;
-import com.github.badoualy.telegram.mtproto.DataCenter;
+import com.github.badoualy.telegram.mtproto.model.DataCenter;
 import com.github.badoualy.telegram.mtproto.auth.AuthKey;
+import com.github.badoualy.telegram.mtproto.model.MTSession;
 
 import org.apache.commons.io.FileUtils;
 
@@ -132,7 +133,8 @@ class ApiStorage implements TelegramApiStorage {
 		}
 	}
 	
-	public void saveServerSalt(long salt) {}
+	public void saveSession(MTSession session) {
+	}
 	
-	public Long loadServerSalt() { return null; }
+	public MTSession loadSession() { return null; }
 }

@@ -29,6 +29,7 @@ public class DatabaseUpdates {
 		register(new DB_Update_4(conn, db));
 		register(new DB_Update_5(conn, db));
 		register(new DB_Update_6(conn, db));
+		register(new DB_Update_7(conn, db));
 		Log.down();
 	}
 	
@@ -97,7 +98,7 @@ public class DatabaseUpdates {
 		}
 	}
 	
-	private DatabaseUpdate getUpdateToVersion(int i) { return updates.get(i); }
+	private DatabaseUpdate getUpdateToVersion(int i) { return updates.get(i-1); }
 	
 	private int getMaxPossibleVersion() {
 		return updates.size();
@@ -205,7 +206,7 @@ class DB_Update_4 extends DatabaseUpdate {
 class DB_Update_5 extends DatabaseUpdate {
 	public int getVersion() { return 5; }
 	public DB_Update_5(Connection conn, Database db) { super(conn, db); }
-	
+
 	protected void _doUpdate() throws SQLException {
 		stmt.executeUpdate("CREATE TABLE runs (id INTEGER PRIMARY KEY ASC, time INTEGER, start_id INTEGER, end_id INTEGER, count_missing INTEGER)");
 	}
@@ -268,10 +269,10 @@ class DB_Update_6 extends DatabaseUpdate {
 		while (rs.next()) {
 			ps.setInt(5, rs.getInt(1));
 			TLMessage msg = db.bytesToTLMessage(rs.getBytes(2));
-			if (msg==null || msg.getFwdFromId()==null || ! (msg.getFwdFromId() instanceof TLPeerUser)) {
+			if (msg==null || msg.getFwdFrom()==null) {
 				ps.setNull(1, Types.INTEGER);
 			} else {
-				ps.setInt(1, ((TLPeerUser)msg.getFwdFromId()).getUserId());
+				ps.setInt(1, msg.getFwdFrom().getFromId());
 			}
 			AbstractMediaFileManager f = FileManagerFactory.getFileManager(msg, db.user_manager, db.client);
 			if (f==null) {
@@ -292,5 +293,17 @@ class DB_Update_6 extends DatabaseUpdate {
 		conn.setAutoCommit(true);
 		stmt.executeUpdate("DROP TABLE messages");
 		stmt.executeUpdate("ALTER TABLE messages_new RENAME TO messages");
+	}
+}
+
+class DB_Update_7 extends DatabaseUpdate {
+	public int getVersion() { return 7; }
+	public boolean needsBackup() { return true; }
+	public DB_Update_7(Connection conn, Database db) { super(conn, db); }
+	
+	protected void _doUpdate() throws SQLException {
+		stmt.executeUpdate("ALTER TABLE messages ADD COLUMN api_layer INTEGER");
+		
+		stmt.executeUpdate("UPDATE messages SET api_layer=51");
 	}
 }

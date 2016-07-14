@@ -65,15 +65,15 @@ class TelegramUpdateHandler implements UpdateCallback {
 		if (db==null) return;
 		if (debug) System.out.println("onShortChatMessage - " + m.getMessage());
 		TLMessage msg = new TLMessage(
-			m.getUnread(),
 			m.getOut(),
 			m.getMentioned(),
 			m.getMediaUnread(),
+			m.getSilent(),
+			false,
 			m.getId(),
 			m.getFromId(),
 			new TLPeerChat(m.getChatId()),
-			m.getFwdFromId(),
-			m.getFwdDate(),
+			m.getFwdFrom(),
 			m.getViaBotId(),
 			m.getReplyToMsgId(),
 			m.getDate(),
@@ -81,10 +81,11 @@ class TelegramUpdateHandler implements UpdateCallback {
 			null,
 			null,
 			m.getEntities(),
+			null,
 			null);
 		TLVector<TLAbsMessage> vector = new TLVector<TLAbsMessage>(TLAbsMessage.class);
 		vector.add(msg);
-		db.saveMessages(vector);
+		db.saveMessages(vector, Config.API_LAYER);
 		System.out.print('.');
 	}
 	
@@ -100,15 +101,15 @@ class TelegramUpdateHandler implements UpdateCallback {
 			from_id = m.getUserId();
 		}
 		TLMessage msg = new TLMessage(
-			m.getUnread(),
 			m.getOut(),
 			m.getMentioned(),
 			m.getMediaUnread(),
+			m.getSilent(),
+			false,
 			m.getId(),
 			from_id,
 			new TLPeerUser(to_id),
-			m.getFwdFromId(),
-			m.getFwdDate(),
+			m.getFwdFrom(),
 			m.getViaBotId(),
 			m.getReplyToMsgId(),
 			m.getDate(),
@@ -116,10 +117,11 @@ class TelegramUpdateHandler implements UpdateCallback {
 			null,
 			null,
 			m.getEntities(),
+			null,
 			null);
 		TLVector<TLAbsMessage> vector = new TLVector<TLAbsMessage>(TLAbsMessage.class);
 		vector.add(msg);
-		db.saveMessages(vector);
+		db.saveMessages(vector, Config.API_LAYER);
 		System.out.print('.');
 	}
 	
@@ -131,7 +133,7 @@ class TelegramUpdateHandler implements UpdateCallback {
 			TLAbsMessage abs_msg = ((TLUpdateNewMessage)update).getMessage();
 			TLVector<TLAbsMessage> vector = new TLVector<TLAbsMessage>(TLAbsMessage.class);
 			vector.add(abs_msg);
-			db.saveMessages(vector);
+			db.saveMessages(vector, Config.API_LAYER);
 			System.out.print('.');
 			if (abs_msg instanceof TLMessage) {
 				AbstractMediaFileManager fm = FileManagerFactory.getFileManager((TLMessage)abs_msg, user, client);

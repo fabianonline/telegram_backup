@@ -161,16 +161,16 @@ public class Database {
 		}
 	}
 	
-	public synchronized void saveMessages(TLVector<TLAbsMessage> all) {
+	public synchronized void saveMessages(TLVector<TLAbsMessage> all, Integer api_layer) {
 		try {
 				//"(id, dialog_id, from_id, from_type, text, time, has_media, data, sticker, type) " +
 				//"VALUES " +
 				//"(?,  ?,         ?,       ?,         ?,    ?,    ?,         ?,    ?,       ?)");
 			String columns =
-				"(id, message_type, dialog_id, chat_id, sender_id, fwd_from_id, text, time, has_media, media_type, media_file, media_size, data) "+
+				"(id, message_type, dialog_id, chat_id, sender_id, fwd_from_id, text, time, has_media, media_type, media_file, media_size, data, api_layer) "+
 				"VALUES " +
-				"(?,  ?,            ?,         ?,       ?,         ?,           ?,    ?,    ?,         ?,          ?,          ?,          ?)";
-				//1   2             3          4        5          6            7     8     9          10          11          12          13 
+				"(?,  ?,            ?,         ?,       ?,         ?,           ?,    ?,    ?,         ?,          ?,          ?,          ?,    ?)";
+				//1   2             3          4        5          6            7     8     9          10          11          12          13    14
 			PreparedStatement ps = conn.prepareStatement("INSERT OR REPLACE INTO messages " + columns);
 			PreparedStatement ps_insert_or_ignore = conn.prepareStatement("INSERT OR IGNORE INTO messages " + columns);
 
@@ -194,11 +194,13 @@ public class Database {
 						throw new RuntimeException("Unexpected Peer type: " + peer.getClass().getName());
 					}
 					ps.setInt(5, msg.getFromId());
-					if (msg.getFwdFromId()!=null && msg.getFwdFromId() instanceof TLPeerUser) {
-						ps.setInt(6, ((TLPeerUser)msg.getFwdFromId()).getUserId());
+					
+					if (msg.getFwdFrom() != null) {
+						ps.setInt(6, msg.getFwdFrom().getFromId());
 					} else {
 						ps.setNull(6, Types.INTEGER);
 					}
+
 					String text = msg.getMessage();
 					if ((text==null || text.equals("")) && msg.getMedia()!=null) {
 						if (msg.getMedia() instanceof TLMessageMediaDocument) {
@@ -224,6 +226,7 @@ public class Database {
 					ByteArrayOutputStream stream = new ByteArrayOutputStream();
 					msg.serializeBody(stream);
 					ps.setBytes(13, stream.toByteArray());
+					ps.setInt(14, api_layer);
 					ps.addBatch();
 				} else if (abs instanceof TLMessageService) {
 					ps_insert_or_ignore.setInt(1, abs.getId());
@@ -239,6 +242,7 @@ public class Database {
 					ps_insert_or_ignore.setNull(11, Types.VARCHAR);
 					ps_insert_or_ignore.setNull(12, Types.INTEGER);
 					ps_insert_or_ignore.setNull(13, Types.BLOB);
+					ps_insert_or_ignore.setInt(14, api_layer);
 					ps_insert_or_ignore.addBatch();
 				} else if (abs instanceof TLMessageEmpty) {
 					ps_insert_or_ignore.setInt(1, abs.getId());
@@ -254,6 +258,7 @@ public class Database {
 					ps_insert_or_ignore.setNull(11, Types.VARCHAR);
 					ps_insert_or_ignore.setNull(12, Types.INTEGER);
 					ps_insert_or_ignore.setNull(13, Types.BLOB);
+					ps_insert_or_ignore.setInt(14, api_layer);
 					ps_insert_or_ignore.addBatch();
 				} else {
 					throw new RuntimeException("Unexpected Message type: " + abs.getClass().getName());
@@ -396,6 +401,17 @@ public class Database {
 			throw new RuntimeException(e);
 		}
 	}
+	
+	public LinkedList<Integer> getIdsFromQuery(String query) {
+		try {
+			LinkedList<Integer> list = new LinkedList<Integer>();
+			ResultSet rs = stmt.executeQuery(query);
+			while(rs.next()) { list.add(rs.getInt(1)); }
+			rs.close();
+			return list;
+		} catch (SQLException e) { throw new RuntimeException(e); }
+	}
+			
 	
 	public HashMap<String, Integer> getMessageTypesWithCount() {
 		HashMap<String, Integer> map = new HashMap<String, Integer>();

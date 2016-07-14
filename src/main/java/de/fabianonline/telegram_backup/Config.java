@@ -37,14 +37,8 @@ public class Config {
     public static final String FILE_FILES_BASE = "files";
     public static final String FILE_STICKER_BASE = "stickers";
 
-    public static final int[] FILE_DOWNLOAD_BLOCK_SIZES = new int[]{
-    	1*1024*1024,
-    	512*1024,
-    	2*1024*1024,
-    	4*1024*1024};
-    
-    public static int DELAY_AFTER_GET_MESSAGES = 200;
-    public static int DELAY_AFTER_GET_FILE = 1000;
+    public static int DELAY_AFTER_GET_MESSAGES = 100;
+    public static int DELAY_AFTER_GET_FILE = 100;
     
     public static final String SECRET_GMAPS = "AIzaSyBEtUDhCQKEH6i2Mn1GAiQ9M_tLN0vxHIs";
     

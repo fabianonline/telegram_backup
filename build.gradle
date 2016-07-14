@@ -14,7 +14,7 @@ repositories {
 }
 
 dependencies {
-	compile 'com.github.badoualy:kotlogram:0.0.6'
+	compile 'com.github.badoualy:kotlogram:497e5dd62d9bcb341f584164b04b4b537ce9d295'
 	compile 'org.xerial:sqlite-jdbc:3.8.11.2'
 	compile 'com.github.spullara.mustache.java:compiler:0.8.18'
 }
