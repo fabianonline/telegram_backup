@@ -43,6 +43,8 @@ import java.util.List;
 import java.util.Random;
 import java.net.URL;
 import java.util.concurrent.TimeoutException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 
 import org.apache.commons.io.FileUtils;
 
@@ -267,8 +269,21 @@ public class DownloadManager {
 	private static boolean downloadFileFromDc(TelegramClient client, String target, TLAbsInputFileLocation loc, Integer dcID, int size) throws RpcErrorException, IOException {
 		FileOutputStream fos = null;
 		try {
-			fos = new FileOutputStream(target);
+			String temp_filename = target + ".downloading";
+			Log.debug("Temporary filename %s", temp_filename);
+			
 			int offset = 0;
+			if (new File(temp_filename).isFile()) {
+				Log.debug("Temporary filename already exists; continuing this file");
+				offset = (int)new File(temp_filename).length();
+				if (offset >= size) {
+					Log.debug("Temporary file size is >= the target size. Assuming corrupt file & deleting it");
+					new File(temp_filename).delete();
+					offset = 0;
+				}
+			}
+			Log.debug("offset before the loop is %d", offset);
+			fos = new FileOutputStream(temp_filename, true);
 			TLFile response;
 			do {
 				int block_size = Config.FILE_DOWNLOAD_BLOCK_SIZES[new Random().nextInt(Config.FILE_DOWNLOAD_BLOCK_SIZES.length)];
@@ -285,23 +300,24 @@ public class DownloadManager {
 				Log.debug("response: %8d               total size: %8d", response.getBytes().getData().length, offset);
 				
 				fos.write(response.getBytes().getData());
+				fos.flush();
 				try { Thread.sleep(Config.DELAY_AFTER_GET_FILE); } catch(InterruptedException e) {}
 			} while(offset < size && response.getBytes().getData().length>0);
 			fos.close();
 			if (offset < size) {
 				System.out.println("Requested file " + target + " with " + size + " bytes, but got only " + offset + " bytes.");
-				new File(target).delete();
+				new File(temp_filename).delete();
 				System.exit(1);
 			}
+			Log.debug("Renaming %s to %s", temp_filename, target);
+			Files.move(new File(temp_filename).toPath(), new File(target).toPath(), StandardCopyOption.REPLACE_EXISTING);
 			return true;
 		} catch (java.io.IOException ex) {
 			if (fos!=null) fos.close();
-			new File(target).delete();
 			System.out.println("IOException happened while downloading " + target);
 			throw ex;
 		} catch (RpcErrorException ex) {
 			if (fos!=null) fos.close();
-			new File(target).delete();
 			System.out.println("RpcErrorException happened while downloading " + target);
 			throw ex;
 		}
