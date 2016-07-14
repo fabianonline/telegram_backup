@@ -54,6 +54,7 @@ public abstract class AbstractMediaFileManager {
 	public abstract String getExtension();
 	public boolean isEmpty() { return isEmpty; }
 	public boolean isDownloaded() { return new File(getTargetPathAndFilename()).isFile(); }
+	public boolean isDownloading() { return new File(getTargetPathAndFilename() + ".downloading").isFile(); }
 	public abstract void download() throws RpcErrorException, IOException;
 	public static void throwUnexpectedObjectError(Object o) {
 		throw new RuntimeException("Unexpected " + o.getClass().getName());

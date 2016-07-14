@@ -47,19 +47,10 @@ public class StickerFileManager extends DocumentFileManager {
 	public StickerFileManager(TLMessage msg, UserManager user, TelegramClient client) {
 		super(msg, user, client);
 	}
-	/*	TLAbsDocument d = ((TLMessageMediaDocument)msg.getMedia()).getDocument();
-		if (d instanceof TLDocument) {
-			this.doc = (TLDocument)d;
-		} else if (d instanceof TLDocumentEmpty) {
-			this.isEmpty = true;
-		} else {
-			throwUnexpectedObjectError(d);
-		}
-	}*/
 	
 	public boolean isSticker() { return true; }
 	
-	public String getTargetFilename() {
+	private String getFilenameBase() {
 		TLDocumentAttributeSticker sticker = null;
 		for(TLAbsDocumentAttribute attr : doc.getAttributes()) {
 			if (attr instanceof TLDocumentAttributeSticker) {
@@ -75,9 +66,11 @@ public class StickerFileManager extends DocumentFileManager {
 		}
 		file.append("_");
 		file.append(sticker.getAlt().hashCode());
-		file.append(".");
-		file.append(getExtension());
 		return file.toString();
+	}
+	
+	public String getTargetFilename() {
+		return getFilenameBase() + "." + getExtension();
 	}
 	
 	public String getTargetPath() {
