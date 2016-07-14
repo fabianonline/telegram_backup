@@ -219,6 +219,7 @@ public class DownloadManager {
 					throw e;
 				}
 			} catch (TimeoutException e) {
+				Log.down();
 				completed = false;
 				System.out.println("");
 				System.out.println("Telegram took too long to respond to our request.");
@@ -230,19 +231,31 @@ public class DownloadManager {
 	}
 	
 	private void _downloadMedia() throws RpcErrorException, IOException, TimeoutException {
+		Log.debug("This is _downloadMedia");
 		LinkedList<TLMessage> messages = this.db.getMessagesWithMedia();
+		Log.debug("Database returned %d messages with media", messages.size());
 		prog.onMediaDownloadStart(messages.size());
+		Log.up();
 		for (TLMessage msg : messages) {
 			AbstractMediaFileManager m = FileManagerFactory.getFileManager(msg, user, client);
+			Log.debug("Message ID: %d  Media type: %-10.10s  FileManager type: %-10.10s  isEmpty: %-5s  isDownloaded: %-5s",
+				msg.getId(),
+				msg.getMedia().getClass().getSimpleName().replace("TLMessageMedia", "…"),
+				m.getClass().getSimpleName().replace("FileManager", "…"),
+				m.isEmpty(),
+				m.isDownloaded());
 			if (m.isEmpty()) {
 				prog.onMediaDownloadedEmpty();
 			} else if (m.isDownloaded()) {
 				prog.onMediaAlreadyPresent(m);
 			} else {
+				Log.up();
 				m.download();
+				Log.down();
 				prog.onMediaDownloaded(m);
 			}
 		}
+		Log.down();
 		prog.onMediaDownloadFinished();
 	}
 	
@@ -271,13 +284,18 @@ public class DownloadManager {
 			TLFile response;
 			do {
 				int block_size = Config.FILE_DOWNLOAD_BLOCK_SIZES[new Random().nextInt(Config.FILE_DOWNLOAD_BLOCK_SIZES.length)];
+				block_size = size;
+				Log.debug("offset:   %8d block_size: %7d size: %8d", offset, block_size, size);
 				TLRequestUploadGetFile req = new TLRequestUploadGetFile(loc, offset, block_size);
 				if (dcID==null) {
 					response = (TLFile) client.executeRpcQuery(req);
 				} else {
 					response = (TLFile) client.executeRpcQuery(req, dcID);
 				}
+				
 				offset += response.getBytes().getData().length;
+				Log.debug("response: %8d               total size: %8d", response.getBytes().getData().length, offset);
+				
 				fos.write(response.getBytes().getData());
 				try { Thread.sleep(Config.DELAY_AFTER_GET_FILE); } catch(InterruptedException e) {}
 			} while(offset < size && response.getBytes().getData().length>0);
