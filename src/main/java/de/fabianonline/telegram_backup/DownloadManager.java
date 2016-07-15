@@ -70,7 +70,7 @@ public class DownloadManager {
 			try {
 				_downloadMessages(limit);
 			} catch (RpcErrorException e) {
-				if (e.getTag().startsWith("420: FLOOD_WAIT_")) {
+				if (e.getCode()==420) { // FLOOD_WAIT
 					completed = false;
 					Utils.obeyFloodWaitException(e);
 				} else {

@@ -34,9 +34,9 @@ public class Utils {
 	}
 	
 	static void obeyFloodWaitException(RpcErrorException e) throws RpcErrorException {
-		if (e==null || ! e.getTag().startsWith("420: FLOOD_WAIT_")) return;
+		if (e==null || e.getCode()!=420) return;
 		
-		int delay = Integer.parseInt(e.getTag().substring(16));
+		int delay = e.getTagInteger();
 		int minutes = (delay/60)+1;
 		int wait = (minutes / 5) * 5 + 5;
 		System.out.println("");
