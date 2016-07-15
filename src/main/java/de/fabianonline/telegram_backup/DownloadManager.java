@@ -173,7 +173,7 @@ public class DownloadManager {
 			
 			TLAbsMessages response = client.messagesGetMessages(vector);
 			prog.onMessageDownloaded(response.getMessages().size());
-			db.saveMessages(response.getMessages(), Config.API_LAYER);
+			db.saveMessages(response.getMessages(), Kotlogram.API_LAYER);
 			db.saveChats(response.getChats());
 			db.saveUsers(response.getUsers());
 			Log.debug("Sleeping");
@@ -286,8 +286,7 @@ public class DownloadManager {
 			fos = new FileOutputStream(temp_filename, true);
 			TLFile response;
 			do {
-				int block_size = Config.FILE_DOWNLOAD_BLOCK_SIZES[new Random().nextInt(Config.FILE_DOWNLOAD_BLOCK_SIZES.length)];
-				block_size = size;
+				int block_size = size;
 				Log.debug("offset:   %8d block_size: %7d size: %8d", offset, block_size, size);
 				TLRequestUploadGetFile req = new TLRequestUploadGetFile(loc, offset, block_size);
 				if (dcID==null) {

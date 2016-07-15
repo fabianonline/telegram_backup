@@ -18,6 +18,7 @@ package de.fabianonline.telegram_backup;
 
 import com.github.badoualy.telegram.api.UpdateCallback;
 import com.github.badoualy.telegram.api.TelegramClient;
+import com.github.badoualy.telegram.api.Kotlogram;
 import com.github.badoualy.telegram.tl.api.*;
 import com.github.badoualy.telegram.tl.core.TLVector;
 
@@ -85,7 +86,7 @@ class TelegramUpdateHandler implements UpdateCallback {
 			null);
 		TLVector<TLAbsMessage> vector = new TLVector<TLAbsMessage>(TLAbsMessage.class);
 		vector.add(msg);
-		db.saveMessages(vector, Config.API_LAYER);
+		db.saveMessages(vector, Kotlogram.API_LAYER);
 		System.out.print('.');
 	}
 	
@@ -121,7 +122,7 @@ class TelegramUpdateHandler implements UpdateCallback {
 			null);
 		TLVector<TLAbsMessage> vector = new TLVector<TLAbsMessage>(TLAbsMessage.class);
 		vector.add(msg);
-		db.saveMessages(vector, Config.API_LAYER);
+		db.saveMessages(vector, Kotlogram.API_LAYER);
 		System.out.print('.');
 	}
 	
@@ -133,7 +134,7 @@ class TelegramUpdateHandler implements UpdateCallback {
 			TLAbsMessage abs_msg = ((TLUpdateNewMessage)update).getMessage();
 			TLVector<TLAbsMessage> vector = new TLVector<TLAbsMessage>(TLAbsMessage.class);
 			vector.add(abs_msg);
-			db.saveMessages(vector, Config.API_LAYER);
+			db.saveMessages(vector, Kotlogram.API_LAYER);
 			System.out.print('.');
 			if (abs_msg instanceof TLMessage) {
 				AbstractMediaFileManager fm = FileManagerFactory.getFileManager((TLMessage)abs_msg, user, client);
