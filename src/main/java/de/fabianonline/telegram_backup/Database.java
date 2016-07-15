@@ -195,7 +195,7 @@ public class Database {
 					}
 					ps.setInt(5, msg.getFromId());
 					
-					if (msg.getFwdFrom() != null) {
+					if (msg.getFwdFrom() != null && msg.getFwdFrom().getFromId() != null) {
 						ps.setInt(6, msg.getFwdFrom().getFromId());
 					} else {
 						ps.setNull(6, Types.INTEGER);
