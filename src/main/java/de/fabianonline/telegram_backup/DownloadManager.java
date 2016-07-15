@@ -54,6 +54,7 @@ public class DownloadManager {
 	Database db;
 	DownloadProgressInterface prog = null;
 	static TelegramClient download_client;
+	static boolean last_download_succeeded = true;
 	
 	public DownloadManager(UserManager u, TelegramClient c, DownloadProgressInterface p) {
 		this.user = u;
@@ -312,6 +313,7 @@ public class DownloadManager {
 			}
 			Log.debug("Renaming %s to %s", temp_filename, target);
 			Files.move(new File(temp_filename).toPath(), new File(target).toPath(), StandardCopyOption.REPLACE_EXISTING);
+			last_download_succeeded = true;
 			return true;
 		} catch (java.io.IOException ex) {
 			if (fos!=null) fos.close();
@@ -319,6 +321,16 @@ public class DownloadManager {
 			throw ex;
 		} catch (RpcErrorException ex) {
 			if (fos!=null) fos.close();
+			if (ex.getCode()==500) {
+				if (!last_download_succeeded) {
+					System.out.println("Got an Internal Server Error from Telegram. Since the file downloaded before also happened to get this error, we will stop downloading now. Please try again later.");
+					throw ex;
+				}
+				last_download_succeeded = false;
+				System.out.println("Got an Internal Server Error from Telegram. Skipping this file for now. Next run of telegram_backup will continue to download this file.");
+				Log.debug(ex.toString());
+				return false;
+			}
 			System.out.println("RpcErrorException happened while downloading " + target);
 			throw ex;
 		}
