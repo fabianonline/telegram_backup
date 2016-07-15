@@ -258,9 +258,9 @@ public class DownloadManager {
 		return a; 
 	}
 	
-	public static void downloadFile(TelegramClient client, String targetFilename, int size, long volumeId, int localId, long secret) throws RpcErrorException, IOException {
+	public static void downloadFile(TelegramClient client, String targetFilename, int size, int dcId, long volumeId, int localId, long secret) throws RpcErrorException, IOException {
 		TLInputFileLocation loc = new TLInputFileLocation(volumeId, localId, secret);
-		downloadFileFromDc(client, targetFilename, loc, null, size);
+		downloadFileFromDc(client, targetFilename, loc, dcId, size);
 	}
 	
 	public static void downloadFile(TelegramClient client, String targetFilename, int size, int dcId, long id, long accessHash) throws RpcErrorException, IOException {

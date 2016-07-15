@@ -79,7 +79,7 @@ public class PhotoFileManager extends AbstractMediaFileManager {
 	public void download() throws RpcErrorException, IOException {
 		if (isEmpty) return;
 		TLFileLocation loc = (TLFileLocation) size.getLocation();
-		DownloadManager.downloadFile(client, getTargetPathAndFilename(), getSize(), loc.getVolumeId(), loc.getLocalId(), loc.getSecret());
+		DownloadManager.downloadFile(client, getTargetPathAndFilename(), getSize(), loc.getDcId(), loc.getVolumeId(), loc.getLocalId(), loc.getSecret());
 	}
 	
 	public String getLetter() { return "p"; }
