@@ -53,6 +53,7 @@ public class DownloadManager {
 	TelegramClient client;
 	Database db;
 	DownloadProgressInterface prog = null;
+	static TelegramClient download_client;
 	
 	public DownloadManager(UserManager u, TelegramClient c, DownloadProgressInterface p) {
 		this.user = u;
@@ -189,6 +190,7 @@ public class DownloadManager {
 	}
 	
 	public void downloadMedia() throws RpcErrorException, IOException {
+		download_client = client.getDownloaderClient();
 		boolean completed = true;
 		do {
 			completed = true;
@@ -290,9 +292,9 @@ public class DownloadManager {
 				Log.debug("offset:   %8d block_size: %7d size: %8d", offset, block_size, size);
 				TLRequestUploadGetFile req = new TLRequestUploadGetFile(loc, offset, block_size);
 				if (dcID==null) {
-					response = (TLFile) client.executeRpcQuery(req);
+					response = (TLFile) download_client.executeRpcQuery(req);
 				} else {
-					response = (TLFile) client.executeRpcQuery(req, dcID);
+					response = (TLFile) download_client.executeRpcQuery(req, dcID);
 				}
 				
 				offset += response.getBytes().getData().length;
