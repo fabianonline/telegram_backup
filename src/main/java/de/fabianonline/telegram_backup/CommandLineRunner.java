@@ -17,10 +17,45 @@
 package de.fabianonline.telegram_backup;
 
 import de.fabianonline.telegram_backup.CommandLineController;
+import org.slf4j.LoggerFactory;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.ConsoleAppender;
+import ch.qos.logback.classic.Level;
 
 public class CommandLineRunner {
 	public static void main(String[] args) {
 		CommandLineOptions.parseOptions(args);
+
+		// Set up logging
+		Logger logger = (Logger)LoggerFactory.getLogger(CommandLineRunner.class);
+		Logger rootLogger = (Logger)LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+		LoggerContext rootContext = rootLogger.getLoggerContext();
+		rootContext.reset();
+		
+		PatternLayoutEncoder encoder = new PatternLayoutEncoder();
+		encoder.setContext(rootContext);
+		encoder.setPattern("%d{HH:mm:ss} %-5level %-35.-35(%logger{0}.%method): %message%n");
+		encoder.start();
+		
+		ConsoleAppender<ILoggingEvent> appender = new ConsoleAppender<ILoggingEvent>();
+		appender.setContext(rootContext);
+		appender.setEncoder(encoder);
+		appender.start();
+		
+		rootLogger.addAppender(appender);
+		rootLogger.setLevel(Level.OFF);
+
+		if (CommandLineOptions.cmd_debug) {
+			((Logger)LoggerFactory.getLogger("de.fabianonline.telegram_backup")).setLevel(Level.TRACE);
+		}
+		if (CommandLineOptions.cmd_debug_telegram) {
+			((Logger)LoggerFactory.getLogger("com.github.badoualy")).setLevel(Level.TRACE);
+		}
+		
+
 		if (true || CommandLineOptions.cmd_console) {
 			// Always use the console for now.
 			new CommandLineController();

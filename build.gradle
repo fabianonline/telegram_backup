@@ -14,9 +14,13 @@ repositories {
 }
 
 dependencies {
-	compile 'com.github.badoualy:kotlogram:497e5dd62d9bcb341f584164b04b4b537ce9d295'
+	compile('com.github.badoualy:kotlogram:497e5dd62d9bcb341f584164b04b4b537ce9d295') {
+		exclude module: 'slf4j-simple'
+	}
 	compile 'org.xerial:sqlite-jdbc:3.8.11.2'
 	compile 'com.github.spullara.mustache.java:compiler:0.8.18'
+	compile 'org.slf4j:slf4j-api:1.7.21'
+	compile 'ch.qos.logback:logback-classic:1.1.7'
 }
 
 run {

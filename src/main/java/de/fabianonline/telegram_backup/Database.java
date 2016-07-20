@@ -19,6 +19,8 @@ package de.fabianonline.telegram_backup;
 import com.github.badoualy.telegram.tl.api.*;
 import com.github.badoualy.telegram.tl.core.TLVector;
 import com.github.badoualy.telegram.api.TelegramClient;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -49,6 +51,7 @@ public class Database {
 	private Statement stmt;
 	public UserManager user_manager;
 	public TelegramClient client;
+	private final static Logger logger = LoggerFactory.getLogger(Database.class);
 	
 	public Database(UserManager user_manager, TelegramClient client) {
 		this(user_manager, client, true);
@@ -91,7 +94,7 @@ public class Database {
 		try {
 			String src = user_manager.getFileBase() + Config.FILE_NAME_DB;
 			String dst = user_manager.getFileBase() + filename;
-			Log.debug("Copying %s to %s", src, dst);
+			logger.debug("Copying {} to {}", src, dst);
 			Files.copy(
 				new File(src).toPath(),
 				new File(dst).toPath(),

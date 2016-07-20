@@ -31,13 +31,17 @@ import java.util.List;
 import java.util.Scanner;
 import java.util.Vector;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 public class CommandLineController {
+	private static Logger logger = LoggerFactory.getLogger(CommandLineController.class);
 	private ApiStorage storage;
 	public TelegramApp app;
 	public UserManager user = null;
 	
 	public CommandLineController() {
-		Log.debug("CommandLineController started. App version %s", Config.APP_APPVER);
+		logger.info("CommandLineController started. App version {}", Config.APP_APPVER);
 		System.out.println("Telegram_Backup version " + Config.APP_APPVER + ", Copyright (C) 2016 Fabian Schlenz");
 		System.out.println();
 		System.out.println("Telegram_Backup comes with ABSOLUTELY NO WARRANTY. This is free software, and you are");
@@ -54,46 +58,41 @@ public class CommandLineController {
 			System.exit(0);
 		}
 		
-		Log.debug("Target dir at startup: %s", Config.FILE_BASE);
+		logger.debug("Target dir at startup: {}", Config.FILE_BASE);
 		if (CommandLineOptions.val_target != null) {
 			Config.FILE_BASE = CommandLineOptions.val_target;
 		}
-		Log.debug("Target dir after options: %s", Config.FILE_BASE);
+		logger.debug("Target dir after options: {}", Config.FILE_BASE);
 		
 		System.out.println("Base directory for files: " + Config.FILE_BASE);
 
 		if (CommandLineOptions.cmd_list_accounts) this.list_accounts();
 		
-		Log.debug("Initializing TelegramApp");
+		logger.debug("Initializing TelegramApp");
 		if (CommandLineOptions.cmd_debug_telegram) {
-			System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "DEBUG");
+			//System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "DEBUG");
 		} else {
-			System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "ERROR");
+			//System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "ERROR");
 		}
 		app = new TelegramApp(Config.APP_ID, Config.APP_HASH, Config.APP_MODEL, Config.APP_SYSVER, Config.APP_APPVER, Config.APP_LANG);
 
-		Log.debug("Checking accounts");
-		Log.up();
+		logger.trace("Checking accounts");
 		String account = null;
 		Vector<String> accounts = Utils.getAccounts();
 		if (CommandLineOptions.cmd_login) {
-			Log.debug("Login requested, doing nothing.");
+			logger.debug("Login requested, doing nothing.");
 			// do nothing
 		} else if (CommandLineOptions.val_account!=null) {
-			Log.debug("Account requested: %s", CommandLineOptions.val_account);
-			Log.debug("Checking accounts for match.");
-			Log.up();
+			logger.debug("Account requested: {}", CommandLineOptions.val_account);
+			logger.trace("Checking accounts for match.");
 			boolean found = false;
 			for (String acc : accounts) {
-				Log.debug("Checking %s", acc);
-				Log.up();
+				logger.trace("Checking {}", acc);
 				if (acc.equals(CommandLineOptions.val_account)) {
 					found=true;
-					Log.debug("Matches.");
+					logger.trace("Matches.");
 				}
-				Log.down();
 			}
-			Log.down();
 			if (!found) {
 				show_error("Couldn't find account '" + CommandLineOptions.val_account + "'. Maybe you want to use '--login' first?");
 			}
@@ -109,25 +108,23 @@ public class CommandLineController {
 				"Use '--account <x>' to use account <x>.\n" +
 				"Use '--list-accounts' to see all available accounts.");
 		}
-		Log.debug("accounts.size(): %d", accounts.size());
-		Log.debug("account: %s", account);
-		Log.debug("CommandLineOptions.cmd_login: %s", CommandLineOptions.cmd_login);
-		Log.down();
-		
-		Log.debug("Initializing ApiStorage");
+		logger.debug("accounts.size(): {}", accounts.size());
+		logger.debug("account: {}", account);
+		logger.debug("CommandLineOptions.cmd_login: {}", CommandLineOptions.cmd_login);
+
+		logger.info("Initializing ApiStorage");
 		storage = new ApiStorage(account);
-		Log.debug("Initializing TelegramUpdateHandler");
+		logger.info("Initializing TelegramUpdateHandler");
 		TelegramUpdateHandler handler = new TelegramUpdateHandler();
-		Log.debug("Creating Client");
+		logger.info("Creating Client");
 		TelegramClient client = Kotlogram.getDefaultClient(app, storage, Kotlogram.PROD_DC4, handler);
 		
 		try {
-			Log.debug("Creating UserManager");
+			logger.info("Creating UserManager");
 			user = new UserManager(client);
 			
-			Log.debug("CommandLineOptions.val_export: %s", CommandLineOptions.val_export);
+			logger.debug("CommandLineOptions.val_export: {}", CommandLineOptions.val_export);
 			if (CommandLineOptions.val_export != null) {
-				Log.up();
 				if (CommandLineOptions.val_export.toLowerCase().equals("html")) {
 					(new HTMLExporter()).export(user);
 					System.exit(0);
@@ -139,23 +136,20 @@ public class CommandLineController {
 				}
 			}
 		
-			Log.debug("CommandLineOptions.cmd_login: %s", CommandLineOptions.cmd_login);			
+			logger.debug("CommandLineOptions.cmd_login: {}", CommandLineOptions.cmd_login);
 			if (CommandLineOptions.cmd_login) {
-				Log.up();
 				cmd_login();
 				System.exit(0);
 			}
 			
 			System.out.println("You are logged in as " + user.getUserString());
 			
-			Log.debug("Initializing Download Manager");
-			Log.up();
+			logger.info("Initializing Download Manager");
 			DownloadManager d = new DownloadManager(user, client, new CommandLineDownloadProgress());
-			Log.debug("Calling DownloadManager.downloadMessages with limit %d", CommandLineOptions.val_limit_messages);
+			logger.debug("Calling DownloadManager.downloadMessages with limit {}", CommandLineOptions.val_limit_messages);
 			d.downloadMessages(CommandLineOptions.val_limit_messages);
-			Log.debug("Calling DownloadManager.downloadMedia");
+			logger.debug("Calling DownloadManager.downloadMedia");
 			d.downloadMedia();
-			Log.down();
 		} catch (Exception e) {
 			e.printStackTrace();
 		} finally {

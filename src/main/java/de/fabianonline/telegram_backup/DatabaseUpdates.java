@@ -10,19 +10,21 @@ import java.sql.Types;
 import java.sql.ResultSet;
 import java.sql.PreparedStatement;
 import com.github.badoualy.telegram.tl.api.*;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import de.fabianonline.telegram_backup.mediafilemanager.FileManagerFactory;
 import de.fabianonline.telegram_backup.mediafilemanager.AbstractMediaFileManager;
 
 public class DatabaseUpdates {
 	protected Connection conn;
 	protected Database db;
+	private static final Logger logger = LoggerFactory.getLogger(DatabaseUpdates.class);
 	private static LinkedList<DatabaseUpdate> updates = new LinkedList<DatabaseUpdate>();
 	
 	public DatabaseUpdates(Connection conn, Database db) {
 		this.conn = conn;
 		this.db = db;
-		Log.debug("Registering Database Updates...");
-		Log.up();
+		logger.debug("Registering Database Updates...");
 		register(new DB_Update_1(conn, db));
 		register(new DB_Update_2(conn, db));
 		register(new DB_Update_3(conn, db));
@@ -30,69 +32,58 @@ public class DatabaseUpdates {
 		register(new DB_Update_5(conn, db));
 		register(new DB_Update_6(conn, db));
 		register(new DB_Update_7(conn, db));
-		Log.down();
 	}
 	
 	public void doUpdates() {
 		try {
 			Statement stmt = conn.createStatement();
 			ResultSet rs;
-			Log.debug("DatabaseUpdate.doUpdates running");
-			Log.up();
-			
-			Log.debug("Getting current database version");
-			Log.up();
+			logger.debug("DatabaseUpdate.doUpdates running");
+
+			logger.debug("Getting current database version");
 			int version;
-			Log.debug("Checking if table database_versions exists");
+			logger.debug("Checking if table database_versions exists");
 			rs = stmt.executeQuery("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='database_versions'");
 			rs.next();
 			if (rs.getInt(1)==0) {
-				Log.debug("Table does not exist");
+				logger.debug("Table does not exist");
 				version = 0;
 			} else {
-				Log.debug("Table exists. Checking max version");
+				logger.debug("Table exists. Checking max version");
 				rs.close();
 				rs = stmt.executeQuery("SELECT MAX(version) FROM database_versions");
 				rs.next();
 				version = rs.getInt(1);
 				rs.close();
 			}
-			Log.debug("version: %d", version);
-			Log.down();
+			logger.debug("version: {}", version);
 			System.out.println("Database version: " + version);
-			Log.debug("Max available database version is %d", getMaxPossibleVersion());
+			logger.debug("Max available database version is {}", getMaxPossibleVersion());
 			
 			if (version < getMaxPossibleVersion()) {
-				Log.debug("Update is necessary. %d => %d.", version, getMaxPossibleVersion());
+				logger.debug("Update is necessary. {} => {}.", version, getMaxPossibleVersion());
 				boolean backup = false;
 				for (int i=version+1; i<=getMaxPossibleVersion(); i++) {
 					if (getUpdateToVersion(i).needsBackup()) {
-						Log.debug("Update to version %d needs a backup", i);
+						logger.debug("Update to version {} needs a backup", i);
 						backup=true;
 					}
 				}
 				if (backup) {
-					Log.debug("Performing backup");
-					Log.up();
+					logger.debug("Performing backup");
 					db.backupDatabase(version);
-					Log.down();
 				}
 				
-				Log.debug("Applying updates");
-				Log.up();
+				logger.debug("Applying updates");
 				try {
 					for (int i=version+1; i<=getMaxPossibleVersion(); i++) {
-						Log.up();
 						getUpdateToVersion(i).doUpdate();
-						Log.down();
 					}
 				} catch (SQLException e) { throw new RuntimeException(e); }
-				Log.down();
 			} else {
-				Log.debug("No update necessary.");
+				logger.debug("No update necessary.");
 			}
 			
-			Log.down();
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
@@ -105,7 +96,7 @@ public class DatabaseUpdates {
 	}
 	
 	private void register(DatabaseUpdate d) {
-		Log.debug("Registering %s as update to version %d", d.getClass().getName(), d.getVersion());
+		logger.debug("Registering {} as update to version {}", d.getClass().getName(), d.getVersion());
 		if (d.getVersion() != updates.size()+1) {
 			throw new RuntimeException("Tried to register DB update to version " + d.getVersion() + ", but would need update to version " + (updates.size()+1));
 		}
@@ -117,6 +108,7 @@ abstract class DatabaseUpdate {
 	protected Connection conn;
 	protected Statement stmt;
 	protected Database db;
+	protected static final Logger logger = LoggerFactory.getLogger(DatabaseUpdate.class);
 	public DatabaseUpdate(Connection conn, Database db) {
 		this.conn = conn;
 		try {
@@ -126,12 +118,10 @@ abstract class DatabaseUpdate {
 	
 	}
 	public void doUpdate() throws SQLException {
-		Log.debug("Applying update to version %d", getVersion());
+		logger.debug("Applying update to version {}", getVersion());
 		System.out.println("  Updating to version " + getVersion() + "...");
-		Log.up();
 		_doUpdate();
-		Log.down();
-		Log.debug("Saving current database version to the db");
+		logger.debug("Saving current database version to the db");
 		stmt.executeUpdate("INSERT INTO database_versions (version) VALUES (" + getVersion() + ")");
 	}
 	

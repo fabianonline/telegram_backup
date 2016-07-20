@@ -33,6 +33,8 @@ import com.github.badoualy.telegram.tl.api.*;
 import com.github.badoualy.telegram.tl.api.upload.TLFile;
 import com.github.badoualy.telegram.tl.exception.RpcErrorException;
 import com.github.badoualy.telegram.tl.api.request.TLRequestUploadGetFile;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.io.File;
@@ -55,6 +57,7 @@ public class DownloadManager {
 	DownloadProgressInterface prog = null;
 	static TelegramClient download_client;
 	static boolean last_download_succeeded = true;
+	static final Logger logger = LoggerFactory.getLogger(DownloadManager.class);
 	
 	public DownloadManager(UserManager u, TelegramClient c, DownloadProgressInterface p) {
 		this.user = u;
@@ -88,11 +91,9 @@ public class DownloadManager {
 	}
 	
 	public void _downloadMessages(Integer limit) throws RpcErrorException, IOException, TimeoutException {
-		Log.debug("This is _downloadMessages with limit %d", limit);
-		Log.up();
+		logger.info("This is _downloadMessages with limit {}", limit);
 		int dialog_limit = 100;
-		Log.debug("Downloading the last %d dialogs", dialog_limit);
-		Log.up();
+		logger.info("Downloading the last {} dialogs", dialog_limit);
 		System.out.println("Downloading most recent dialogs... ");
 		int max_message_id = 0;
 		TLAbsDialogs dialogs = client.messagesGetDialogs(
@@ -100,15 +101,13 @@ public class DownloadManager {
 			0,
 			new TLInputPeerEmpty(),
 			dialog_limit);
-		Log.debug("Got %d dialogs", dialogs.getDialogs().size());
-		Log.up();
+		logger.debug("Got {} dialogs", dialogs.getDialogs().size());
 		for (TLDialog d : dialogs.getDialogs()) {
 			if (d.getTopMessage() > max_message_id) {
-				Log.debug("Updating top message id: %d => %d", max_message_id, d.getTopMessage());
+				logger.trace("Updating top message id: {} => {}", max_message_id, d.getTopMessage());
 				max_message_id = d.getTopMessage();
 			}
 		}
-		Log.down();
 		System.out.println("Top message ID is " + max_message_id);
 		int max_database_id = db.getTopMessageID();
 		System.out.println("Top message ID in database is " + max_database_id);
@@ -117,8 +116,7 @@ public class DownloadManager {
 			max_database_id = Math.max(max_database_id, max_message_id-limit);
 			System.out.println("New top message id 'in database' is " + max_database_id);
 		}
-		Log.down();
-		
+
 		if (max_database_id == max_message_id) {
 			System.out.println("No new messages to download.");
 		} else if (max_database_id > max_message_id) {
@@ -131,14 +129,13 @@ public class DownloadManager {
 			downloadMessages(ids);
 		}
 		
-		Log.debug("Searching for missing messages in the db");
-		Log.up();
+		logger.info("Searching for missing messages in the db");
 		int count_missing = 0;
 		System.out.println("Checking message database for completeness...");
 		int db_count = db.getMessageCount();
 		int db_max = db.getTopMessageID();
-		Log.debug("db_count: %d", db_count);
-		Log.debug("db_max: %d", db_max);
+		logger.debug("db_count: {}", db_count);
+		logger.debug("db_max: {}", db_max);
 		
 		if (db_count != db_max) {
 			if (limit != null) {
@@ -152,40 +149,35 @@ public class DownloadManager {
 			}
 		}
 		
-		Log.debug("Logging this run");
+		logger.info("Logging this run");
 		db.logRun(Math.min(max_database_id + 1, max_message_id), max_message_id, count_missing);
-		Log.down();
 	}
 	
 	private void downloadMessages(List<Integer> ids) throws RpcErrorException, IOException {
 		prog.onMessageDownloadStart(ids.size());
 		
-		Log.debug("Entering download loop");
-		Log.up();
+		logger.debug("Entering download loop");
 		while (ids.size()>0) {
-			Log.debug("Loop");
-			Log.up();
+			logger.trace("Loop");
 			TLIntVector vector = new TLIntVector();
 			for (int i=0; i<100; i++) {
 				if (ids.size()==0) break;
 				vector.add(ids.remove(0));
 			}
-			Log.debug("vector.size(): %d", vector.size());
-			Log.debug("ids.size(): %d", ids.size());
+			logger.trace("vector.size(): {}", vector.size());
+			logger.trace("ids.size(): {}", ids.size());
 			
 			TLAbsMessages response = client.messagesGetMessages(vector);
 			prog.onMessageDownloaded(response.getMessages().size());
 			db.saveMessages(response.getMessages(), Kotlogram.API_LAYER);
 			db.saveChats(response.getChats());
 			db.saveUsers(response.getUsers());
-			Log.debug("Sleeping");
+			logger.trace("Sleeping");
 			try {
 				Thread.sleep(Config.DELAY_AFTER_GET_MESSAGES);
 			} catch (InterruptedException e) {}
-			Log.down();
 		}
-		Log.down();
-		Log.debug("Finished.");
+		logger.debug("Finished.");
 		
 		prog.onMessageDownloadFinished();
 	}
@@ -205,7 +197,6 @@ public class DownloadManager {
 					throw e;
 				}
 			} catch (TimeoutException e) {
-				Log.down();
 				completed = false;
 				System.out.println("");
 				System.out.println("Telegram took too long to respond to our request.");
@@ -217,39 +208,35 @@ public class DownloadManager {
 	}
 	
 	private void _downloadMedia() throws RpcErrorException, IOException, TimeoutException {
-		Log.debug("This is _downloadMedia");
-		Log.debug("Checking if there are messages in the DB with a too old API layer");
+		logger.info("This is _downloadMedia");
+		logger.info("Checking if there are messages in the DB with a too old API layer");
 		LinkedList<Integer> ids = db.getIdsFromQuery("SELECT id FROM messages WHERE has_media=1 AND api_layer<" + Kotlogram.API_LAYER);
 		if (ids.size()>0) {
 			System.out.println("You have " + ids.size() + " messages in your db that need an update. Doing that now.");
-			Log.debug("Found %d messages", ids.size());
+			logger.debug("Found {} messages", ids.size());
 			downloadMessages(ids);
 		}
 		
 		LinkedList<TLMessage> messages = this.db.getMessagesWithMedia();
-		Log.debug("Database returned %d messages with media", messages.size());
+		logger.debug("Database returned {} messages with media", messages.size());
 		prog.onMediaDownloadStart(messages.size());
-		Log.up();
 		for (TLMessage msg : messages) {
 			AbstractMediaFileManager m = FileManagerFactory.getFileManager(msg, user, client);
-			Log.debug("Message ID: %d  Media type: %-10.10s  FileManager type: %-10.10s  isEmpty: %-5s  isDownloaded: %-5s",
+			logger.trace("message {}, {}, {}, {}, {}",
 				msg.getId(),
 				msg.getMedia().getClass().getSimpleName().replace("TLMessageMedia", "…"),
-				m.getClass().getSimpleName().replace("FileManager", "…"),
-				m.isEmpty(),
-				m.isDownloaded());
+				m.getClass().getSimpleName(),
+				m.isEmpty() ? "empty" : "non-empty",
+				m.isDownloaded() ? "downloaded" : "not downloaded");
 			if (m.isEmpty()) {
 				prog.onMediaDownloadedEmpty();
 			} else if (m.isDownloaded()) {
 				prog.onMediaAlreadyPresent(m);
 			} else {
-				Log.up();
 				m.download();
-				Log.down();
 				prog.onMediaDownloaded(m);
 			}
 		}
-		Log.down();
 		prog.onMediaDownloadFinished();
 	}
 	
@@ -273,24 +260,24 @@ public class DownloadManager {
 		FileOutputStream fos = null;
 		try {
 			String temp_filename = target + ".downloading";
-			Log.debug("Temporary filename %s", temp_filename);
+			logger.debug("Temporary filename {}", temp_filename);
 			
 			int offset = 0;
 			if (new File(temp_filename).isFile()) {
-				Log.debug("Temporary filename already exists; continuing this file");
+				logger.info("Temporary filename already exists; continuing this file");
 				offset = (int)new File(temp_filename).length();
 				if (offset >= size) {
-					Log.debug("Temporary file size is >= the target size. Assuming corrupt file & deleting it");
+					logger.warn("Temporary file size is >= the target size. Assuming corrupt file & deleting it");
 					new File(temp_filename).delete();
 					offset = 0;
 				}
 			}
-			Log.debug("offset before the loop is %d", offset);
+			logger.debug("offset before the loop is {}", offset);
 			fos = new FileOutputStream(temp_filename, true);
 			TLFile response;
 			do {
 				int block_size = size;
-				Log.debug("offset:   %8d block_size: %7d size: %8d", offset, block_size, size);
+				logger.trace("offset: {} block_size: {} size: {}", offset, block_size, size);
 				TLRequestUploadGetFile req = new TLRequestUploadGetFile(loc, offset, block_size);
 				if (dcID==null) {
 					response = (TLFile) download_client.executeRpcQuery(req);
@@ -299,7 +286,7 @@ public class DownloadManager {
 				}
 				
 				offset += response.getBytes().getData().length;
-				Log.debug("response: %8d               total size: %8d", response.getBytes().getData().length, offset);
+				logger.trace("response: {} total size: {}", response.getBytes().getData().length, offset);
 				
 				fos.write(response.getBytes().getData());
 				fos.flush();
@@ -311,7 +298,7 @@ public class DownloadManager {
 				new File(temp_filename).delete();
 				System.exit(1);
 			}
-			Log.debug("Renaming %s to %s", temp_filename, target);
+			logger.debug("Renaming {} to {}", temp_filename, target);
 			Files.move(new File(temp_filename).toPath(), new File(target).toPath(), StandardCopyOption.REPLACE_EXISTING);
 			last_download_succeeded = true;
 			return true;
@@ -328,7 +315,7 @@ public class DownloadManager {
 				}
 				last_download_succeeded = false;
 				System.out.println("Got an Internal Server Error from Telegram. Skipping this file for now. Next run of telegram_backup will continue to download this file.");
-				Log.debug(ex.toString());
+				logger.warn(ex.toString());
 				return false;
 			}
 			System.out.println("RpcErrorException happened while downloading " + target);
