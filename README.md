@@ -100,3 +100,5 @@ which are:
   licensed under Apache License version 2.0.
 * [Mustache.java](https://github.com/spullara/mustache.java) by RightTime,
   Inc., licensed under Apache License version 2.0.
+* [Logback](http://logback.qos.ch) by QOS.ch, licensed unter LGPL version 2.1.
+* [SLF4J](http://www.slf4j.org) by QOS.ch, licensed under MIT license.
