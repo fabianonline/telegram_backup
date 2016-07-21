@@ -35,7 +35,7 @@ class CommandLineDownloadProgress implements DownloadProgressInterface {
 		System.out.println("'V' - Video         'P' - Photo         'D' - Document");
 		System.out.println("'S' - Sticker       'A' - Audio         'G' - Geolocation");
 		System.out.println("'.' - Previously downloaded file        'e' - Empty file");
-		System.out.println("' ' - Ignored media type (location or website, for example)");
+		System.out.println("' ' - Ignored media type (weblinks or contacts, for example)");
 		System.out.println("" + count + " Files to check / download");    
 	}
 	
