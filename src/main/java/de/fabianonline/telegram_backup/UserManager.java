@@ -31,6 +31,9 @@ import java.security.NoSuchAlgorithmException;
 import java.io.IOException;
 import java.io.File;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 public class UserManager {
 	public TLUser user = null;
 	public String phone = null;
@@ -39,14 +42,17 @@ public class UserManager {
 	private TLSentCode sent_code = null;
 	private TLAuthorization auth = null;
 	private boolean password_needed = false;
+	private static Logger logger = LoggerFactory.getLogger(UserManager.class);
 	
 	public UserManager(TelegramClient c) throws IOException {
 		this.client = c;
+		logger.debug("Calling getFullUser");
 		try {
 			TLUserFull full_user = this.client.usersGetFullUser(new TLInputUserSelf());
 			this.user = full_user.getUser().getAsUser();
 		} catch (Exception e) {
 			// This may happen. Ignoring it.
+			logger.debug("Ignoring exception", e);
 		}
 	}
 	
