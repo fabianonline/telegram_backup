@@ -50,9 +50,9 @@ public class UserManager {
 		try {
 			TLUserFull full_user = this.client.usersGetFullUser(new TLInputUserSelf());
 			this.user = full_user.getUser().getAsUser();
-		} catch (Exception e) {
+		} catch (RpcErrorException e) {
 			// This may happen. Ignoring it.
-			logger.debug("Ignoring exception", e);
+			logger.debug("Ignoring exception:", e);
 		}
 	}
 	

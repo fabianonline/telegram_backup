@@ -69,11 +69,6 @@ public class CommandLineController {
 		if (CommandLineOptions.cmd_list_accounts) this.list_accounts();
 		
 		logger.debug("Initializing TelegramApp");
-		if (CommandLineOptions.cmd_debug_telegram) {
-			//System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "DEBUG");
-		} else {
-			//System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "ERROR");
-		}
 		app = new TelegramApp(Config.APP_ID, Config.APP_HASH, Config.APP_MODEL, Config.APP_SYSVER, Config.APP_APPVER, Config.APP_LANG);
 
 		logger.trace("Checking accounts");
