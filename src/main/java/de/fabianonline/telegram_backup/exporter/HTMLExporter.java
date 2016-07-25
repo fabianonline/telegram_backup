@@ -26,6 +26,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.HashMap;
+import java.util.Map;
 
 import com.github.mustachejava.DefaultMustacheFactory;
 import com.github.mustachejava.Mustache;
@@ -37,7 +38,7 @@ public class HTMLExporter {
 			Database db = new Database(user, null);
 			
 			// Create base dir
-			String base = user.getFileBase() + "export" + File.separatorChar + "html" + File.separatorChar;
+			String base = user.getFileBase() + "files" + File.separatorChar;
 			new File(base).mkdirs();
 			new File(base + "dialogs").mkdirs();
 			
@@ -49,6 +50,34 @@ public class HTMLExporter {
 			scope.put("user", user.getUser());
 			scope.put("dialogs", dialogs);
 			scope.put("chats", chats);
+			
+			// Collect stats data
+			scope.put("count.chats", chats.size());
+			scope.put("count.dialogs", dialogs.size());
+			
+			int count_messages_chats = 0;
+			int count_messages_dialogs = 0;
+			for (Database.Chat   c : chats)   count_messages_chats   += c.count;
+			for (Database.Dialog d : dialogs) count_messages_dialogs += d.count;
+			
+			scope.put("count.messages", count_messages_chats + count_messages_dialogs);
+			scope.put("count.messages.chats", count_messages_chats);
+			scope.put("count.messages.dialogs", count_messages_dialogs);
+			
+			scope.put("count.messages.from_me", db.getMessagesFromUserCount());
+
+			scope.put("heatmap_data", intArrayToString(db.getMessageTimesMatrix(null, null)));
+			
+			HashMap<String, Integer> types;
+			types = db.getMessageTypesWithCount();
+			for (Map.Entry<String, Integer> entry : types.entrySet()) {
+				scope.put("count.messages.type." + entry.getKey(), entry.getValue());
+			}
+			
+			types = db.getMessageMediaTypesWithCount();
+			for (Map.Entry<String, Integer> entry : types.entrySet()) {
+				scope.put("count.messages.media_type." + entry.getKey(), entry.getValue());
+			}
 			
 			MustacheFactory mf = new DefaultMustacheFactory();
 			Mustache mustache = mf.compile("templates/html/index.mustache");
@@ -83,5 +112,21 @@ public class HTMLExporter {
 			e.printStackTrace();
 			throw new RuntimeException("Exception above!");
 		}
+	}
+
+	private String intArrayToString(int[][] data) {
+		StringBuilder sb = new StringBuilder();
+		sb.append("[");
+		for (int x=0; x<data.length; x++) {
+			if (x>0) sb.append(", ");
+			sb.append("[");
+			for (int y=0; y<data[x].length; y++) {
+				if (y>0) sb.append(", ");
+				sb.append(data[x][y]);
+			}
+			sb.append("]");
+		}
+		sb.append("]");
+		return sb.toString();
 	}
 }

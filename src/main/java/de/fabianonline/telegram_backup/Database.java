@@ -439,6 +439,20 @@ public class Database {
 			return map;
 		} catch (Exception e) { throw new RuntimeException(e); }
 	}
+
+	public int[][] getMessageTimesMatrix(Integer dialog_id, Integer chat_id) {
+		int result[][] = new int[24][7];
+		try {
+			ResultSet rs = stmt.executeQuery("SELECT STRFTIME('%H', time, 'unixepoch') AS hour, " +
+				"STRFTIME('%w', time, 'unixepoch') as DAY, " +
+				"COUNT(id) FROM messages GROUP BY hour, day " +
+				"ORDER BY hour, day");
+			while (rs.next()) {
+				result[rs.getInt(1)][rs.getInt(2) == 0 ? 6 : rs.getInt(2)-1] = rs.getInt(3);
+			}
+			return result;
+		} catch (Exception e) { throw new RuntimeException(e); }
+	}
 			
 	
 	public LinkedList<Chat> getListOfChatsForExport() {

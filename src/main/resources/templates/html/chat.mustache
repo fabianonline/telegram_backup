@@ -26,9 +26,9 @@
 				<span class="sender">{{user_first_name}}</span>
 				<span class="time">{{formatted_time}}</span>
 				{{#text}}<span class="text">{{text}}</span>{{/text}}
-				{{#media_sticker}}<span class="sticker"><img src="../../../../stickers/{{media_file}}" /></span>{{/media_sticker}}
-				{{#media_photo}}<span class="photo"><img src="../../../files/{{media_file}}" /></span>{{/media_photo}}
-				{{#media_document}}<span class="document"><a href="../../../files/{{media_file}}">{{media_file}}</a></span>{{/media_document}}
+				{{#media_sticker}}<span class="sticker"><img src="../../../stickers/{{media_file}}" /></span>{{/media_sticker}}
+				{{#media_photo}}<span class="photo"><img src="../{{media_file}}" /></span>{{/media_photo}}
+				{{#media_document}}<span class="document"><a href="../{{media_file}}">{{media_file}}</a></span>{{/media_document}}
 			</li>
 		{{/messages}}
 	</ul>
