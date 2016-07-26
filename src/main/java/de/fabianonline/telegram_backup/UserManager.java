@@ -69,7 +69,7 @@ public class UserManager {
 			this.auth = client.authSignIn(phone, this.sent_code.getPhoneCodeHash(), this.code);
 			this.user = auth.getUser().getAsUser();
 		} catch (RpcErrorException e) {
-			if (!e.getTag().equals("401: SESSION_PASSWORD_NEEDED")) throw e;
+			if (e.getCode()!=401 || !e.getTag().equals("SESSION_PASSWORD_NEEDED")) throw e;
 			this.password_needed = true;
 		}
 	}
