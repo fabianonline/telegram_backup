@@ -117,6 +117,11 @@ public class CommandLineController {
 		try {
 			logger.info("Creating UserManager");
 			user = new UserManager(client);
+
+			if (!CommandLineOptions.cmd_login && user.getUser()==null) {
+				System.out.println("Your authorization data is invalid or missing. You will have to login with Telegram again.");
+				CommandLineOptions.cmd_login = true;
+			}
 			
 			logger.debug("CommandLineOptions.val_export: {}", CommandLineOptions.val_export);
 			if (CommandLineOptions.val_export != null) {
@@ -133,7 +138,7 @@ public class CommandLineController {
 		
 			logger.debug("CommandLineOptions.cmd_login: {}", CommandLineOptions.cmd_login);
 			if (CommandLineOptions.cmd_login) {
-				cmd_login();
+				cmd_login(account);
 				System.exit(0);
 			}
 			
@@ -160,10 +165,12 @@ public class CommandLineController {
 		}
 	}
 	
-	private void cmd_login() throws RpcErrorException, IOException {
-		System.out.println("Please enter your phone number in international format.");
-		System.out.println("Example: +4917077651234");
-		String phone = getLine();
+	private void cmd_login(String phone) throws RpcErrorException, IOException {
+		if (phone==null) {
+			System.out.println("Please enter your phone number in international format.");
+			System.out.println("Example: +4917077651234");
+			phone = getLine();
+		}
 		user.sendCodeToPhoneNumber(phone);
 		
 		System.out.println("Telegram sent you a code. Please enter it here.");
