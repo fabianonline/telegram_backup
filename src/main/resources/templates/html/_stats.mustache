@@ -1,0 +1,160 @@
+<script type="text/javascript" src="//code.jquery.com/jquery-1.9.1.js"></script>
+<script src="https://code.highcharts.com/highcharts.js"></script>
+<script src="https://code.highcharts.com/modules/heatmap.js"></script>
+<script src="https://code.highcharts.com/modules/drilldown.js"></script>
+
+<script type="text/javascript">
+	$(function() {
+		$('#heatmap').highcharts({
+			chart: {
+				type: 'heatmap',
+			},
+			colorAxis: {
+				stops: [
+					[0, '#FFEDA0'],
+					[1, '#B10026'],
+				],
+			},
+			xAxis: {
+				categories: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+			},
+			yAxis: {
+				reversed: true,
+				title: { text: "Hour", },
+			},
+			series: [{
+				name: 'Messages per hour',
+				data: {{heatmap_data}},
+			}],
+		});
+		
+		{{#count.dialogs}}
+		$('#chart_chat_types').highcharts({
+			chart: {
+				type: 'pie',
+			},
+			title: {
+				text: 'Chat types',
+			},
+			series: [{
+				name: 'Types',
+				data: [{
+					name: 'Dialogs',
+					y: {{count.dialogs}},
+				}, {
+					name: 'Group chats',
+					y: {{count.chats}},
+				}],
+			}],
+		});
+		{{/count.dialogs}}
+		
+		$('#chart_media_types').highcharts({
+			chart: {
+				type: 'pie',
+			},
+			title: {
+				text: 'Media types',
+			},
+			subtitle: {
+				text: 'Click on media slice to expand',
+			},
+			series: [{
+				name: 'Has media',
+				data: [
+					{name: 'No media',    y: {{count.messages.media_type.null}}+0, drilldown: null},
+					{name: 'With media',  y: {{count.messages.media_type.any}}+0, drilldown: 'With media'},
+				].filter(function(d){return d.y>0;}),
+			}],
+			drilldown: {
+				series: [{
+					name: 'Media types',
+					id: 'With media',
+					data: [
+						['Photo',       {{count.messages.media_type.photo}}+0],
+						['Audio',       {{count.messages.media_type.audio}}+0],
+						['Video',       {{count.messages.media_type.video}}+0],
+						['Geolocation', {{count.messages.media_type.geo}}+0],
+						['Document',    {{count.messages.media_type.document}}+0],
+						['Sticker',     {{count.messages.media_type.sticker}}+0],
+						['Venue',       {{count.messages.media_type.venue}}+0],
+						['Contact',     {{count.messages.media_type.contact}}+0],
+					].filter(function(d){return d[1]>0;}),
+				}],
+			},
+		});
+		
+		var authors_options = {
+			chart: {
+				type: 'pie',
+			},
+			title: {
+				text: 'Authors',
+			},
+			series: [{
+				name: 'Authors',
+				data: [
+					{name: 'Me',     y: {{authors.count.me}}, drilldown: null},
+					{name: 'Others', y: {{authors.count.others}}, drilldown: 'Others'},
+				]
+			}],
+			drilldown: {
+				series: [{
+					name: 'Authors',
+					id: 'Others',
+					data: null,
+				}],
+			},
+		};
+		
+		var author_data = [
+			{{#authors.all}}
+				['{{key.name}}', {{value}}],
+			{{/authors.all}}
+		];
+		author_data.sort(function(a, b) { return b[1]-a[1]; });
+		var other_count = 0;
+		var limit = 7;
+		var new_data = [];
+		if (author_data.length > 8) {
+			for (var i=0; i<author_data.length; i++) {
+				if (i<=limit) {
+					new_data.push(author_data[i]);
+				} else {
+					other_count += author_data[i][1];
+				}
+			}
+			if (other_count>0) new_data.push(["Other", other_count]);
+			authors_options.drilldown.series[0].data = new_data;
+		} else {
+			author_data.unshift(["Me", {{authors.count.me}}]);
+			authors_options.series[0].data = author_data;
+		}
+		
+		$('#chart_authors').highcharts(authors_options);
+		
+		$('#chart_message_types').highcharts({
+			chart: {
+				type: 'pie',
+			},
+			title: {
+				text: 'Message types',
+			},
+			series: [{
+				name: 'Message types',
+				data: [
+					{name: 'Normal messages',  y: {{count.messages.type.message}}+0},
+					{name: 'Empty messages',   y: {{count.messages.type.empty_message}}+0},
+					{name: 'Service messages', y: {{count.messages.type.service_message}}+0},
+				].filter(function(d){return d.y>0;}),
+			}],
+		});
+	});
+</script>
+
+<span id="heatmap" style="width: 400px; height: 500px;"></span>
+
+{{#count.dialogs}}<span id="chart_chat_types" style="width: 400px; height: 500px;"></span>{{/count.dialogs}}
+<span id="chart_message_types" style="width: 400px; height: 500px;"></span>
+<span id="chart_media_types" style="width: 400px; height: 500px;"></span>
+<span id="chart_authors" style="width: 400px; height: 500px;"></span>

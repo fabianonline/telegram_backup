@@ -5,108 +5,7 @@
 	
 	<meta charset="UTF-8">
 	
-	<script type="text/javascript" src="//code.jquery.com/jquery-1.9.1.js"></script>
-	<script src="https://code.highcharts.com/highcharts.js"></script>
-	<script src="https://code.highcharts.com/modules/heatmap.js"></script>
-	<script src="https://code.highcharts.com/modules/drilldown.js"></script>
-	
-	<script type="text/javascript">
-		$(function() {
-			$('#heatmap').highcharts({
-				chart: {
-					type: 'heatmap',
-				},
-				colorAxis: {
-					stops: [
-						[0, '#000000'],
-						[1, '#FF0000'],
-					],
-				},
-				xAxis: {
-					categories: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
-				},
-				yAxis: {
-					reversed: true,
-					title: { text: "Hour", },
-				},
-				series: [{
-					name: 'Messages per hour',
-					data: {{heatmap_data}},
-				}],
-			});
-			
-			$('#chart_chat_types').highcharts({
-				chart: {
-					type: 'pie',
-				},
-				title: {
-					text: 'Chat types',
-				},
-				series: [{
-					name: 'Types',
-					data: [{
-						name: 'Dialogs',
-						y: {{count.dialogs}},
-					}, {
-						name: 'Group chats',
-						y: {{count.chats}},
-					}],
-				}],
-			});
-			
-			$('#chart_media_types').highcharts({
-				chart: {
-					type: 'pie',
-				},
-				title: {
-					text: 'Media types',
-				},
-				subtitle: {
-					text: 'Click on media slice to expand',
-				},
-				series: [{
-					name: 'Has media',
-					data: [
-						{name: 'No media',    y: {{count.messages.media_type.null}}+0, drilldown: null},
-						{name: 'With media',  y: {{count.messages.media_type.any}}+0, drilldown: 'With media'},
-					],
-				}],
-				drilldown: {
-					series: [{
-						name: 'Media types',
-						id: 'With media',
-						data: [
-							{name: 'Photo',       y: {{count.messages.media_type.photo}}+0},
-							{name: 'Audio',       y: {{count.messages.media_type.audio}}+0},
-							{name: 'Video',       y: {{count.messages.media_type.video}}+0},
-							{name: 'Geolocation', y: {{count.messages.media_type.geo}}+0},
-							{name: 'Document',    y: {{count.messages.media_type.document}}+0},
-							{name: 'Sticker',     y: {{count.messages.media_type.sticker}}+0},
-							{name: 'Venue',       y: {{count.messages.media_type.venue}}+0},
-							{name: 'Contact',     y: {{count.messages.media_type.contact}}+0},
-						],
-					}],
-				},
-			});
-			
-			$('#chart_message_types').highcharts({
-				chart: {
-					type: 'pie',
-				},
-				title: {
-					text: 'Message types',
-				},
-				series: [{
-					name: 'Message types',
-					data: [
-						{name: 'Normal messages',  y: {{count.messages.type.message}}+0},
-						{name: 'Empty messages',   y: {{count.messages.type.empty_message}}+0},
-						{name: 'Service messages', y: {{count.messages.type.service_message}}+0},
-					],
-				}],
-			});
-		});
-	</script>
+	<link rel="stylesheet" href="style.css" type="text/css" />
 </head>
 
 <body>
@@ -138,11 +37,7 @@
 		{{/chats}}
 	</ul>
 
-
-	<span id="heatmap" style="width: 400px; height: 500px;"></span>
+	{{> _stats }}
 	
-	<span id="chart_chat_types" style="width: 400px; height: 500px;"></span>
-	<span id="chart_message_types" style="width: 400px; height: 500px;"></span>
-	<span id="chart_media_types" style="width: 400px; height: 500px;"></span>
 </body>
 </html>

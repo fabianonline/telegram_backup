@@ -24,30 +24,41 @@ import java.io.PrintWriter;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.URL;
+import org.apache.commons.io.FileUtils;
 import java.util.LinkedList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import com.github.mustachejava.DefaultMustacheFactory;
 import com.github.mustachejava.Mustache;
 import com.github.mustachejava.MustacheFactory;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class HTMLExporter {
+	private static Logger logger = LoggerFactory.getLogger(HTMLExporter.class);
+	
 	public void export(UserManager user) {
 		try {
 			Database db = new Database(user, null);
 			
 			// Create base dir
+			logger.debug("Creating base dir");
 			String base = user.getFileBase() + "files" + File.separatorChar;
 			new File(base).mkdirs();
 			new File(base + "dialogs").mkdirs();
 			
+			logger.debug("Fetching dialogs");
 			LinkedList<Database.Dialog> dialogs = db.getListOfDialogsForExport();
+			logger.debug("Fetching chats");
 			LinkedList<Database.Chat> chats = db.getListOfChatsForExport();
 			
-			
+			logger.debug("Generating index.html");
 			HashMap<String, Object> scope = new HashMap<String, Object>();
-			scope.put("user", user.getUser());
+			scope.put("user", user);
 			scope.put("dialogs", dialogs);
 			scope.put("chats", chats);
 			
@@ -66,18 +77,11 @@ public class HTMLExporter {
 			
 			scope.put("count.messages.from_me", db.getMessagesFromUserCount());
 
-			scope.put("heatmap_data", intArrayToString(db.getMessageTimesMatrix(null, null)));
+			scope.put("heatmap_data", intArrayToString(db.getMessageTimesMatrix()));
 			
-			HashMap<String, Integer> types;
-			types = db.getMessageTypesWithCount();
-			for (Map.Entry<String, Integer> entry : types.entrySet()) {
-				scope.put("count.messages.type." + entry.getKey(), entry.getValue());
-			}
-			
-			types = db.getMessageMediaTypesWithCount();
-			for (Map.Entry<String, Integer> entry : types.entrySet()) {
-				scope.put("count.messages.media_type." + entry.getKey(), entry.getValue());
-			}
+			scope.putAll(db.getMessageAuthorsWithCount());
+			scope.putAll(db.getMessageTypesWithCount());
+			scope.putAll(db.getMessageMediaTypesWithCount());
 			
 			MustacheFactory mf = new DefaultMustacheFactory();
 			Mustache mustache = mf.compile("templates/html/index.mustache");
@@ -87,27 +91,44 @@ public class HTMLExporter {
 			
 			mustache = mf.compile("templates/html/chat.mustache");
 			
+			logger.debug("Generating dialog pages");
 			for (Database.Dialog d : dialogs) {
 				LinkedList<HashMap<String, Object>> messages = db.getMessagesForExport(d);
 				scope.clear();
 				scope.put("dialog", d);
 				scope.put("messages", messages);
 				
+				scope.putAll(db.getMessageAuthorsWithCount(d));
+				scope.put("heatmap_data", intArrayToString(db.getMessageTimesMatrix(d)));
+				scope.putAll(db.getMessageTypesWithCount(d));
+				scope.putAll(db.getMessageMediaTypesWithCount(d));
+				
 				w = new FileWriter(base + "dialogs" + File.separatorChar + "user_" + d.id + ".html");
 				mustache.execute(w, scope);
 				w.close();
 			}
 			
+			logger.debug("Generating chat pages");
 			for (Database.Chat c : chats) {
 				LinkedList<HashMap<String, Object>> messages = db.getMessagesForExport(c);
 				scope.clear();
 				scope.put("chat", c);
 				scope.put("messages", messages);
 				
+				scope.put("heatmap_data", intArrayToString(db.getMessageTimesMatrix(c)));
+				scope.putAll(db.getMessageTypesWithCount(c));
+				scope.putAll(db.getMessageMediaTypesWithCount(c));
+				
 				w = new FileWriter(base + "dialogs" + File.separatorChar + "chat_" + c.id + ".html");
 				mustache.execute(w, scope);
 				w.close();
 			}
+			
+			logger.debug("Generating additional files");
+			// Copy CSS
+			URL cssFile = getClass().getResource("/templates/html/style.css");
+			File dest = new File(base + "style.css");
+			FileUtils.copyURLToFile(cssFile, dest);
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new RuntimeException("Exception above!");
@@ -122,6 +143,15 @@ public class HTMLExporter {
 				if (x>0 || y>0) sb.append(",");
 				sb.append("[" + x + "," + y + "," + data[x][y] + "]");
 			}
+		}
+		sb.append("]");
+		return sb.toString();
+	}
+	
+	private String mapToString(Map<String, Integer> map) {
+		StringBuilder sb = new StringBuilder("[");
+		for (Map.Entry<String, Integer> entry : map.entrySet()) {
+			sb.append("['" + entry.getKey() + "', " + entry.getValue() + "],");
 		}
 		sb.append("]");
 		return sb.toString();

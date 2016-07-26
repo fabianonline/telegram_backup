@@ -414,24 +414,31 @@ public class Database {
 			return list;
 		} catch (SQLException e) { throw new RuntimeException(e); }
 	}
-			
 	
 	public HashMap<String, Integer> getMessageTypesWithCount() {
+		return getMessageTypesWithCount(new GlobalChat());
+	}		
+	
+	public HashMap<String, Integer> getMessageTypesWithCount(AbstractChat c) {
 		HashMap<String, Integer> map = new HashMap<String, Integer>();
 		try {
-			ResultSet rs = stmt.executeQuery("SELECT message_type, COUNT(id) FROM messages GROUP BY message_type");
+			ResultSet rs = stmt.executeQuery("SELECT message_type, COUNT(id) FROM messages WHERE " + c.getQuery() + " GROUP BY message_type");
 			while (rs.next()) {
-				map.put(rs.getString(1), rs.getInt(2));
+				map.put("count.messages.type." + rs.getString(1), rs.getInt(2));
 			}
 			return map;
 		} catch (Exception e) { throw new RuntimeException(e); }
 	}
 	
 	public HashMap<String, Integer> getMessageMediaTypesWithCount() {
+		return getMessageMediaTypesWithCount(new GlobalChat());
+	}
+	
+	public HashMap<String, Integer> getMessageMediaTypesWithCount(AbstractChat c) {
 		HashMap<String, Integer> map = new HashMap<String, Integer>();
 		try {
 			int count = 0;
-			ResultSet rs = stmt.executeQuery("SELECT media_type, COUNT(id) FROM messages GROUP BY media_type");
+			ResultSet rs = stmt.executeQuery("SELECT media_type, COUNT(id) FROM messages WHERE " + c.getQuery() + " GROUP BY media_type");
 			while (rs.next()) {
 				String s = rs.getString(1);
 				if (s==null) {
@@ -439,19 +446,49 @@ public class Database {
 				} else {
 					count += rs.getInt(2);
 				}
-				map.put(s, rs.getInt(2));
+				map.put("count.messages.media_type." + s, rs.getInt(2));
 			}
-			map.put("any", count);
+			map.put("count.messages.media_type.any", count);
 			return map;
 		} catch (Exception e) { throw new RuntimeException(e); }
 	}
+	
+	public HashMap<String, Object> getMessageAuthorsWithCount() {
+		return getMessageAuthorsWithCount(new GlobalChat());
+	}
+	
+	public HashMap<String, Object> getMessageAuthorsWithCount(AbstractChat c) {
+		HashMap<String, Object> map = new HashMap<String, Object>();
+		HashMap<User, Integer> user_map = new HashMap<User, Integer>();
+		int count_others = 0;
+		try {
+			ResultSet rs = stmt.executeQuery("SELECT users.id, users.first_name, users.last_name, users.username, COUNT(messages.id) "+
+				"FROM messages, users WHERE users.id=messages.sender_id AND " + c.getQuery() + " GROUP BY sender_id");
+			while (rs.next()) {
+				User u = new User(rs.getInt(1), rs.getString(2), rs.getString(3), rs.getString(4));
+				if (u.isMe) {
+					map.put("authors.count.me", rs.getInt(5));
+				} else {
+					user_map.put(u, rs.getInt(5));
+					count_others += rs.getInt(5);
+				}
+			}
+			map.put("authors.count.others", count_others);
+			map.put("authors.all", user_map.entrySet());
+			return map;
+		} catch (Exception e) { throw new RuntimeException(e); }
+	}
+	
+	public int[][] getMessageTimesMatrix() {
+		return getMessageTimesMatrix(new GlobalChat());
+	}
 
-	public int[][] getMessageTimesMatrix(Integer dialog_id, Integer chat_id) {
+	public int[][] getMessageTimesMatrix(AbstractChat c) {
 		int result[][] = new int[7][24];
 		try {
 			ResultSet rs = stmt.executeQuery("SELECT STRFTIME('%w', time, 'unixepoch') as DAY, " +
 				"STRFTIME('%H', time, 'unixepoch') AS hour, " +
-				"COUNT(id) FROM messages GROUP BY hour, day " +
+				"COUNT(id) FROM messages WHERE " + c.getQuery() + " GROUP BY hour, day " +
 				"ORDER BY hour, day");
 			while (rs.next()) {
 				result[rs.getInt(1) == 0 ? 6 : rs.getInt(1)-1][rs.getInt(2)] = rs.getInt(3);
@@ -497,29 +534,25 @@ public class Database {
 		}
 	}
 	
-	public LinkedList<HashMap<String, Object>> getMessagesForExport(Dialog d) {
-		return getMessagesForExport("dialog_id", d.id);
-	}
-	
-	public LinkedList<HashMap<String, Object>> getMessagesForExport(Chat c) {
-		return getMessagesForExport("chat_id", c.id);
-	}
-	
-	private LinkedList<HashMap<String, Object>> getMessagesForExport(String type, Integer id) {
+	public LinkedList<HashMap<String, Object>> getMessagesForExport(AbstractChat c) {
 		try {
+			
 			ResultSet rs = stmt.executeQuery("SELECT messages.id as message_id, text, time*1000 as time, has_media, " +
 				"media_type, media_file, media_size, users.first_name as user_first_name, users.last_name as user_last_name, " +
 				"users.username as user_username, users.id as user_id, " +
 				"users_fwd.first_name as user_fwd_first_name, users_fwd.last_name as user_fwd_last_name, users_fwd.username as user_fwd_username " +
 				"FROM messages, users LEFT JOIN users AS users_fwd ON users_fwd.id=fwd_from_id WHERE " +
-				"users.id=messages.sender_id AND " + type + "=" + id + " " +
+				"users.id=messages.sender_id AND " + c.getQuery() + " " +
 				"ORDER BY messages.id");
 			SimpleDateFormat format_time = new SimpleDateFormat("HH:mm:ss");
 			SimpleDateFormat format_date = new SimpleDateFormat("d MMM yy");
 			ResultSetMetaData meta = rs.getMetaData();
 			int columns = meta.getColumnCount();
 			LinkedList<HashMap<String, Object>> list = new LinkedList<HashMap<String, Object>>();
+			
+			Integer count=0;
 			String old_date = null;
+			Integer old_user = null;
 			while (rs.next()) {
 				HashMap<String, Object> h = new HashMap<String, Object>(columns);
 				for (int i=1; i<=columns; i++) {
@@ -535,9 +568,13 @@ public class Database {
 				}
 				h.put("from_me", rs.getInt("user_id")==user_manager.getUser().getId());
 				h.put("is_new_date", !date.equals(old_date));
+				h.put("odd_even", (count%2==0) ? "even" : "odd");
+				h.put("same_user", old_user!=null && rs.getInt("user_id")==old_user);
+				old_user = rs.getInt("user_id");
 				old_date = date;
 				
 				list.add(h);
+				count++;
 			}
 			rs.close();
 			return list;
@@ -564,9 +601,11 @@ public class Database {
 	
 	
 	
+	public abstract class AbstractChat {
+		public abstract String getQuery();
+	}
 	
-	
-	public class Dialog {
+	public class Dialog extends AbstractChat{
 		public int id;
 		public String first_name;
 		public String last_name;
@@ -580,9 +619,11 @@ public class Database {
 			this.username = username;
 			this.count = count;
 		}
+		
+		public String getQuery() { return "dialog_id=" + id; }
 	}
 	
-	public class Chat {
+	public class Chat extends AbstractChat {
 		public int id;
 		public String name;
 		public int count;
@@ -592,5 +633,24 @@ public class Database {
 			this.name = name;
 			this.count = count;
 		}
+		
+		public String getQuery() {return "chat_id=" + id; }
+	}
+	
+	public class User {
+		public String name;
+		public boolean isMe;
+		
+		public User(int id, String first_name, String last_name, String username) {
+			isMe = id==user_manager.getUser().getId();
+			StringBuilder s = new StringBuilder();
+			if (first_name!=null) s.append(first_name + " ");
+			if (last_name!=null) s.append(last_name);
+			name = s.toString().trim();
+		}
+	}
+	
+	public class GlobalChat extends AbstractChat {
+		public String getQuery() { return "1=1"; }
 	}
 }

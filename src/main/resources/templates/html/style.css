@@ -1,0 +1,48 @@
+body { font-family: Verdana, sans-serif; }
+
+ul.messages {
+	padding-left: 0px;
+}
+
+li.date, li.message {
+	list-style-type: none;
+}
+
+li.message { padding-left: 20px; }
+
+li.date {
+	font-weight: bold;
+	font-size: bigger;
+	margin-top: 10px;
+	text-transform: uppercase;
+	border-bottom: 1px dotted #888;
+}
+
+li.message.from-me {
+	background-color: #eef !important;
+}
+
+li .sender {
+	font-weight: bold;
+	min-width: 10em;
+	display: inline-block;
+}
+
+li.message .photo {
+	vertical-align: top;
+}
+
+li.message .photo img {
+	max-width: 250px;
+	max-height: 250px;
+}
+
+li.message.same-user .sender { visibility: hidden; }
+
+li .time {
+	font-size: smaller;
+}
+
+li.message.even {
+	background-color: #f8f8f8;
+}

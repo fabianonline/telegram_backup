@@ -2,6 +2,8 @@
 <html>
 <head>
 	<title>Telegram Backup for {{user.getUserString}}</title>
+	<meta charset="UTF-8">
+	<link rel="stylesheet" href="../style.css" type="text/css" />
 </head>
 
 <body>
@@ -22,9 +24,9 @@
 				{{formatted_date}}
 			</li>
 			{{/is_new_date}}
-			<li class="message {{#from_me}}from-me{{/from_me}}" data-message-id="{{message_id}}" data-media="{{media_type}}">
-				<span class="sender">{{user_first_name}}</span>
+			<li class="message {{#from_me}}from-me{{/from_me}} {{odd_even}} {{#same_user}}same-user{{/same_user}}" data-message-id="{{message_id}}" data-media="{{media_type}}">
 				<span class="time">{{formatted_time}}</span>
+				<span class="sender">{{user_first_name}}</span>
 				{{#text}}<span class="text">{{text}}</span>{{/text}}
 				{{#media_sticker}}<span class="sticker"><img src="../../../stickers/{{media_file}}" /></span>{{/media_sticker}}
 				{{#media_photo}}<span class="photo"><img src="../{{media_file}}" /></span>{{/media_photo}}
@@ -34,6 +36,8 @@
 	</ul>
 	
 	<a href="../index.html">Back to the overview</a>
+	
+	{{> _stats }}
 	
 </body>
 </html>
