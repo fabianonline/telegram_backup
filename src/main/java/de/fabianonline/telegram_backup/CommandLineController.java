@@ -18,7 +18,6 @@ package de.fabianonline.telegram_backup;
 
 import de.fabianonline.telegram_backup.TelegramUpdateHandler;
 import de.fabianonline.telegram_backup.exporter.HTMLExporter;
-import de.fabianonline.telegram_backup.exporter.StatsExporter;
 
 import com.github.badoualy.telegram.api.Kotlogram;
 import com.github.badoualy.telegram.api.TelegramApp;
@@ -133,9 +132,6 @@ public class CommandLineController {
 			if (CommandLineOptions.val_export != null) {
 				if (CommandLineOptions.val_export.toLowerCase().equals("html")) {
 					(new HTMLExporter()).export(user);
-					System.exit(0);
-				} else if (CommandLineOptions.val_export.toLowerCase().equals("stats")) {
-					(new StatsExporter()).export(user);
 					System.exit(0);
 				} else {
 					show_error("Unknown export format.");
