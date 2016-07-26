@@ -118,13 +118,10 @@ public class HTMLExporter {
 		StringBuilder sb = new StringBuilder();
 		sb.append("[");
 		for (int x=0; x<data.length; x++) {
-			if (x>0) sb.append(", ");
-			sb.append("[");
 			for (int y=0; y<data[x].length; y++) {
-				if (y>0) sb.append(", ");
-				sb.append(data[x][y]);
+				if (x>0 || y>0) sb.append(",");
+				sb.append("[" + x + "," + y + "," + data[x][y] + "]");
 			}
-			sb.append("]");
 		}
 		sb.append("]");
 		return sb.toString();

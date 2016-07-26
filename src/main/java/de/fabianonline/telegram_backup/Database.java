@@ -430,25 +430,31 @@ public class Database {
 	public HashMap<String, Integer> getMessageMediaTypesWithCount() {
 		HashMap<String, Integer> map = new HashMap<String, Integer>();
 		try {
+			int count = 0;
 			ResultSet rs = stmt.executeQuery("SELECT media_type, COUNT(id) FROM messages GROUP BY media_type");
 			while (rs.next()) {
 				String s = rs.getString(1);
-				if (s==null) s="null";
+				if (s==null) {
+					s="null";
+				} else {
+					count += rs.getInt(2);
+				}
 				map.put(s, rs.getInt(2));
 			}
+			map.put("any", count);
 			return map;
 		} catch (Exception e) { throw new RuntimeException(e); }
 	}
 
 	public int[][] getMessageTimesMatrix(Integer dialog_id, Integer chat_id) {
-		int result[][] = new int[24][7];
+		int result[][] = new int[7][24];
 		try {
-			ResultSet rs = stmt.executeQuery("SELECT STRFTIME('%H', time, 'unixepoch') AS hour, " +
-				"STRFTIME('%w', time, 'unixepoch') as DAY, " +
+			ResultSet rs = stmt.executeQuery("SELECT STRFTIME('%w', time, 'unixepoch') as DAY, " +
+				"STRFTIME('%H', time, 'unixepoch') AS hour, " +
 				"COUNT(id) FROM messages GROUP BY hour, day " +
 				"ORDER BY hour, day");
 			while (rs.next()) {
-				result[rs.getInt(1)][rs.getInt(2) == 0 ? 6 : rs.getInt(2)-1] = rs.getInt(3);
+				result[rs.getInt(1) == 0 ? 6 : rs.getInt(1)-1][rs.getInt(2)] = rs.getInt(3);
 			}
 			return result;
 		} catch (Exception e) { throw new RuntimeException(e); }

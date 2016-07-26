@@ -3,59 +3,109 @@
 <head>
 	<title>Telegram Backup for {{user.getUserString}}</title>
 	
-	<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-	<script type="text/javascript">
-		google.charts.load("current", {packages:["corechart"]});
-		google.charts.setOnLoadCallback(drawChart);
-		
-		function drawChart() {
-			drawChartChatTypes();
-			drawChartMessageTypes();
-			drawChartMediaTypes();
-		}
+	<meta charset="UTF-8">
 	
-		function drawChartChatTypes() {
-			var data = google.visualization.arrayToDataTable([
-				['Type', 'Count'],
-				['Dialog', {{count.dialogs}}],
-				['Chat', {{count.chats}}]
-			]);
-			var options = {
-				title: 'Chat types',
-				legend: 'none',
-				pieSliceText: 'label',
-			};
-
-			var chart = new google.visualization.PieChart(document.getElementById('chart_chat_types'));
-			chart.draw(data, options);
-		}
-		
-		function drawChartMediaTypes() {
-			var data = google.visualization.arrayToDataTable([
-				['Type', 'Count'],
-				['No media', {{count.messages.media_type.null}}+0], ['Photo', {{count.messages.media_type.photo}}+0],
-				['Audio', {{count.messages.media_type.audio}}+0], ['Video', {{count.messages.media_type.video}}+0],
-				['Geolocation', {{count.messages.media_type.geo}}+0], ['Document', {{count.messages.media_type.document}}+0],
-				['Sticker', {{count.messages.media_type.sticker}}+0], ['Venue', {{count.messages.media_type.venue}}+0],
-				['Contact', {{count.messages.media_type.contact}}+0]
-			]);
-			var options = { title: 'Media types', legend: 'none', pieSliceText: 'label' };
-			var chart = new google.visualization.PieChart(document.getElementById('chart_media_types'));
-			chart.draw(data, options);
-		}
-		
-		function drawChartMessageTypes() {
-			var data = google.visualization.arrayToDataTable([
-				['Type', 'Count'],
-				['Normal messages', {{count.messages.type.message}}],
-				['Empty messages', {{count.messages.type.empty_message}}],
-				['Service messages', {{count.messages.type.service_message}}]
-			]);
-			var options = { title: 'Message types', legend: 'none', pieSliceText: 'label' };
+	<script type="text/javascript" src="//code.jquery.com/jquery-1.9.1.js"></script>
+	<script src="https://code.highcharts.com/highcharts.js"></script>
+	<script src="https://code.highcharts.com/modules/heatmap.js"></script>
+	<script src="https://code.highcharts.com/modules/drilldown.js"></script>
+	
+	<script type="text/javascript">
+		$(function() {
+			$('#heatmap').highcharts({
+				chart: {
+					type: 'heatmap',
+				},
+				colorAxis: {
+					stops: [
+						[0, '#000000'],
+						[1, '#FF0000'],
+					],
+				},
+				xAxis: {
+					categories: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+				},
+				yAxis: {
+					reversed: true,
+					title: { text: "Hour", },
+				},
+				series: [{
+					name: 'Messages per hour',
+					data: {{heatmap_data}},
+				}],
+			});
 			
-			var chart = new google.visualization.PieChart(document.getElementById('chart_message_types'));
-			chart.draw(data, options);
-		}
+			$('#chart_chat_types').highcharts({
+				chart: {
+					type: 'pie',
+				},
+				title: {
+					text: 'Chat types',
+				},
+				series: [{
+					name: 'Types',
+					data: [{
+						name: 'Dialogs',
+						y: {{count.dialogs}},
+					}, {
+						name: 'Group chats',
+						y: {{count.chats}},
+					}],
+				}],
+			});
+			
+			$('#chart_media_types').highcharts({
+				chart: {
+					type: 'pie',
+				},
+				title: {
+					text: 'Media types',
+				},
+				subtitle: {
+					text: 'Click on media slice to expand',
+				},
+				series: [{
+					name: 'Has media',
+					data: [
+						{name: 'No media',    y: {{count.messages.media_type.null}}+0, drilldown: null},
+						{name: 'With media',  y: {{count.messages.media_type.any}}+0, drilldown: 'With media'},
+					],
+				}],
+				drilldown: {
+					series: [{
+						name: 'Media types',
+						id: 'With media',
+						data: [
+							{name: 'Photo',       y: {{count.messages.media_type.photo}}+0},
+							{name: 'Audio',       y: {{count.messages.media_type.audio}}+0},
+							{name: 'Video',       y: {{count.messages.media_type.video}}+0},
+							{name: 'Geolocation', y: {{count.messages.media_type.geo}}+0},
+							{name: 'Document',    y: {{count.messages.media_type.document}}+0},
+							{name: 'Sticker',     y: {{count.messages.media_type.sticker}}+0},
+							{name: 'Venue',       y: {{count.messages.media_type.venue}}+0},
+							{name: 'Contact',     y: {{count.messages.media_type.contact}}+0},
+						],
+					}],
+				},
+			});
+			
+			$('#chart_message_types').highcharts({
+				chart: {
+					type: 'pie',
+				},
+				title: {
+					text: 'Message types',
+				},
+				series: [{
+					name: 'Message types',
+					data: [
+						{name: 'Normal messages',  y: {{count.messages.type.message}}+0},
+						{name: 'Empty messages',   y: {{count.messages.type.empty_message}}+0},
+						{name: 'Service messages', y: {{count.messages.type.service_message}}+0},
+					],
+				}],
+			});
+		});
 	</script>
 </head>
 
@@ -88,35 +138,11 @@
 		{{/chats}}
 	</ul>
 
-<!--
-count.chats: {{count.chats}}
-count.dialogs: {{count.dialogs}}
-count.messages: {{count.messages}}
-count.messages.chats: {{count.messages.chats}}
-count.messages.dialogs: {{count.messages.dialogs}}
-count.messages.from_me: {{count.messages.from_me}}
 
-count.messages.type.message: {{count.messages.type.message}}
-count.messages.type.empty_message: {{count.messages.type.empty_message}}
-count.messages.type.service_message: {{count.messages.type.service_message}}
-
-count.messages.media_type.null: {{count.messages.media_type.null}}
-count.messages.media_type.photo:{{count.messages.media_type.photo}}
-count.messages.media_type.audio:{{count.messages.media_type.audio}}
-count.messages.media_type.video:{{count.messages.media_type.video}}
-count.messages.media_type.geo:{{count.messages.media_type.geo}}
-count.messages.media_type.document:{{count.messages.media_type.document}}
-count.messages.media_type.sticker:{{count.messages.media_type.sticker}}
-count.messages.media_type.venue:{{count.messages.media_type.venue}}
-count.messages.media_type.contact:{{count.messages.media_type.contact}}
-
-{{heatmap_data}}
--->
-
-
+	<span id="heatmap" style="width: 400px; height: 500px;"></span>
 	
-	<div id="chart_chat_types" style="width: 900px; height: 500px;"></div>
-	<div id="chart_message_types" style="width: 900px; height: 500px;"></div>
-	<div id="chart_media_types" style="width: 900px; height: 500px;"></div>
+	<span id="chart_chat_types" style="width: 400px; height: 500px;"></span>
+	<span id="chart_message_types" style="width: 400px; height: 500px;"></span>
+	<span id="chart_media_types" style="width: 400px; height: 500px;"></span>
 </body>
 </html>
