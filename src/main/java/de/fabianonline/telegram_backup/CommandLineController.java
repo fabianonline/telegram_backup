@@ -118,9 +118,15 @@ public class CommandLineController {
 			logger.info("Creating UserManager");
 			user = new UserManager(client);
 
-			if (!CommandLineOptions.cmd_login && user.getUser()==null) {
+			if (!CommandLineOptions.cmd_login && !user.isLoggedIn()) {
 				System.out.println("Your authorization data is invalid or missing. You will have to login with Telegram again.");
 				CommandLineOptions.cmd_login = true;
+			}
+			if (account!=null && user.isLoggedIn()) {
+				if (!account.equals("+" + user.getUser().getPhone())) {
+					logger.error("Account: {}, user.getUser().getPhone(): +{}", account, user.getUser().getPhone());
+					throw new RuntimeException("Account / User mismatch");
+				}
 			}
 			
 			logger.debug("CommandLineOptions.val_export: {}", CommandLineOptions.val_export);
@@ -142,7 +148,11 @@ public class CommandLineController {
 				System.exit(0);
 			}
 			
-			System.out.println("You are logged in as " + user.getUserString());
+			if (user.isLoggedIn()) {
+				System.out.println("You are logged in as " + user.getUserString());
+			} else {
+				System.out.println("You are not logged in.");
+			}
 			
 			logger.info("Initializing Download Manager");
 			DownloadManager d = new DownloadManager(user, client, new CommandLineDownloadProgress());
@@ -178,13 +188,13 @@ public class CommandLineController {
 		user.verifyCode(code);
 		
 		if (user.isPasswordNeeded()) {
-			System.out.println("We also need your account password.");
+			System.out.println("We also need your account password. Please enter it now. It should not be printed, so it's okay if you see nothing while typing it.");
 			String pw = getPassword();
 			user.verifyPassword(pw);
 		}
 		storage.setPrefix("+" + user.getUser().getPhone());
 		
-		System.out.println("Please run this tool with '--account +" + user.getUser().getPhone() + " to use this account.");
+		System.out.println("Everything seems fine. Please run this tool again with '--account +" + user.getUser().getPhone() + " to use this account.");
 	}
 	
 	private String getLine() {
