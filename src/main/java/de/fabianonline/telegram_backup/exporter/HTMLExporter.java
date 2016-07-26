@@ -95,6 +95,7 @@ public class HTMLExporter {
 			for (Database.Dialog d : dialogs) {
 				LinkedList<HashMap<String, Object>> messages = db.getMessagesForExport(d);
 				scope.clear();
+				scope.put("user", user);
 				scope.put("dialog", d);
 				scope.put("messages", messages);
 				
@@ -112,9 +113,11 @@ public class HTMLExporter {
 			for (Database.Chat c : chats) {
 				LinkedList<HashMap<String, Object>> messages = db.getMessagesForExport(c);
 				scope.clear();
+				scope.put("user", user);
 				scope.put("chat", c);
 				scope.put("messages", messages);
 				
+				scope.putAll(db.getMessageAuthorsWithCount(c));
 				scope.put("heatmap_data", intArrayToString(db.getMessageTimesMatrix(c)));
 				scope.putAll(db.getMessageTypesWithCount(c));
 				scope.putAll(db.getMessageMediaTypesWithCount(c));

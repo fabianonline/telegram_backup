@@ -54,8 +54,8 @@ public class DatabaseUpdates {
 				rs = stmt.executeQuery("SELECT MAX(version) FROM database_versions");
 				rs.next();
 				version = rs.getInt(1);
-				rs.close();
 			}
+			rs.close();
 			logger.debug("version: {}", version);
 			System.out.println("Database version: " + version);
 			logger.debug("Max available database version is {}", getMaxPossibleVersion());
@@ -70,8 +70,12 @@ public class DatabaseUpdates {
 					}
 				}
 				if (backup) {
-					logger.debug("Performing backup");
-					db.backupDatabase(version);
+					if (version > 0) {
+						logger.debug("Performing backup");
+						db.backupDatabase(version);
+					} else {
+						logger.debug("NOT performing a backup, because we are creating a fresh database and don't need a backup of that.");
+					}
 				}
 				
 				logger.debug("Applying updates");

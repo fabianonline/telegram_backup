@@ -98,6 +98,15 @@
 					{name: 'Others', y: {{authors.count.others}}, drilldown: 'Others'},
 				]
 			}],
+			plotOptions: {
+				pie: {
+					dataLabels: {
+						style: {
+							width: '150px',
+						},
+					},
+				},
+			},
 			drilldown: {
 				series: [{
 					name: 'Authors',
@@ -152,9 +161,11 @@
 	});
 </script>
 
-<span id="heatmap" style="width: 400px; height: 500px;"></span>
+<span id="heatmap"             style="width: 500px; height: 600px;"></span>
 
-{{#count.dialogs}}<span id="chart_chat_types" style="width: 400px; height: 500px;"></span>{{/count.dialogs}}
-<span id="chart_message_types" style="width: 400px; height: 500px;"></span>
-<span id="chart_media_types" style="width: 400px; height: 500px;"></span>
-<span id="chart_authors" style="width: 400px; height: 500px;"></span>
+{{#count.dialogs}}
+<span id="chart_chat_types"    style="width: 600px; height: 500px;"></span>
+{{/count.dialogs}}
+<span id="chart_message_types" style="width: 600px; height: 500px;"></span>
+<span id="chart_media_types"   style="width: 600px; height: 500px;"></span>
+<span id="chart_authors"       style="width: 600px; height: 500px;"></span>
