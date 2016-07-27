@@ -41,6 +41,7 @@ import java.util.HashMap;
 import java.util.Date;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.FileAlreadyExistsException;
 import java.text.SimpleDateFormat;
 
 import de.fabianonline.telegram_backup.mediafilemanager.AbstractMediaFileManager;
@@ -97,8 +98,9 @@ public class Database {
 			logger.debug("Copying {} to {}", src, dst);
 			Files.copy(
 				new File(src).toPath(),
-				new File(dst).toPath(),
-				StandardCopyOption.REPLACE_EXISTING);
+				new File(dst).toPath());
+		} catch (FileAlreadyExistsException e) {
+			logger.warn("Backup already exists:", e);
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new RuntimeException("Could not create backup.");
