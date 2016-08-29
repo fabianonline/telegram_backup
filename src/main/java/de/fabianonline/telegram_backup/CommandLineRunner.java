@@ -17,6 +17,8 @@
 package de.fabianonline.telegram_backup;
 
 import de.fabianonline.telegram_backup.CommandLineController;
+import de.fabianonline.telegram_backup.Utils;
+import de.fabianonline.telegram_backup.Version;
 import org.slf4j.LoggerFactory;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
@@ -55,6 +57,14 @@ public class CommandLineRunner {
 			((Logger)LoggerFactory.getLogger("com.github.badoualy")).setLevel(Level.TRACE);
 		}
 		
+		Version v = Utils.getNewestVersion();
+		if (v!=null && v.isNewer) {
+			System.out.println("A newer version is vailable!");
+			System.out.println("You are using: " + Config.APP_APPVER);
+			System.out.println("Available:     " + v.version);
+			System.out.println("Get it here:   " + v.url);
+			System.out.println();
+		}
 
 		if (true || CommandLineOptions.cmd_console) {
 			// Always use the console for now.

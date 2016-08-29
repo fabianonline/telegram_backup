@@ -19,8 +19,20 @@ import com.github.badoualy.telegram.tl.exception.RpcErrorException;
 import java.io.File;
 import java.util.List;
 import java.util.Vector;
+import com.google.gson.*;
+import java.net.URL;
+import org.apache.commons.io.IOUtils;
+import de.fabianonline.telegram_backup.Version;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Utils {
+	public static final int VERSIONS_EQUAL = 0;
+	public static final int VERSION_1_NEWER = 1;
+	public static final int VERSION_2_NEWER = 2;
+	
+	private static final Logger logger = (Logger)LoggerFactory.getLogger(Utils.class);
+	
 	static Vector<String> getAccounts() {
 		Vector<String> accounts = new Vector<String>();
 		File folder = new File(Config.FILE_BASE);
@@ -52,5 +64,84 @@ public class Utils {
 			"the fact that Telegram won't talk to me until then.");
 		try { Thread.sleep(wait * 60 * 1000); } catch(InterruptedException e2) {}
 		System.out.println("");
+	}
+	
+	static Version getNewestVersion() {
+		try {
+			String data_url = "https://api.github.com/repos/fabianonline/telegram_backup/releases";
+			logger.debug("Requesting current release info from {}", data_url);
+			String json = IOUtils.toString(new URL(data_url));
+			JsonParser parser = new JsonParser();
+			JsonElement root_elm = parser.parse(json);
+			if (root_elm.isJsonArray()) {
+				JsonArray root = root_elm.getAsJsonArray();
+				JsonObject newest_version = null;
+				for (JsonElement e : root) if (e.isJsonObject()) {
+					JsonObject version = e.getAsJsonObject();
+					if (version.getAsJsonPrimitive("prerelease").getAsBoolean() == false) {
+						newest_version = version;
+						break;
+					}
+				}
+				if (newest_version == null) return null;
+				String new_v = newest_version.getAsJsonPrimitive("tag_name").getAsString();
+				logger.debug("Found current release version {}", new_v);
+				String cur_v = Config.APP_APPVER;
+				
+				int result = compareVersions(cur_v, new_v);
+				
+				return new Version(new_v, newest_version.getAsJsonPrimitive("html_url").getAsString(), result == VERSION_2_NEWER);
+			}
+			return null;
+		} catch(Exception e) {
+			return null;
+		}
+	}
+	
+	public static int compareVersions(String v1, String v2) {
+		logger.debug("Comparing versions {} and {}.", v1, v2);
+		if (v1.equals(v2)) return VERSIONS_EQUAL;
+				
+		String[] v1_p = v1.split("-");
+		String[] v2_p = v2.split("-");
+		
+		logger.trace("Parts to compare without suffixes: {} and {}.", v1_p[0], v2_p[0]);
+		
+		String[] v1_p2 = v1_p[0].split("\\.");
+		String[] v2_p2 = v2_p[0].split("\\.");
+		
+		logger.trace("Length of the parts without suffixes: {} and {}.", v1_p2.length, v2_p2.length);
+		
+		int i;
+		for (i=0; i<v1_p2.length && i<v2_p2.length; i++) {
+			int i_1 = Integer.parseInt(v1_p2[i]);
+			int i_2 = Integer.parseInt(v2_p2[i]);
+			logger.trace("Comparing parts: {} and {}.", i_1, i_2);
+			if (i_1 > i_2) {
+				logger.debug("v1 is newer");
+				return VERSION_1_NEWER;
+			} else if (i_2 > i_1) {
+				logger.debug("v2 is newer");
+				return VERSION_2_NEWER;
+			}
+		}
+		logger.trace("At least one of the versions has run out of parts.");
+		if (v1_p2.length > v2_p2.length) {
+			logger.debug("v1 is longer, so it is newer");
+			return VERSION_1_NEWER;
+		} else if (v2_p2.length > v1_p2.length) {
+			logger.debug("v2 is longer, so it is newer");
+			return VERSION_2_NEWER;
+		}
+		
+		if (v1_p.length>1 && v2_p.length==1) {
+			logger.debug("v1 has a suffix, v2 not - so v2 is newer.");
+			return VERSION_2_NEWER;
+		} else if (v1_p.length==1 && v2_p.length>1) {
+			logger.debug("v1 has no suffix, but v2 has - so v1 is newer.");
+			return VERSION_1_NEWER;
+		}
+		logger.debug("We couldn't find a real difference, so we're assuming the versions are equal-ish.");
+		return VERSIONS_EQUAL;
 	}
 }
