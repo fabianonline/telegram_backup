@@ -26,6 +26,7 @@ class CommandLineOptions {
 	public static boolean cmd_version        = false;
 	public static boolean cmd_license        = false;
 	public static boolean cmd_daemon         = false;
+	public static boolean cmd_no_media       = false;
 	
 	public static String  val_account        = null;
 	public static Integer val_limit_messages = null;
@@ -93,6 +94,9 @@ class CommandLineOptions {
 				
 				case "-d": case "--daemon":
 					cmd_daemon = true;              break;
+				
+				case "--no-media":
+					cmd_no_media = true;            break;
 					
 				default:
 					throw new RuntimeException("Unknown command " + arg);

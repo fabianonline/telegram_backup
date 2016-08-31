@@ -154,8 +154,14 @@ public class CommandLineController {
 			DownloadManager d = new DownloadManager(user, client, new CommandLineDownloadProgress());
 			logger.debug("Calling DownloadManager.downloadMessages with limit {}", CommandLineOptions.val_limit_messages);
 			d.downloadMessages(CommandLineOptions.val_limit_messages);
-			logger.debug("Calling DownloadManager.downloadMedia");
-			d.downloadMedia();
+			
+			logger.debug("CommandLineOptions.cmd_no_media: {}", CommandLineOptions.cmd_no_media);
+			if (!CommandLineOptions.cmd_no_media) {
+				logger.debug("Calling DownloadManager.downloadMedia");
+				d.downloadMedia();
+			} else {
+				System.out.println("Skipping media download because --no-media is set.");
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		} finally {
@@ -219,6 +225,7 @@ public class CommandLineController {
 		System.out.println("      --debug-telegram         Shows lots of debug messages from the library used to access Telegram.");
 		System.out.println("  -A, --list-accounts          List all existing accounts ");
 		System.out.println("      --limit-messages <x>     Downloads at most the most recent <x> messages.");
+		System.out.println("      --no-media               Do not download media files.");
 		System.out.println("  -t, --target <x>             Target directory for the files.");
 		System.out.println("  -e, --export <format>        Export the database. Valid formats are:");
 		System.out.println("                               html - Creates HTML files.");
