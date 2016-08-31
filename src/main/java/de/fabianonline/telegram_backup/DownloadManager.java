@@ -260,7 +260,8 @@ public class DownloadManager {
 		FileOutputStream fos = null;
 		try {
 			String temp_filename = target + ".downloading";
-			logger.debug("Temporary filename {}", temp_filename);
+			logger.debug("Downloading file {}", target);
+			logger.trace("Temporary filename: {}", temp_filename);
 			
 			int offset = 0;
 			if (new File(temp_filename).isFile()) {
@@ -272,7 +273,7 @@ public class DownloadManager {
 					offset = 0;
 				}
 			}
-			logger.debug("offset before the loop is {}", offset);
+			logger.trace("offset before the loop is {}", offset);
 			fos = new FileOutputStream(temp_filename, true);
 			TLFile response;
 			do {
@@ -298,7 +299,7 @@ public class DownloadManager {
 				new File(temp_filename).delete();
 				System.exit(1);
 			}
-			logger.debug("Renaming {} to {}", temp_filename, target);
+			logger.trace("Renaming {} to {}", temp_filename, target);
 			Files.move(new File(temp_filename).toPath(), new File(target).toPath(), StandardCopyOption.REPLACE_EXISTING);
 			last_download_succeeded = true;
 			return true;
