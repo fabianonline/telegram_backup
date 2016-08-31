@@ -50,10 +50,13 @@ public class CommandLineRunner {
 		rootLogger.addAppender(appender);
 		rootLogger.setLevel(Level.OFF);
 
-		if (CommandLineOptions.cmd_debug) {
+		if (CommandLineOptions.cmd_trace) {
 			((Logger)LoggerFactory.getLogger("de.fabianonline.telegram_backup")).setLevel(Level.TRACE);
+		} else if (CommandLineOptions.cmd_debug) {
+			((Logger)LoggerFactory.getLogger("de.fabianonline.telegram_backup")).setLevel(Level.DEBUG);
 		}
-		if (CommandLineOptions.cmd_debug_telegram) {
+		
+		if (CommandLineOptions.cmd_trace_telegram) {
 			((Logger)LoggerFactory.getLogger("com.github.badoualy")).setLevel(Level.TRACE);
 		}
 		

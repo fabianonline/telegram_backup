@@ -222,7 +222,8 @@ public class CommandLineController {
 		System.out.println("  -a, --account <x>            Use account <x>.");
 		System.out.println("  -l, --login                  Login to an existing telegram account.");
 		System.out.println("      --debug                  Shows some debug information.");
-		System.out.println("      --debug-telegram         Shows lots of debug messages from the library used to access Telegram.");
+		System.out.println("      --trace                  Shows lots of debug information. Overrides --debug.");
+		System.out.println("      --trace-telegram         Shows lots of debug messages from the library used to access Telegram.");
 		System.out.println("  -A, --list-accounts          List all existing accounts ");
 		System.out.println("      --limit-messages <x>     Downloads at most the most recent <x> messages.");
 		System.out.println("      --no-media               Do not download media files.");
