@@ -103,8 +103,8 @@ public class DownloadManager {
 			dialog_limit);
 		logger.debug("Got {} dialogs", dialogs.getDialogs().size());
 		for (TLDialog d : dialogs.getDialogs()) {
-			if (d.getTopMessage() > max_message_id) {
-				logger.trace("Updating top message id: {} => {}", max_message_id, d.getTopMessage());
+			if (d.getTopMessage() > max_message_id && ! (d.getPeer() instanceof TLPeerChannel)) {
+				logger.trace("Updating top message id: {} => {}. Dialog type: {}", max_message_id, d.getTopMessage(), d.getPeer().getClass().getName());
 				max_message_id = d.getTopMessage();
 			}
 		}
