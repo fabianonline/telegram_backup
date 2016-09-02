@@ -128,6 +128,15 @@ public class CommandLineController {
 				}
 			}
 			
+			if (CommandLineOptions.val_test != null) {
+				if (CommandLineOptions.val_test == 1) {
+					TestFeatures.test1();
+				} else {
+					System.out.println("Unknown test " + CommandLineOptions.val_test);
+				}
+				System.exit(1);
+			}
+			
 			logger.debug("CommandLineOptions.val_export: {}", CommandLineOptions.val_export);
 			if (CommandLineOptions.val_export != null) {
 				if (CommandLineOptions.val_export.toLowerCase().equals("html")) {

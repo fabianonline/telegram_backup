@@ -33,6 +33,7 @@ class CommandLineOptions {
 	public static Integer val_limit_messages = null;
 	public static String  val_target         = null;
 	public static String  val_export         = null;
+	public static Integer val_test           = null;
 
 	public static void parseOptions(String[] args) {
 		String last_cmd = null;
@@ -51,6 +52,9 @@ class CommandLineOptions {
 						
 					case "--export":
 						val_export = arg;                           break;
+					
+					case "--test":
+						val_test = Integer.parseInt(arg);           break;
 				}
 				last_cmd = null;
 				continue;
@@ -101,6 +105,9 @@ class CommandLineOptions {
 				
 				case "--no-media":
 					cmd_no_media = true;            break;
+				
+				case "--test":
+					last_cmd = "--test";            continue;
 					
 				default:
 					throw new RuntimeException("Unknown command " + arg);
