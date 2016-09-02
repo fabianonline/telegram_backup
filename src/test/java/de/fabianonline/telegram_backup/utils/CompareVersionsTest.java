@@ -11,5 +11,6 @@ public class CompareVersionsTest {
 		assertEquals(Utils.compareVersions("1.0.4", "1.0.4-pre.1"), Utils.VERSION_1_NEWER);
 		assertEquals(Utils.compareVersions("1.0.4", "1.0.4"), Utils.VERSIONS_EQUAL);
 		assertEquals(Utils.compareVersions("1.0.4-pre.2", "1.0.4-pre.1"), Utils.VERSIONS_EQUAL);
+		assertEquals(Utils.compareVersions("1.0.4", "1.0.4-abcdef-dirty"), Utils.VERSION_2_NEWER);
 	}
 }

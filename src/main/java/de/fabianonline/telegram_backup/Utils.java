@@ -102,8 +102,8 @@ public class Utils {
 		logger.debug("Comparing versions {} and {}.", v1, v2);
 		if (v1.equals(v2)) return VERSIONS_EQUAL;
 				
-		String[] v1_p = v1.split("-");
-		String[] v2_p = v2.split("-");
+		String[] v1_p = v1.split("-", 2);
+		String[] v2_p = v2.split("-", 2);
 		
 		logger.trace("Parts to compare without suffixes: {} and {}.", v1_p[0], v2_p[0]);
 		
@@ -134,12 +134,33 @@ public class Utils {
 			return VERSION_2_NEWER;
 		}
 		
+		// startsWith
 		if (v1_p.length>1 && v2_p.length==1) {
-			logger.debug("v1 has a suffix, v2 not - so v2 is newer.");
-			return VERSION_2_NEWER;
+			logger.debug("v1 has a suffix, v2 not.");
+			if (v1_p[1].startsWith("pre")) {
+				logger.debug("v1 is a pre version, so v1 is newer");
+				return VERSION_2_NEWER;
+			} else {
+				return VERSION_1_NEWER;
+			}
 		} else if (v1_p.length==1 && v2_p.length>1) {
-			logger.debug("v1 has no suffix, but v2 has - so v1 is newer.");
-			return VERSION_1_NEWER;
+			logger.debug("v1 has no suffix, but v2 has");
+			if (v2_p[1].startsWith("pre")) {
+				logger.debug("v2 is a pre version, so v1 is better");
+				return VERSION_1_NEWER;
+			} else {
+				return VERSION_2_NEWER;
+			}
+		} else if (v1_p.length>1 && v2_p.length>1) {
+			logger.debug("Both have a suffix");
+			if (v1_p[1].startsWith("pre") && !v2_p[1].startsWith("pre")) {
+				logger.debug("v1 is a 'pre' version, v2 not.");
+				return VERSION_2_NEWER;
+			} else if (!v1_p[1].startsWith("pre") && v2_p[1].startsWith("pre")) {
+				logger.debug("v2 is a 'pre' version, v2 not.");
+				return VERSION_1_NEWER;
+			}
+			return VERSIONS_EQUAL;
 		}
 		logger.debug("We couldn't find a real difference, so we're assuming the versions are equal-ish.");
 		return VERSIONS_EQUAL;
