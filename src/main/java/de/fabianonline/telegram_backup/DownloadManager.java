@@ -116,6 +116,12 @@ public class DownloadManager {
 			max_database_id = Math.max(max_database_id, max_message_id-limit);
 			System.out.println("New top message id 'in database' is " + max_database_id);
 		}
+		if (max_message_id - max_database_id > 1000000) {
+			System.out.println("Would have to load more than 1 million messages which is not supported by telegram. Capping the list.");
+			logger.debug("max_message_id={}, max_database_id={}, difference={}", max_message_id, max_database_id, max_message_id - max_database_id);
+			max_database_id = Math.max(0, max_message_id - 1000000);
+			logger.debug("new max_database_id: {}", max_database_id);
+		}
 
 		if (max_database_id == max_message_id) {
 			System.out.println("No new messages to download.");
@@ -141,11 +147,16 @@ public class DownloadManager {
 			if (limit != null) {
 				System.out.println("You are missing messages in your database. But since you're using '--limit-messages', I won't download these now.");
 			} else {
-				LinkedList<Integer> ids = db.getMissingIDs();
-				count_missing = ids.size();
-				System.out.println("Downloading " + ids.size() + " messages that are missing in your database.");
+				LinkedList<Integer> all_missing_ids = db.getMissingIDs();
+				LinkedList<Integer> downloadable_missing_ids = new LinkedList<Integer>();
+				for (Integer id : all_missing_ids) {
+					if (id > max_message_id - 1000000) downloadable_missing_ids.add(id);
+				}
+				count_missing = all_missing_ids.size();
+				System.out.println("" + all_missing_ids.size() + " messages are missing in your Database.");
+				System.out.println("I can (and will) download " + downloadable_missing_ids.size() + " of them.");
 				
-				downloadMessages(ids);
+				downloadMessages(downloadable_missing_ids);
 			}
 		}
 		
