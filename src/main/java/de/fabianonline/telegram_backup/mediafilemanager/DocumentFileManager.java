@@ -60,7 +60,7 @@ public class DocumentFileManager extends AbstractMediaFileManager {
 	
 	public boolean isSticker() {
 		TLDocumentAttributeSticker sticker = null;
-		for(TLAbsDocumentAttribute attr : doc.getAttributes()) {
+		if (doc.getAttributes() != null) for(TLAbsDocumentAttribute attr : doc.getAttributes()) {
 			if (attr instanceof TLDocumentAttributeSticker) {
 				sticker = (TLDocumentAttributeSticker)attr;
 			}
@@ -78,7 +78,7 @@ public class DocumentFileManager extends AbstractMediaFileManager {
 		if (doc == null) return "empty";
 		String ext = null;
 		String original_filename = null;
-		for(TLAbsDocumentAttribute attr : doc.getAttributes()) {
+		if (doc.getAttributes() != null) for(TLAbsDocumentAttribute attr : doc.getAttributes()) {
 			if (attr instanceof TLDocumentAttributeFilename) {
 				original_filename = ((TLDocumentAttributeFilename)attr).getFileName();
 			}
