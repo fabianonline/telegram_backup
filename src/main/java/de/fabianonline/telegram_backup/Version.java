@@ -19,11 +19,13 @@ package de.fabianonline.telegram_backup;
 public class Version {
 	public final String version;
 	public final String url;
+	public final String body;
 	public final boolean isNewer;
 		
-	public Version(String v, String u, boolean n) {
+	public Version(String v, String u, String b, boolean n) {
 		this.version = v;
 		this.url = u;
+		this.body = b;
 		this.isNewer = n;
 	}
 }

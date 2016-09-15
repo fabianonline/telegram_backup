@@ -90,7 +90,7 @@ public class Utils {
 				
 				int result = compareVersions(cur_v, new_v);
 				
-				return new Version(new_v, newest_version.getAsJsonPrimitive("html_url").getAsString(), result == VERSION_2_NEWER);
+				return new Version(new_v, newest_version.getAsJsonPrimitive("html_url").getAsString(), newest_version.getAsJsonPrimitive("body").getAsString(), result == VERSION_2_NEWER);
 			}
 			return null;
 		} catch(Exception e) {

@@ -67,6 +67,9 @@ public class CommandLineRunner {
 			System.out.println("Available:     " + v.version);
 			System.out.println("Get it here:   " + v.url);
 			System.out.println();
+			System.out.println("Changes in this version:");
+			System.out.println(v.body);
+			System.out.println();
 		}
 
 		if (true || CommandLineOptions.cmd_console) {
