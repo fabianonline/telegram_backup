@@ -40,6 +40,9 @@ public class Config {
     public static int DELAY_AFTER_GET_MESSAGES = 100;
     public static int DELAY_AFTER_GET_FILE = 100;
     
+    public static int RENAMING_MAX_TRIES = 5;
+    public static int RENAMING_DELAY = 1000;
+    
     public static final String SECRET_GMAPS = "AIzaSyBEtUDhCQKEH6i2Mn1GAiQ9M_tLN0vxHIs";
     
     static {

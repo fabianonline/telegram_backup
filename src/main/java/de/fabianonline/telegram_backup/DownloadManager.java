@@ -311,7 +311,23 @@ public class DownloadManager {
 				System.exit(1);
 			}
 			logger.trace("Renaming {} to {}", temp_filename, target);
-			Files.move(new File(temp_filename).toPath(), new File(target).toPath(), StandardCopyOption.REPLACE_EXISTING);
+			int rename_tries = 0;
+			IOException last_exception = null;
+			while (rename_tries <= Config.RENAMING_MAX_TRIES) {
+				rename_tries++;
+				try {
+					Files.move(new File(temp_filename).toPath(), new File(target).toPath(), StandardCopyOption.REPLACE_EXISTING);
+					last_exception = null;
+					break;
+				} catch (IOException e) {
+					logger.debug("Exception during move. rename_tries: {}. Exception: {}", rename_tries, e);
+					last_exception = e;
+					try { Thread.sleep(Config.RENAMING_DELAY); } catch (InterruptedException e2) {}
+				}
+			}
+			if (last_exception != null) {
+				throw last_exception;
+			}
 			last_download_succeeded = true;
 			return true;
 		} catch (java.io.IOException ex) {
