@@ -37,7 +37,7 @@ public class Config {
     public static final String FILE_FILES_BASE = "files";
     public static final String FILE_STICKER_BASE = "stickers";
 
-    public static int DELAY_AFTER_GET_MESSAGES = 100;
+    public static int DELAY_AFTER_GET_MESSAGES = 400;
     public static int DELAY_AFTER_GET_FILE = 100;
     
     public static int RENAMING_MAX_TRIES = 5;
