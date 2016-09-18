@@ -498,6 +498,17 @@ public class Database {
 			return result;
 		} catch (Exception e) { throw new RuntimeException(e); }
 	}
+
+	public String getEncoding() {
+		try {
+			ResultSet rs = stmt.executeQuery("PRAGMA encoding");
+			rs.next();
+			return rs.getString(1);
+		} catch (SQLException e) {
+			logger.debug("SQLException: {}", e);
+			return "unknown";
+		}
+	}
 			
 	
 	public LinkedList<Chat> getListOfChatsForExport() {

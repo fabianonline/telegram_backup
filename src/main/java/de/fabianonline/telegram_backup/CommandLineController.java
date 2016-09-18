@@ -131,6 +131,8 @@ public class CommandLineController {
 			if (CommandLineOptions.val_test != null) {
 				if (CommandLineOptions.val_test == 1) {
 					TestFeatures.test1();
+				} else if (CommandLineOptions.val_test == 2) {
+					TestFeatures.test2(user, client);
 				} else {
 					System.out.println("Unknown test " + CommandLineOptions.val_test);
 				}
