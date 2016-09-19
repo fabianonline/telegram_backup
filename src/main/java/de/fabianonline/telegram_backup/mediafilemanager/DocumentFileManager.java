@@ -91,6 +91,10 @@ public class DocumentFileManager extends AbstractMediaFileManager {
 		if (ext==null) {
 			ext = extensionFromMimetype(doc.getMimeType());
 		}
+		
+		// Sometimes, extensions contain a trailing double quote. Remove this. Fixes #12.
+		ext = ext.replace("\"", "");
+		
 		this.extension = ext;
 		return ext;
 	}
