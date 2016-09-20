@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.Random;
 import java.net.URL;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.TimeUnit;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 
@@ -84,7 +85,7 @@ public class DownloadManager {
 				System.out.println("");
 				System.out.println("Telegram took too long to respond to our request.");
 				System.out.println("I'm going to wait a minute and then try again.");
-				try { Thread.sleep(60*1000); } catch(InterruptedException e2) {}
+				try { TimeUnit.MINUTES.sleep(1); } catch(InterruptedException e2) {}
 				System.out.println("");
 			}
 		} while (!completed);
@@ -185,7 +186,7 @@ public class DownloadManager {
 			db.saveUsers(response.getUsers());
 			logger.trace("Sleeping");
 			try {
-				Thread.sleep(Config.DELAY_AFTER_GET_MESSAGES);
+				TimeUnit.MILLISECONDS.sleep(Config.DELAY_AFTER_GET_MESSAGES);
 			} catch (InterruptedException e) {}
 		}
 		logger.debug("Finished.");
@@ -212,7 +213,7 @@ public class DownloadManager {
 				System.out.println("");
 				System.out.println("Telegram took too long to respond to our request.");
 				System.out.println("I'm going to wait a minute and then try again.");
-				try { Thread.sleep(60*1000); } catch(InterruptedException e2) {}
+				try { TimeUnit.MINUTES.sleep(1); } catch(InterruptedException e2) {}
 				System.out.println("");
 			}
 		} while (!completed);
@@ -302,7 +303,7 @@ public class DownloadManager {
 				
 				fos.write(response.getBytes().getData());
 				fos.flush();
-				try { Thread.sleep(Config.DELAY_AFTER_GET_FILE); } catch(InterruptedException e) {}
+				try { TimeUnit.MILLISECONDS.sleep(Config.DELAY_AFTER_GET_FILE); } catch(InterruptedException e) {}
 			} while(offset < size && response.getBytes().getData().length>0);
 			fos.close();
 			if (offset < size) {
@@ -322,7 +323,7 @@ public class DownloadManager {
 				} catch (IOException e) {
 					logger.debug("Exception during move. rename_tries: {}. Exception: {}", rename_tries, e);
 					last_exception = e;
-					try { Thread.sleep(Config.RENAMING_DELAY); } catch (InterruptedException e2) {}
+					try { TimeUnit.MILLISECONDS.sleep(Config.RENAMING_DELAY); } catch (InterruptedException e2) {}
 				}
 			}
 			if (last_exception != null) {

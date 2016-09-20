@@ -19,6 +19,7 @@ import com.github.badoualy.telegram.tl.exception.RpcErrorException;
 import java.io.File;
 import java.util.List;
 import java.util.Vector;
+import java.util.concurrent.TimeUnit;
 import com.google.gson.*;
 import java.net.URL;
 import org.apache.commons.io.IOUtils;
@@ -59,7 +60,7 @@ public class Utils {
 			"Ctrl+C. You can restart me at any time and I will just continue to download your\n" +
 			"messages and media. But be advised that just restarting me is not going to change\n" +
 			"the fact that Telegram won't talk to me until then.");
-		try { Thread.sleep((delay + 1) * 1000); } catch(InterruptedException e2) {}
+		try { TimeUnit.SECONDS.sleep(delay + 1); } catch(InterruptedException e2) {}
 		System.out.println("");
 	}
 	
