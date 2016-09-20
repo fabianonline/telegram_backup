@@ -21,7 +21,9 @@ import de.fabianonline.telegram_backup.Database;
 
 import java.io.File;
 import java.io.PrintWriter;
-import java.io.BufferedWriter;
+import java.io.OutputStreamWriter;
+import java.io.FileOutputStream;
+import java.nio.charset.Charset;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URL;
@@ -85,7 +87,7 @@ public class HTMLExporter {
 			
 			MustacheFactory mf = new DefaultMustacheFactory();
 			Mustache mustache = mf.compile("templates/html/index.mustache");
-			FileWriter w = new FileWriter(base + "index.html");
+			OutputStreamWriter w = new OutputStreamWriter(new FileOutputStream(base + "index.html"), Charset.forName("UTF-8").newEncoder());
 			mustache.execute(w, scope);
 			w.close();
 			
@@ -104,7 +106,7 @@ public class HTMLExporter {
 				scope.putAll(db.getMessageTypesWithCount(d));
 				scope.putAll(db.getMessageMediaTypesWithCount(d));
 				
-				w = new FileWriter(base + "dialogs" + File.separatorChar + "user_" + d.id + ".html");
+				w = new OutputStreamWriter(new FileOutputStream(base + "dialogs" + File.separatorChar + "user_" + d.id + ".html"), Charset.forName("UTF-8").newEncoder());
 				mustache.execute(w, scope);
 				w.close();
 			}
@@ -122,7 +124,7 @@ public class HTMLExporter {
 				scope.putAll(db.getMessageTypesWithCount(c));
 				scope.putAll(db.getMessageMediaTypesWithCount(c));
 				
-				w = new FileWriter(base + "dialogs" + File.separatorChar + "chat_" + c.id + ".html");
+				w = new OutputStreamWriter(new FileOutputStream(base + "dialogs" + File.separatorChar + "chat_" + c.id + ".html"), Charset.forName("UTF-8").newEncoder());
 				mustache.execute(w, scope);
 				w.close();
 			}
