@@ -85,6 +85,7 @@ public class CommandLineController {
 				if (acc.equals(CommandLineOptions.val_account)) {
 					found=true;
 					logger.trace("Matches.");
+					break;
 				}
 			}
 			if (!found) {
