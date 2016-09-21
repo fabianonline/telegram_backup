@@ -87,7 +87,7 @@ public class HTMLExporter {
 			
 			MustacheFactory mf = new DefaultMustacheFactory();
 			Mustache mustache = mf.compile("templates/html/index.mustache");
-			OutputStreamWriter w = new OutputStreamWriter(new FileOutputStream(base + "index.html"), Charset.forName("UTF-8").newEncoder());
+			OutputStreamWriter w = getWriter(base + "index.html");
 			mustache.execute(w, scope);
 			w.close();
 			
@@ -106,7 +106,7 @@ public class HTMLExporter {
 				scope.putAll(db.getMessageTypesWithCount(d));
 				scope.putAll(db.getMessageMediaTypesWithCount(d));
 				
-				w = new OutputStreamWriter(new FileOutputStream(base + "dialogs" + File.separatorChar + "user_" + d.id + ".html"), Charset.forName("UTF-8").newEncoder());
+				w = getWriter(base + "dialogs" + File.separatorChar + "user_" + d.id + ".html");
 				mustache.execute(w, scope);
 				w.close();
 			}
@@ -124,7 +124,7 @@ public class HTMLExporter {
 				scope.putAll(db.getMessageTypesWithCount(c));
 				scope.putAll(db.getMessageMediaTypesWithCount(c));
 				
-				w = new OutputStreamWriter(new FileOutputStream(base + "dialogs" + File.separatorChar + "chat_" + c.id + ".html"), Charset.forName("UTF-8").newEncoder());
+				w = getWriter(base + "dialogs" + File.separatorChar + "chat_" + c.id + ".html");
 				mustache.execute(w, scope);
 				w.close();
 			}
@@ -138,6 +138,11 @@ public class HTMLExporter {
 			e.printStackTrace();
 			throw new RuntimeException("Exception above!");
 		}
+	}
+	
+	private OutputStreamWriter getWriter(String filename) {
+		logger.trace("Creating writer for file {}", filename);
+		return new OutputStreamWriter(new FileOutputStream(filename), Charset.forName("UTF-8").newEncoder());
 	}
 
 	private String intArrayToString(int[][] data) {
