@@ -68,9 +68,15 @@ public abstract class AbstractMediaFileManager {
 	public String getTargetPathAndFilename() { return getTargetPath() + getTargetFilename(); }
 	
 	protected String extensionFromMimetype(String mime) {
+		switch(mime) {
+			case "text/plain": return "txt";
+		}
+		
 		int i = mime.lastIndexOf('/');
 		String ext = mime.substring(i+1).toLowerCase();
-		if (ext=="unknown") ext="dat";
+		
+		if (ext=="unknown") return "dat";
+		
 		return ext;
 	}
 	
