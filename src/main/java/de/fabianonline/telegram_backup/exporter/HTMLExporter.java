@@ -26,6 +26,7 @@ import java.io.FileOutputStream;
 import java.nio.charset.Charset;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.FileNotFoundException;
 import java.net.URL;
 import org.apache.commons.io.FileUtils;
 import java.util.LinkedList;
@@ -140,7 +141,7 @@ public class HTMLExporter {
 		}
 	}
 	
-	private OutputStreamWriter getWriter(String filename) {
+	private OutputStreamWriter getWriter(String filename) throws FileNotFoundException {
 		logger.trace("Creating writer for file {}", filename);
 		return new OutputStreamWriter(new FileOutputStream(filename), Charset.forName("UTF-8").newEncoder());
 	}
