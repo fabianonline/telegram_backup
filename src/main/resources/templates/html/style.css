@@ -32,7 +32,7 @@ li.message .photo {
 	vertical-align: top;
 }
 
-li.message .photo img {
+li.message .photo img, li.message .sticker img {
 	max-width: 250px;
 	max-height: 250px;
 }
