@@ -56,8 +56,10 @@ public class HTMLExporter {
 			
 			logger.debug("Fetching dialogs");
 			LinkedList<Database.Dialog> dialogs = db.getListOfDialogsForExport();
+			logger.trace("Got {} dialogs", dialogs.size());
 			logger.debug("Fetching chats");
 			LinkedList<Database.Chat> chats = db.getListOfChatsForExport();
+			logger.trace("Got {} chats", chats.size());
 			
 			logger.debug("Generating index.html");
 			HashMap<String, Object> scope = new HashMap<String, Object>();
