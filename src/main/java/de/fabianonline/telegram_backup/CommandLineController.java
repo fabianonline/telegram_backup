@@ -57,13 +57,13 @@ public class CommandLineController {
 			System.exit(0);
 		}
 		
-		logger.debug("Target dir at startup: {}", Config.FILE_BASE);
+		logger.debug("Target dir at startup: {}", Utils.anonymize(Config.FILE_BASE));
 		if (CommandLineOptions.val_target != null) {
 			Config.FILE_BASE = CommandLineOptions.val_target;
 		}
-		logger.debug("Target dir after options: {}", Config.FILE_BASE);
+		logger.debug("Target dir after options: {}", Utils.anonymize(Config.FILE_BASE));
 		
-		System.out.println("Base directory for files: " + Config.FILE_BASE);
+		System.out.println("Base directory for files: " + Utils.anonymize(Config.FILE_BASE));
 
 		if (CommandLineOptions.cmd_list_accounts) this.list_accounts();
 		
@@ -77,11 +77,11 @@ public class CommandLineController {
 			logger.debug("Login requested, doing nothing.");
 			// do nothing
 		} else if (CommandLineOptions.val_account!=null) {
-			logger.debug("Account requested: {}", CommandLineOptions.val_account);
+			logger.debug("Account requested: {}", Utils.anonymize(CommandLineOptions.val_account));
 			logger.trace("Checking accounts for match.");
 			boolean found = false;
 			for (String acc : accounts) {
-				logger.trace("Checking {}", acc);
+				logger.trace("Checking {}", Utils.anonymize(acc));
 				if (acc.equals(CommandLineOptions.val_account)) {
 					found=true;
 					logger.trace("Matches.");
@@ -89,7 +89,7 @@ public class CommandLineController {
 				}
 			}
 			if (!found) {
-				show_error("Couldn't find account '" + CommandLineOptions.val_account + "'. Maybe you want to use '--login' first?");
+				show_error("Couldn't find account '" + Utils.anonymize(CommandLineOptions.val_account) + "'. Maybe you want to use '--login' first?");
 			}
 			account = CommandLineOptions.val_account;
 		} else if (accounts.size()==0) {
@@ -97,14 +97,14 @@ public class CommandLineController {
 			CommandLineOptions.cmd_login = true;
 		} else if (accounts.size()==1) {
 			account = accounts.firstElement();
-			System.out.println("Using only available account: " + account);
+			System.out.println("Using only available account: " + Utils.anonymize(account));
 		} else {
 			show_error("You didn't specify which account to use.\n" +
 				"Use '--account <x>' to use account <x>.\n" +
 				"Use '--list-accounts' to see all available accounts.");
 		}
 		logger.debug("accounts.size(): {}", accounts.size());
-		logger.debug("account: {}", account);
+		logger.debug("account: {}", Utils.anonymize(account));
 		logger.debug("CommandLineOptions.cmd_login: {}", CommandLineOptions.cmd_login);
 
 		logger.info("Initializing ApiStorage");
@@ -124,7 +124,7 @@ public class CommandLineController {
 			}
 			if (account!=null && user.isLoggedIn()) {
 				if (!account.equals("+" + user.getUser().getPhone())) {
-					logger.error("Account: {}, user.getUser().getPhone(): +{}", account, user.getUser().getPhone());
+					logger.error("Account: {}, user.getUser().getPhone(): +{}", Utils.anonymize(account), Utils.anonymize(user.getUser().getPhone()));
 					throw new RuntimeException("Account / User mismatch");
 				}
 			}
@@ -157,7 +157,7 @@ public class CommandLineController {
 			}
 			
 			if (user.isLoggedIn()) {
-				System.out.println("You are logged in as " + user.getUserString());
+				System.out.println("You are logged in as " + Utils.anonymize(user.getUserString()));
 			} else {
 				System.out.println("You are not logged in.");
 			}
@@ -208,7 +208,7 @@ public class CommandLineController {
 		}
 		storage.setPrefix("+" + user.getUser().getPhone());
 		
-		System.out.println("Everything seems fine. Please run this tool again with '--account +" + user.getUser().getPhone() + " to use this account.");
+		System.out.println("Everything seems fine. Please run this tool again with '--account +" + Utils.anonymize(user.getUser().getPhone()) + " to use this account.");
 	}
 	
 	private String getLine() {
@@ -244,6 +244,7 @@ public class CommandLineController {
 		System.out.println("                               html - Creates HTML files.");
 		System.out.println("      --license                Displays the license of this program.");
 		System.out.println("  -d, --daemon                 Keep running and automatically save new messages.");
+		System.out.println("      --anonymize              (Try to) Remove all sensitive information from output. Useful for requesting support.");
 	}
 	
 	private void list_accounts() {
@@ -251,7 +252,7 @@ public class CommandLineController {
 		List<String> accounts = Utils.getAccounts();
 		if (accounts.size()>0) {
 			for (String str : accounts) {
-				System.out.println("    " + str);
+				System.out.println("    " + Utils.anonymize(str));
 			}
 			System.out.println("Use '--account <x>' to use one of those accounts.");
 		} else {

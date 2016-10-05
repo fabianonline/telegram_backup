@@ -163,4 +163,9 @@ public class Utils {
 		logger.debug("We couldn't find a real difference, so we're assuming the versions are equal-ish.");
 		return VERSIONS_EQUAL;
 	}
+	
+	public static String anonymize(String str) {
+		if (!CommandLineOptions.cmd_anonymize) return str;
+		return str.replaceAll("[0-9]", "1").replaceAll("[A-Z]", "A").replaceAll("[a-z]", "a") + " (ANONYMIZED)";
+	}
 }
