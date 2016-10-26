@@ -39,6 +39,7 @@ public class Config {
 
     public static int DELAY_AFTER_GET_MESSAGES = 400;
     public static int DELAY_AFTER_GET_FILE = 100;
+    public static int GET_MESSAGES_BATCH_SIZE = 200;
     
     public static int RENAMING_MAX_TRIES = 5;
     public static int RENAMING_DELAY = 1000;

@@ -173,7 +173,7 @@ public class DownloadManager {
 		while (ids.size()>0) {
 			logger.trace("Loop");
 			TLIntVector vector = new TLIntVector();
-			for (int i=0; i<100; i++) {
+			for (int i=0; i<Config.GET_MESSAGES_BATCH_SIZE; i++) {
 				if (ids.size()==0) break;
 				vector.add(ids.remove(0));
 			}
