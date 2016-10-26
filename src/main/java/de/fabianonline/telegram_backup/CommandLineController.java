@@ -263,6 +263,7 @@ public class CommandLineController {
 	}
 	
 	public static void show_error(String error) {
+		logger.error(error);
 		System.out.println("ERROR: " + error);
 		System.exit(1);
 	}
