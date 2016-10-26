@@ -167,6 +167,7 @@ public class DownloadManager {
 	
 	private void downloadMessages(List<Integer> ids) throws RpcErrorException, IOException {
 		prog.onMessageDownloadStart(ids.size());
+		boolean has_seen_flood_wait_message = false;
 		
 		logger.debug("Entering download loop");
 		while (ids.size()>0) {
@@ -179,7 +180,30 @@ public class DownloadManager {
 			logger.trace("vector.size(): {}", vector.size());
 			logger.trace("ids.size(): {}", ids.size());
 			
-			TLAbsMessages response = client.messagesGetMessages(vector);
+			TLAbsMessages response;
+			int tries = 0;
+			while(true) {
+				logger.trace("Trying getMessages(), tries={}", tries);
+				if (tries>=5) {
+					CommandLineController.show_error("Couldn't getMessages after 5 tries. Quitting.");
+				}
+				tries++;
+				try {
+					response = client.messagesGetMessages(vector);
+					break;
+				} catch (RpcErrorException e) {
+					if (e.getCode()==420) { // FLOOD_WAIT
+						Utils.obeyFloodWaitException(e, has_seen_flood_wait_message);
+						has_seen_flood_wait_message = true;
+					} else {
+						throw e;
+					}
+				}
+			}
+			logger.trace("response.getMessages().size(): {}", response.getMessages().size());
+			if (response.getMessages().size() != vector.size()) {
+				CommandLineController.show_error("Requested " + vector.size() + " messages, but got " + response.getMessages().size() + ". That is unexpected. Quitting.");
+			}
 			prog.onMessageDownloaded(response.getMessages().size());
 			db.saveMessages(response.getMessages(), Kotlogram.API_LAYER);
 			db.saveChats(response.getChats());

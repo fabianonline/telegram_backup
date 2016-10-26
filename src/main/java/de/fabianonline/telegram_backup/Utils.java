@@ -47,21 +47,27 @@ public class Utils {
 	}
 	
 	static void obeyFloodWaitException(RpcErrorException e) throws RpcErrorException {
+		obeyFloodWaitException(e, false);
+	}
+	
+	static void obeyFloodWaitException(RpcErrorException e, boolean silent) throws RpcErrorException {
 		if (e==null || e.getCode()!=420) return;
 		
 		int delay = e.getTagInteger();
-		System.out.println("");
-		System.out.println(
-			"Telegram complained about us (okay, me) making too many requests in too short time by\n" +
-			"sending us \"" + e.getTag() + "\" as an error. So we now have to wait a bit. Telegram\n" +
-			"asked us to wait for " + delay + " seconds.\n" +
-			"\n" +
-			"So I'm going to do just that for now. If you don't want to wait, you can quit by pressing\n" +
-			"Ctrl+C. You can restart me at any time and I will just continue to download your\n" +
-			"messages and media. But be advised that just restarting me is not going to change\n" +
-			"the fact that Telegram won't talk to me until then.");
+		if(!silent) {
+			System.out.println("");
+			System.out.println(
+				"Telegram complained about us (okay, me) making too many requests in too short time by\n" +
+				"sending us \"" + e.getTag() + "\" as an error. So we now have to wait a bit. Telegram\n" +
+				"asked us to wait for " + delay + " seconds.\n" +
+				"\n" +
+				"So I'm going to do just that for now. If you don't want to wait, you can quit by pressing\n" +
+				"Ctrl+C. You can restart me at any time and I will just continue to download your\n" +
+				"messages and media. But be advised that just restarting me is not going to change\n" +
+				"the fact that Telegram won't talk to me until then.");
+			System.out.println("");
+		}
 		try { TimeUnit.SECONDS.sleep(delay + 1); } catch(InterruptedException e2) {}
-		System.out.println("");
 	}
 	
 	static Version getNewestVersion() {
