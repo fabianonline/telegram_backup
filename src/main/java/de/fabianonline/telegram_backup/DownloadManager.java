@@ -33,8 +33,6 @@ import com.github.badoualy.telegram.tl.api.*;
 import com.github.badoualy.telegram.tl.api.upload.TLFile;
 import com.github.badoualy.telegram.tl.exception.RpcErrorException;
 import com.github.badoualy.telegram.tl.api.request.TLRequestUploadGetFile;
-import com.github.badoualy.telegram.tl.core.TLMethod;
-import com.github.badoualy.telegram.tl.api.request.*;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
@@ -170,26 +168,6 @@ public class DownloadManager {
 	private void downloadMessages(List<Integer> ids) throws RpcErrorException, IOException {
 		prog.onMessageDownloadStart(ids.size());
 		boolean has_seen_flood_wait_message = false;
-		
-		/// Testing
-		List<TLRequestMessagesGetMessages> methods = new LinkedList<>();
-		int a = 0;
-		while(ids.size()>0 && a<5) {
-			a++;
-			TLIntVector vector = new TLIntVector();
-			for (int i=0; i<Config.GET_MESSAGES_BATCH_SIZE; i++) {
-				if (ids.size()==0) break;
-				vector.add(ids.remove(0));
-			}
-			TLRequestMessagesGetMessages method = new TLRequestMessagesGetMessages(vector);
-			methods.add(method);
-		}
-		List<? extends TLObject> responses = client.executeRpcQueries(methods);
-		for(TLObject obj : responses) {
-			System.out.println(obj.getClass().getName());
-		}
-		System.exit(0);
-		/// Testing ends
 		
 		logger.debug("Entering download loop");
 		while (ids.size()>0) {
