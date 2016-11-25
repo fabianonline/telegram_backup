@@ -11,7 +11,7 @@ repositories {
 }
 
 dependencies {
-	compile('com.github.badoualy:kotlogram:497e5dd62d9bcb341f584164b04b4b537ce9d295') {
+	compile('com.github.badoualy:kotlogram:666a81ef9d6707f117a3fecc2d21c91d51c7d075') {
 		exclude module: 'slf4j-simple'
 	}
 	compile 'org.xerial:sqlite-jdbc:3.8.11.2'
