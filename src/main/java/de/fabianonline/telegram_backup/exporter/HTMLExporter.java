@@ -18,6 +18,7 @@ package de.fabianonline.telegram_backup.exporter;
 
 import de.fabianonline.telegram_backup.UserManager;
 import de.fabianonline.telegram_backup.Database;
+import de.fabianonline.telegram_backup.Utils;
 
 import java.io.File;
 import java.io.PrintWriter;
@@ -96,8 +97,11 @@ public class HTMLExporter {
 			
 			mustache = mf.compile("templates/html/chat.mustache");
 			
-			logger.debug("Generating dialog pages");
+			int i=0;
+			logger.debug("Generating {} dialog pages", dialogs.size());
 			for (Database.Dialog d : dialogs) {
+				i++;
+				logger.trace("Dialog {}/{}: {}", i, dialogs.size(), Utils.anonymize(""+d.id));
 				LinkedList<HashMap<String, Object>> messages = db.getMessagesForExport(d);
 				scope.clear();
 				scope.put("user", user);
@@ -114,8 +118,11 @@ public class HTMLExporter {
 				w.close();
 			}
 			
-			logger.debug("Generating chat pages");
+			i=0;
+			logger.debug("Generating {} chat pages", chats.size());
 			for (Database.Chat c : chats) {
+				i++;
+				logger.trace("Chat {}/{}: {}", i, chats.size(), Utils.anonymize(""+c.id));
 				LinkedList<HashMap<String, Object>> messages = db.getMessagesForExport(c);
 				scope.clear();
 				scope.put("user", user);
@@ -137,6 +144,7 @@ public class HTMLExporter {
 			URL cssFile = getClass().getResource("/templates/html/style.css");
 			File dest = new File(base + "style.css");
 			FileUtils.copyURLToFile(cssFile, dest);
+			logger.debug("Done exporting.");
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new RuntimeException("Exception above!");
@@ -144,7 +152,7 @@ public class HTMLExporter {
 	}
 	
 	private OutputStreamWriter getWriter(String filename) throws FileNotFoundException {
-		logger.trace("Creating writer for file {}", filename);
+		logger.trace("Creating writer for file {}", Utils.anonymize(filename));
 		return new OutputStreamWriter(new FileOutputStream(filename), Charset.forName("UTF-8").newEncoder());
 	}
 
