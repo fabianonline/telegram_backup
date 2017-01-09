@@ -1,0 +1,9 @@
+version: '2'
+services:
+  tg-dl:
+    build:
+      context: .
+    restart: "unless-stopped"
+    volumes:
+      - /data/telegram-downloader:/data  # host server path : docker container path
+    command: ["java", "-jar", "telegram_backup.jar", "--target", "/data/"]
