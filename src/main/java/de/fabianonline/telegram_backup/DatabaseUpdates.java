@@ -32,6 +32,7 @@ public class DatabaseUpdates {
 		register(new DB_Update_5(conn, db));
 		register(new DB_Update_6(conn, db));
 		register(new DB_Update_7(conn, db));
+		//register(new DB_Update_8(conn, db));
 	}
 	
 	public void doUpdates() {
@@ -299,5 +300,45 @@ class DB_Update_7 extends DatabaseUpdate {
 		stmt.executeUpdate("ALTER TABLE messages ADD COLUMN api_layer INTEGER");
 		
 		stmt.executeUpdate("UPDATE messages SET api_layer=51");
+	}
+}
+
+class DB_Update_8 extends DatabaseUpdate {
+	public int getVersion() { return 8; }
+	public boolean needsBackup() { return true; }
+	public DB_Update_8(Connection conn, Database db) { super(conn, db); }
+	
+	protected void _doUpdate() throws SQLException {
+		stmt.executeUpdate("CREATE TABLE users_new (id INTEGER PRIMARY KEY ASC, telegram_id INTEGER, is_current BOOLEAN, first_name TEXT, last_name TEXT, username TEXT, type TEXT, phone TEXT, photo_id INTEGER, photo_downloaded BOOLEAN, time INTEGER");
+		LinkedHashMap<String, String> mappings = new LinkedHashMap<String, String>();
+		mappings.put("telegram_id", "id");
+		mappings.put("is_current", "TRUE");
+		mappings.put("first_name", "first_name");
+		mappings.put("last_name", "last_name");
+		mappings.put("username", "username");
+		mappings.put("type", "type");
+		mappings.put("phone", "phone");
+		mappings.put("photo_id", "NULL");
+		mappings.put("photo_downloaded", "FALSE");
+		mappings.put("time", "0");
+		StringBuilder query = new StringBuilder("INSERT INTO users_new\n(");
+		boolean first;
+		first = true;
+		for(String s : mappings.keySet()) {
+			if (!first) query.append(", ");
+			query.append(s);
+			first = false;
+		}
+		query.append(")\nSELECT \n");
+		first = true;
+		for (String s : mappings.values()) {
+			if (!first) query.append(", ");
+			query.append(s);
+			first = false;
+		}
+		query.append("\nFROM users");
+		stmt.executeUpdate(query.toString());
+		stmt.executeUpdate("DROP TABLE users");
+		stmt.executeUpdate("ALTER TABLE users_new RENAME TO users");
 	}
 }
