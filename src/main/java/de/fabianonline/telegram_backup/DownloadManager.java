@@ -173,7 +173,9 @@ public class DownloadManager {
 		while (ids.size()>0) {
 			logger.trace("Loop");
 			TLIntVector vector = new TLIntVector();
-			for (int i=0; i<Config.GET_MESSAGES_BATCH_SIZE; i++) {
+			int download_count = Config.GET_MESSAGES_BATCH_SIZE - (int)(Math.random() * Config.GET_MESSAGES_BATCH_SIZE * 0.2);
+			logger.trace("download_count: {}", download_count);
+			for (int i=0; i<download_count; i++) {
 				if (ids.size()==0) break;
 				vector.add(ids.remove(0));
 			}
