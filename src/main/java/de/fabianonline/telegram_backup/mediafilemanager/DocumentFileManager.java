@@ -60,6 +60,7 @@ public class DocumentFileManager extends AbstractMediaFileManager {
 	
 	public boolean isSticker() {
 		TLDocumentAttributeSticker sticker = null;
+		if (this.isEmpty || doc==null) return false;
 		if (doc.getAttributes() != null) for(TLAbsDocumentAttribute attr : doc.getAttributes()) {
 			if (attr instanceof TLDocumentAttributeSticker) {
 				sticker = (TLDocumentAttributeSticker)attr;
