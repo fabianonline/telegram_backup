@@ -22,12 +22,11 @@ You can find the whole app packed into one fat jar file under
   containing your chats. This feature is still in the works.
 
 ## Limitations
-This tool relies on Telegram's API. Apparently they don't like people who
-download lots of media files, so this app gets blocked after about 2000
-downloaded media files. This is nothing bad; the app detects this and waits
-the necessary amount of time as dictated by Telegram. Since this delay can
-be quite large (I've seen 50 minutes), downloading lots and lots of media
-can take some time.
+This tool relies on Telegram's API. They started rate limiting the calls
+made by this tool some time ago. As of february 2017, downloading messages
+is limited to 400 messages every 30 seconds, resulting in 48,000 messages
+per hour. Media download is not throttled right now, so it should be a lot
+quicker.
 
 But since this tool is designed to be able to continue it's work at any
 time, you can just abort the download and continue it later - that way,
