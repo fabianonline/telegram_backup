@@ -26,6 +26,7 @@ public interface DownloadProgressInterface {
 	public void onMediaDownloadStart(int count);
 	public void onMediaDownloaded(AbstractMediaFileManager a);
 	public void onMediaDownloadedEmpty();
+	public void onMediaSkipped();
 	public void onMediaAlreadyPresent(AbstractMediaFileManager a);
 	public void onMediaDownloadFinished();
 }

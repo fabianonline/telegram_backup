@@ -36,6 +36,7 @@ class CommandLineDownloadProgress implements DownloadProgressInterface {
 		System.out.println("'S' - Sticker       'A' - Audio         'G' - Geolocation");
 		System.out.println("'.' - Previously downloaded file        'e' - Empty file");
 		System.out.println("' ' - Ignored media type (weblinks or contacts, for example)");
+		System.out.println("'x' - File skipped because of timeout errors");
 		System.out.println("" + count + " Files to check / download");    
 	}
 	
@@ -47,6 +48,7 @@ class CommandLineDownloadProgress implements DownloadProgressInterface {
 	public void onMediaAlreadyPresent(AbstractMediaFileManager fm) {
 		show(".");
 	}
+	public void onMediaSkipped() { show("x"); }
 	
 	public void onMediaDownloadFinished() { showNewLine(); System.out.println("Done."); }
 	

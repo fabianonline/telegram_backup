@@ -239,6 +239,7 @@ public class DownloadManager {
 				System.out.println("");
 				System.out.println("Telegram took too long to respond to our request.");
 				System.out.println("I'm going to wait a minute and then try again.");
+				logger.warn("TimeoutException caught", e);
 				try { TimeUnit.MINUTES.sleep(1); } catch(InterruptedException e2) {}
 				System.out.println("");
 			}
@@ -271,8 +272,13 @@ public class DownloadManager {
 			} else if (m.isDownloaded()) {
 				prog.onMediaAlreadyPresent(m);
 			} else {
-				m.download();
-				prog.onMediaDownloaded(m);
+				/*try {*/
+					m.download();
+					prog.onMediaDownloaded(m);
+				/*} catch (TimeoutException e) {
+					// do nothing - skip this file
+					prog.onMediaSkipped();
+				}*/
 			}
 		}
 		prog.onMediaDownloadFinished();
