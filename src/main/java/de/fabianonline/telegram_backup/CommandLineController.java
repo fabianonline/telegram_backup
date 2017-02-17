@@ -176,6 +176,7 @@ public class CommandLineController {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
+			logger.error("Exception caught!", e);
 		} finally {
 			if (CommandLineOptions.cmd_daemon) {
 				handler.setUser(user, client);

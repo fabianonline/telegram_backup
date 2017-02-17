@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
 public class HTMLExporter {
 	private static Logger logger = LoggerFactory.getLogger(HTMLExporter.class);
 	
-	public void export(UserManager user) {
+	public void export(UserManager user) throws IOException {
 		try {
 			Database db = new Database(user, null);
 			
@@ -147,7 +147,8 @@ public class HTMLExporter {
 			logger.debug("Done exporting.");
 		} catch (IOException e) {
 			e.printStackTrace();
-			throw new RuntimeException("Exception above!");
+			logger.error("Caught an exception!", e);
+			throw e;
 		}
 	}
 	
