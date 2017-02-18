@@ -33,7 +33,9 @@ def getVersionName= { ->
 		commandLine 'git', 'describe', '--tags', '--dirty'
 		standardOutput = stdout
 	}
-	return stdout.toString().trim()
+	def version = stdout.toString().trim()
+	logger.lifecycle("Version $version")
+	return version
 }
 
 ant.propertyfile(file: "$project.rootDir/build/resources/main/build.properties") {
