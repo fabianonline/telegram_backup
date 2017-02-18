@@ -319,15 +319,26 @@ public class DownloadManager {
 			}
 			logger.trace("offset before the loop is {}", offset);
 			fos = new FileOutputStream(temp_filename, true);
-			TLFile response;
+			TLFile response = null;
+			boolean try_again;
 			do {
+				try_again = false;
 				int block_size = size;
 				logger.trace("offset: {} block_size: {} size: {}", offset, block_size, size);
 				TLRequestUploadGetFile req = new TLRequestUploadGetFile(loc, offset, block_size);
-				if (dcID==null) {
-					response = (TLFile) download_client.executeRpcQuery(req);
-				} else {
-					response = (TLFile) download_client.executeRpcQuery(req, dcID);
+				try {
+					if (dcID==null) {
+						response = (TLFile) download_client.executeRpcQuery(req);
+					} else {
+						response = (TLFile) download_client.executeRpcQuery(req, dcID);
+					}
+				} catch (RpcErrorException e) {
+					if (e.getTag().startsWith("420: FLOOD_WAIT_")) {
+						try_again = true;
+						Utils.obeyFloodWaitException(e);
+					} else {
+						throw e;
+					}
 				}
 				
 				offset += response.getBytes().getData().length;
@@ -336,7 +347,7 @@ public class DownloadManager {
 				fos.write(response.getBytes().getData());
 				fos.flush();
 				try { TimeUnit.MILLISECONDS.sleep(Config.DELAY_AFTER_GET_FILE); } catch(InterruptedException e) {}
-			} while(offset < size && response.getBytes().getData().length>0);
+			} while(offset < size && (response.getBytes().getData().length>0 || try_again));
 			fos.close();
 			if (offset < size) {
 				System.out.println("Requested file " + target + " with " + size + " bytes, but got only " + offset + " bytes.");
