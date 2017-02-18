@@ -98,7 +98,7 @@ public class HTMLExporter {
 			mustache = mf.compile("templates/html/chat.mustache");
 			
 			int i=0;
-			logger.debug("Generating {} dialog pages", dialogs.size());
+			/*logger.debug("Generating {} dialog pages", dialogs.size());
 			for (Database.Dialog d : dialogs) {
 				i++;
 				logger.trace("Dialog {}/{}: {}", i, dialogs.size(), Utils.anonymize(""+d.id));
@@ -116,25 +116,33 @@ public class HTMLExporter {
 				w = getWriter(base + "dialogs" + File.separatorChar + "user_" + d.id + ".html");
 				mustache.execute(w, scope);
 				w.close();
-			}
+			}*/
 			
 			i=0;
 			logger.debug("Generating {} chat pages", chats.size());
 			for (Database.Chat c : chats) {
 				i++;
 				logger.trace("Chat {}/{}: {}", i, chats.size(), Utils.anonymize(""+c.id));
+				logger.trace("getMessagesForExport");
 				LinkedList<HashMap<String, Object>> messages = db.getMessagesForExport(c);
+				logger.trace("Preparing scope");
 				scope.clear();
 				scope.put("user", user);
 				scope.put("chat", c);
 				scope.put("messages", messages);
 				
+				logger.trace("getMessageAuthorsWithCount");
 				scope.putAll(db.getMessageAuthorsWithCount(c));
+				logger.trace("heatmap");
 				scope.put("heatmap_data", intArrayToString(db.getMessageTimesMatrix(c)));
+				logger.trace("getMessageTypesWithCount");
 				scope.putAll(db.getMessageTypesWithCount(c));
+				logger.trace("getMessageMediaTypesWithCount");
 				scope.putAll(db.getMessageMediaTypesWithCount(c));
 				
+				logger.trace("getWriter");
 				w = getWriter(base + "dialogs" + File.separatorChar + "chat_" + c.id + ".html");
+				logger.trace("mustache.execute");
 				mustache.execute(w, scope);
 				w.close();
 			}
