@@ -234,7 +234,7 @@ public class DownloadManager {
 				} else {
 					throw e;
 				}
-			} catch (TimeoutException e) {
+			} /*catch (TimeoutException e) {
 				completed = false;
 				System.out.println("");
 				System.out.println("Telegram took too long to respond to our request.");
@@ -242,11 +242,11 @@ public class DownloadManager {
 				logger.warn("TimeoutException caught", e);
 				try { TimeUnit.MINUTES.sleep(1); } catch(InterruptedException e2) {}
 				System.out.println("");
-			}
+			}*/
 		} while (!completed);
 	}
 	
-	private void _downloadMedia() throws RpcErrorException, IOException, TimeoutException {
+	private void _downloadMedia() throws RpcErrorException, IOException {
 		logger.info("This is _downloadMedia");
 		logger.info("Checking if there are messages in the DB with a too old API layer");
 		LinkedList<Integer> ids = db.getIdsFromQuery("SELECT id FROM messages WHERE has_media=1 AND api_layer<" + Kotlogram.API_LAYER);
@@ -272,13 +272,13 @@ public class DownloadManager {
 			} else if (m.isDownloaded()) {
 				prog.onMediaAlreadyPresent(m);
 			} else {
-				/*try {*/
+				try {
 					m.download();
 					prog.onMediaDownloaded(m);
-				/*} catch (TimeoutException e) {
+				} catch (TimeoutException e) {
 					// do nothing - skip this file
 					prog.onMediaSkipped();
-				}*/
+				}
 			}
 		}
 		prog.onMediaDownloadFinished();
@@ -290,17 +290,17 @@ public class DownloadManager {
 		return a; 
 	}
 	
-	public static void downloadFile(TelegramClient client, String targetFilename, int size, int dcId, long volumeId, int localId, long secret) throws RpcErrorException, IOException {
+	public static void downloadFile(TelegramClient client, String targetFilename, int size, int dcId, long volumeId, int localId, long secret) throws RpcErrorException, IOException, TimeoutException {
 		TLInputFileLocation loc = new TLInputFileLocation(volumeId, localId, secret);
 		downloadFileFromDc(client, targetFilename, loc, dcId, size);
 	}
 	
-	public static void downloadFile(TelegramClient client, String targetFilename, int size, int dcId, long id, long accessHash) throws RpcErrorException, IOException {
+	public static void downloadFile(TelegramClient client, String targetFilename, int size, int dcId, long id, long accessHash) throws RpcErrorException, IOException, TimeoutException {
 		TLInputDocumentFileLocation loc = new TLInputDocumentFileLocation(id, accessHash);
 		downloadFileFromDc(client, targetFilename, loc, dcId, size);
 	}
 	
-	private static boolean downloadFileFromDc(TelegramClient client, String target, TLAbsInputFileLocation loc, Integer dcID, int size) throws RpcErrorException, IOException {
+	private static boolean downloadFileFromDc(TelegramClient client, String target, TLAbsInputFileLocation loc, Integer dcID, int size) throws RpcErrorException, IOException, TimeoutException {
 		FileOutputStream fos = null;
 		try {
 			String temp_filename = target + ".downloading";

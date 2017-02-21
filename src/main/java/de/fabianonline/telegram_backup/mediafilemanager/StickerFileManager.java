@@ -88,7 +88,7 @@ public class StickerFileManager extends DocumentFileManager {
 		return path;
 	}
 	
-	public void download() throws RpcErrorException, IOException {
+	public void download() throws RpcErrorException, IOException, TimeoutException {
 		String old_file = Config.FILE_BASE + File.separatorChar + Config.FILE_STICKER_BASE + File.separatorChar + getTargetFilename();
 		
 		logger.trace("Old filename exists: {}", new File(old_file).exists());

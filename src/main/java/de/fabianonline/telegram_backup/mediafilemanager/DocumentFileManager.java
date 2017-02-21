@@ -100,7 +100,7 @@ public class DocumentFileManager extends AbstractMediaFileManager {
 		return ext;
 	}
 	
-	public void download() throws RpcErrorException, IOException {
+	public void download() throws RpcErrorException, IOException, TimeoutException {
 		if (doc!=null) {
 			DownloadManager.downloadFile(client, getTargetPathAndFilename(), getSize(), doc.getDcId(), doc.getId(), doc.getAccessHash());
 		}
