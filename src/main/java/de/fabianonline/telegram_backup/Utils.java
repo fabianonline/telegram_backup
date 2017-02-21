@@ -26,6 +26,8 @@ import org.apache.commons.io.IOUtils;
 import de.fabianonline.telegram_backup.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.github.badoualy.telegram.tl.core.TLBytes;
+import java.lang.reflect.Type;
 
 public class Utils {
 	public static final int VERSIONS_EQUAL = 0;
@@ -173,5 +175,18 @@ public class Utils {
 	public static String anonymize(String str) {
 		if (!CommandLineOptions.cmd_anonymize) return str;
 		return str.replaceAll("[0-9]", "1").replaceAll("[A-Z]", "A").replaceAll("[a-z]", "a") + " (ANONYMIZED)";
+	}
+	
+	public static Gson getGson() {
+		return new GsonBuilder()
+			.registerTypeAdapter(TLBytes.class, new TLBytesSerializer())
+			.setPrettyPrinting()
+			.create();
+	}
+}
+	
+class TLBytesSerializer implements JsonSerializer<TLBytes> {
+	public JsonElement serialize(TLBytes bytes, Type typeOfSrc, JsonSerializationContext ctx) {
+		return new JsonNull();
 	}
 }

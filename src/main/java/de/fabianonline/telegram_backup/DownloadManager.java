@@ -35,6 +35,8 @@ import com.github.badoualy.telegram.tl.exception.RpcErrorException;
 import com.github.badoualy.telegram.tl.api.request.TLRequestUploadGetFile;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import java.io.IOException;
 import java.io.File;
@@ -206,10 +208,18 @@ public class DownloadManager {
 			if (response.getMessages().size() != vector.size()) {
 				CommandLineController.show_error("Requested " + vector.size() + " messages, but got " + response.getMessages().size() + ". That is unexpected. Quitting.");
 			}
+			
+			//ObjectMapper om = new ObjectMapper();
+			//String json = om.writerWithDefaultPrettyPrinter().writeValueAsString(response.getMessages().get(1));
+			Gson gson = Utils.getGson();
+			String json = gson.toJson(response.getMessages());
+			System.out.println(json);
+			//System.exit(1);
+			
 			prog.onMessageDownloaded(response.getMessages().size());
-			db.saveMessages(response.getMessages(), Kotlogram.API_LAYER);
-			db.saveChats(response.getChats());
-			db.saveUsers(response.getUsers());
+			//db.saveMessages(response.getMessages(), Kotlogram.API_LAYER);
+			//db.saveChats(response.getChats());
+			//db.saveUsers(response.getUsers());
 			logger.trace("Sleeping");
 			try {
 				TimeUnit.MILLISECONDS.sleep(Config.DELAY_AFTER_GET_MESSAGES);
