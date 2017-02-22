@@ -76,7 +76,7 @@ public class PhotoFileManager extends AbstractMediaFileManager {
 	
 	public String getExtension() { return "jpg"; }
 	
-	public void download() throws RpcErrorException, IOException {
+	public void download() throws RpcErrorException, IOException, TimeoutException {
 		if (isEmpty) return;
 		TLFileLocation loc = (TLFileLocation) size.getLocation();
 		DownloadManager.downloadFile(client, getTargetPathAndFilename(), getSize(), loc.getDcId(), loc.getVolumeId(), loc.getLocalId(), loc.getSecret());

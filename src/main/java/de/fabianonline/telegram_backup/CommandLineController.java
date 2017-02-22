@@ -41,11 +41,7 @@ public class CommandLineController {
 	
 	public CommandLineController() {
 		logger.info("CommandLineController started. App version {}", Config.APP_APPVER);
-		System.out.println("Telegram_Backup version " + Config.APP_APPVER + ", Copyright (C) 2016 Fabian Schlenz");
-		System.out.println();
-		System.out.println("Telegram_Backup comes with ABSOLUTELY NO WARRANTY. This is free software, and you are");
-		System.out.println("welcome to redistribute it under certain conditions; run it with '--license' for details.");
-		System.out.println();
+		this.printHeader();
 		
 		if (CommandLineOptions.cmd_version) {
 			System.exit(0);
@@ -57,54 +53,19 @@ public class CommandLineController {
 			System.exit(0);
 		}
 		
-		logger.debug("Target dir at startup: {}", Utils.anonymize(Config.FILE_BASE));
-		if (CommandLineOptions.val_target != null) {
-			Config.FILE_BASE = CommandLineOptions.val_target;
-		}
-		logger.debug("Target dir after options: {}", Utils.anonymize(Config.FILE_BASE));
+		this.setupFileBase();
 		
-		System.out.println("Base directory for files: " + Utils.anonymize(Config.FILE_BASE));
-
-		if (CommandLineOptions.cmd_list_accounts) this.list_accounts();
+		if (CommandLineOptions.cmd_list_accounts) {
+			this.list_accounts();
+			System.exit(0);
+		}
 		
 		logger.debug("Initializing TelegramApp");
 		app = new TelegramApp(Config.APP_ID, Config.APP_HASH, Config.APP_MODEL, Config.APP_SYSVER, Config.APP_APPVER, Config.APP_LANG);
 
 		logger.trace("Checking accounts");
-		String account = null;
-		Vector<String> accounts = Utils.getAccounts();
-		if (CommandLineOptions.cmd_login) {
-			logger.debug("Login requested, doing nothing.");
-			// do nothing
-		} else if (CommandLineOptions.val_account!=null) {
-			logger.debug("Account requested: {}", Utils.anonymize(CommandLineOptions.val_account));
-			logger.trace("Checking accounts for match.");
-			boolean found = false;
-			for (String acc : accounts) {
-				logger.trace("Checking {}", Utils.anonymize(acc));
-				if (acc.equals(CommandLineOptions.val_account)) {
-					found=true;
-					logger.trace("Matches.");
-					break;
-				}
-			}
-			if (!found) {
-				show_error("Couldn't find account '" + Utils.anonymize(CommandLineOptions.val_account) + "'. Maybe you want to use '--login' first?");
-			}
-			account = CommandLineOptions.val_account;
-		} else if (accounts.size()==0) {
-			System.out.println("No accounts found. Starting login process...");
-			CommandLineOptions.cmd_login = true;
-		} else if (accounts.size()==1) {
-			account = accounts.firstElement();
-			System.out.println("Using only available account: " + Utils.anonymize(account));
-		} else {
-			show_error("You didn't specify which account to use.\n" +
-				"Use '--account <x>' to use account <x>.\n" +
-				"Use '--list-accounts' to see all available accounts.");
-		}
-		logger.debug("accounts.size(): {}", accounts.size());
-		logger.debug("account: {}", Utils.anonymize(account));
+		String account = this.selectAccount();
+		
 		logger.debug("CommandLineOptions.cmd_login: {}", CommandLineOptions.cmd_login);
 
 		logger.info("Initializing ApiStorage");
@@ -160,6 +121,7 @@ public class CommandLineController {
 				System.out.println("You are logged in as " + Utils.anonymize(user.getUserString()));
 			} else {
 				System.out.println("You are not logged in.");
+				System.exit(1);
 			}
 			
 			logger.info("Initializing Download Manager");
@@ -188,6 +150,62 @@ public class CommandLineController {
 				System.exit(0);
 			}
 		}
+	}
+	
+	private void printHeader() {
+		System.out.println("Telegram_Backup version " + Config.APP_APPVER + ", Copyright (C) 2016 Fabian Schlenz");
+		System.out.println();
+		System.out.println("Telegram_Backup comes with ABSOLUTELY NO WARRANTY. This is free software, and you are");
+		System.out.println("welcome to redistribute it under certain conditions; run it with '--license' for details.");
+		System.out.println();
+	}
+	
+	private void setupFileBase() {
+		logger.debug("Target dir at startup: {}", Utils.anonymize(Config.FILE_BASE));
+		if (CommandLineOptions.val_target != null) {
+			Config.FILE_BASE = CommandLineOptions.val_target;
+		}
+		logger.debug("Target dir after options: {}", Utils.anonymize(Config.FILE_BASE));
+		
+		System.out.println("Base directory for files: " + Utils.anonymize(Config.FILE_BASE));
+	}
+	
+	private String selectAccount() {
+		String account = null;
+		Vector<String> accounts = Utils.getAccounts();
+		if (CommandLineOptions.cmd_login) {
+			logger.debug("Login requested, doing nothing.");
+			// do nothing
+		} else if (CommandLineOptions.val_account!=null) {
+			logger.debug("Account requested: {}", Utils.anonymize(CommandLineOptions.val_account));
+			logger.trace("Checking accounts for match.");
+			boolean found = false;
+			for (String acc : accounts) {
+				logger.trace("Checking {}", Utils.anonymize(acc));
+				if (acc.equals(CommandLineOptions.val_account)) {
+					found=true;
+					logger.trace("Matches.");
+					break;
+				}
+			}
+			if (!found) {
+				show_error("Couldn't find account '" + Utils.anonymize(CommandLineOptions.val_account) + "'. Maybe you want to use '--login' first?");
+			}
+			account = CommandLineOptions.val_account;
+		} else if (accounts.size()==0) {
+			System.out.println("No accounts found. Starting login process...");
+			CommandLineOptions.cmd_login = true;
+		} else if (accounts.size()==1) {
+			account = accounts.firstElement();
+			System.out.println("Using only available account: " + Utils.anonymize(account));
+		} else {
+			show_error("You didn't specify which account to use.\n" +
+				"Use '--account <x>' to use account <x>.\n" +
+				"Use '--list-accounts' to see all available accounts.");
+		}
+		logger.debug("accounts.size(): {}", accounts.size());
+		logger.debug("account: {}", Utils.anonymize(account));
+		return account;
 	}
 	
 	private void cmd_login(String phone) throws RpcErrorException, IOException {
@@ -260,7 +278,6 @@ public class CommandLineController {
 			System.out.println("NO ACCOUNTS FOUND");
 			System.out.println("Use '--login' to login to a telegram account.");
 		}
-		System.exit(0);
 	}
 	
 	public static void show_error(String error) {
