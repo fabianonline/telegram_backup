@@ -29,6 +29,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Scanner;
 import java.util.Vector;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
@@ -90,6 +92,11 @@ public class CommandLineController {
 					logger.error("Account: {}, user.getUser().getPhone(): +{}", Utils.anonymize(account), Utils.anonymize(user.getUser().getPhone()));
 					throw new RuntimeException("Account / User mismatch");
 				}
+			}
+			
+			if (CommandLineOptions.cmd_stats) {
+				cmd_stats();
+				System.exit(0);
 			}
 			
 			if (CommandLineOptions.val_test != null) {
@@ -210,6 +217,18 @@ public class CommandLineController {
 		return account;
 	}
 	
+	private void cmd_stats() {
+		HashMap<String, Integer> map = new HashMap<String, Integer>();
+		map.put("count.accounts", Utils.getAccounts().size());
+		map.put("count.messages", Database.getInstance().getMessageCount());
+		map.put("messages.top_id", Database.getInstance().getTopMessageID());
+		for(Map.Entry<String, Integer> pair : Database.getInstance().getMessageMediaTypesWithCount().entrySet()) {
+			map.put(pair.getKey(), pair.getValue());
+		}
+		
+		System.out.println(map.toString());
+	}
+	
 	private void cmd_login(String phone) throws RpcErrorException, IOException {
 		UserManager user = UserManager.getInstance();
 		if (phone==null) {
@@ -267,6 +286,7 @@ public class CommandLineController {
 		System.out.println("      --license                Displays the license of this program.");
 		System.out.println("  -d, --daemon                 Keep running and automatically save new messages.");
 		System.out.println("      --anonymize              (Try to) Remove all sensitive information from output. Useful for requesting support.");
+		System.out.println("      --stats                  Print some usage statistics.");
 	}
 	
 	private void list_accounts() {
