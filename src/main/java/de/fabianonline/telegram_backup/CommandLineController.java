@@ -153,7 +153,7 @@ public class CommandLineController {
 	}
 	
 	private void printHeader() {
-		System.out.println("Telegram_Backup version " + Config.APP_APPVER + ", Copyright (C) 2016 Fabian Schlenz");
+		System.out.println("Telegram_Backup version " + Config.APP_APPVER + ", Copyright (C) 2016, 2017 Fabian Schlenz");
 		System.out.println();
 		System.out.println("Telegram_Backup comes with ABSOLUTELY NO WARRANTY. This is free software, and you are");
 		System.out.println("welcome to redistribute it under certain conditions; run it with '--license' for details.");
