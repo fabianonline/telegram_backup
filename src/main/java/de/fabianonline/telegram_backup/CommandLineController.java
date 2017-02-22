@@ -37,7 +37,6 @@ public class CommandLineController {
 	private static Logger logger = LoggerFactory.getLogger(CommandLineController.class);
 	private ApiStorage storage;
 	public TelegramApp app;
-	public UserManager user = null;
 	
 	public CommandLineController() {
 		logger.info("CommandLineController started. App version {}", Config.APP_APPVER);
@@ -76,8 +75,11 @@ public class CommandLineController {
 		TelegramClient client = Kotlogram.getDefaultClient(app, storage, Kotlogram.PROD_DC4, handler);
 		
 		try {
-			logger.info("Creating UserManager");
-			user = new UserManager(client);
+			logger.info("Initializing UserManager");
+			UserManager.init(client);
+			Database.init(client);
+			
+			UserManager user = UserManager.getInstance();
 
 			if (!CommandLineOptions.cmd_login && !user.isLoggedIn()) {
 				System.out.println("Your authorization data is invalid or missing. You will have to login with Telegram again.");
@@ -104,7 +106,7 @@ public class CommandLineController {
 			logger.debug("CommandLineOptions.val_export: {}", CommandLineOptions.val_export);
 			if (CommandLineOptions.val_export != null) {
 				if (CommandLineOptions.val_export.toLowerCase().equals("html")) {
-					(new HTMLExporter()).export(user);
+					(new HTMLExporter()).export();
 					System.exit(0);
 				} else {
 					show_error("Unknown export format.");
@@ -125,7 +127,7 @@ public class CommandLineController {
 			}
 			
 			logger.info("Initializing Download Manager");
-			DownloadManager d = new DownloadManager(user, client, new CommandLineDownloadProgress());
+			DownloadManager d = new DownloadManager(client, new CommandLineDownloadProgress());
 			logger.debug("Calling DownloadManager.downloadMessages with limit {}", CommandLineOptions.val_limit_messages);
 			d.downloadMessages(CommandLineOptions.val_limit_messages);
 			
@@ -141,7 +143,7 @@ public class CommandLineController {
 			logger.error("Exception caught!", e);
 		} finally {
 			if (CommandLineOptions.cmd_daemon) {
-				handler.setUser(user, client);
+				handler.activate();
 				System.out.println("DAEMON mode requested - keeping running.");
 			} else {
 				client.close();
@@ -209,6 +211,7 @@ public class CommandLineController {
 	}
 	
 	private void cmd_login(String phone) throws RpcErrorException, IOException {
+		UserManager user = UserManager.getInstance();
 		if (phone==null) {
 			System.out.println("Please enter your phone number in international format.");
 			System.out.println("Example: +4917077651234");

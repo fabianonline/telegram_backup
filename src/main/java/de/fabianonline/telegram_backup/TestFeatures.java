@@ -58,7 +58,7 @@ class TestFeatures {
 		// Prints system.encoding and default charset
 		System.out.println("Default Charset:   " + Charset.defaultCharset());
 		System.out.println("file.encoding:     " + System.getProperty("file.encoding"));
-		Database db = new Database(user, client, false);
+		Database db = Database.getInstance();
 		System.out.println("Database encoding: " + db.getEncoding());
 	}
 }
