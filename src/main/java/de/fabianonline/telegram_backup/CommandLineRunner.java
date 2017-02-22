@@ -31,7 +31,20 @@ public class CommandLineRunner {
 	public static void main(String[] args) {
 		CommandLineOptions.parseOptions(args);
 
-		// Set up logging
+		setupLogging();
+		checkVersion();
+		
+		
+
+		if (true || CommandLineOptions.cmd_console) {
+			// Always use the console for now.
+			new CommandLineController();
+		} else {
+			new GUIController();
+		}
+	}
+	
+	public static void setupLogging() {
 		Logger logger = (Logger)LoggerFactory.getLogger(CommandLineRunner.class);
 		Logger rootLogger = (Logger)LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
 		LoggerContext rootContext = rootLogger.getLoggerContext();
@@ -59,7 +72,9 @@ public class CommandLineRunner {
 		if (CommandLineOptions.cmd_trace_telegram) {
 			((Logger)LoggerFactory.getLogger("com.github.badoualy")).setLevel(Level.TRACE);
 		}
-		
+	}
+	
+	public static boolean checkVersion() {
 		Version v = Utils.getNewestVersion();
 		if (v!=null && v.isNewer) {
 			System.out.println("A newer version is vailable!");
@@ -70,13 +85,8 @@ public class CommandLineRunner {
 			System.out.println("Changes in this version:");
 			System.out.println(v.body);
 			System.out.println();
+			return false;
 		}
-
-		if (true || CommandLineOptions.cmd_console) {
-			// Always use the console for now.
-			new CommandLineController();
-		} else {
-			new GUIController();
-		}
+		return true;
 	}
 }
