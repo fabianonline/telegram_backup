@@ -53,6 +53,7 @@ public class Database {
 	public UserManager user_manager;
 	public TelegramClient client;
 	private final static Logger logger = LoggerFactory.getLogger(Database.class);
+	private static Database instance = null;
 	
 	public Database(UserManager user_manager, TelegramClient client) {
 		this(user_manager, client, true);
@@ -80,6 +81,7 @@ public class Database {
 		}
 		
 		this.init(update_db);
+		instance = this;
 		System.out.println("Database is ready.");
 	}
 	
@@ -87,6 +89,11 @@ public class Database {
 		if (!update_db) return;
 		DatabaseUpdates updates = new DatabaseUpdates(conn, this);
 		updates.doUpdates();
+	}
+	
+	public static Database getInstance() {
+		if (instance == null) throw new RuntimeException("Database is not initialized but getInstance() was called.");
+		return instance;
 	}
 	
 	public void backupDatabase(int currentVersion) {
