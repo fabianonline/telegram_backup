@@ -18,6 +18,7 @@ package de.fabianonline.telegram_backup;
 
 import de.fabianonline.telegram_backup.TelegramUpdateHandler;
 import de.fabianonline.telegram_backup.exporter.HTMLExporter;
+import de.fabianonline.telegram_backup.models.Message;
 
 import com.github.badoualy.telegram.api.Kotlogram;
 import com.github.badoualy.telegram.api.TelegramApp;
@@ -90,16 +91,7 @@ public class CommandLineController {
 				}
 			}
 			
-			if (CommandLineOptions.val_test != null) {
-				if (CommandLineOptions.val_test == 1) {
-					TestFeatures.test1();
-				} else if (CommandLineOptions.val_test == 2) {
-					TestFeatures.test2(user, client);
-				} else {
-					System.out.println("Unknown test " + CommandLineOptions.val_test);
-				}
-				System.exit(1);
-			}
+			
 			
 			logger.debug("CommandLineOptions.val_export: {}", CommandLineOptions.val_export);
 			if (CommandLineOptions.val_export != null) {
@@ -126,6 +118,20 @@ public class CommandLineController {
 			
 			logger.info("Initializing Download Manager");
 			DownloadManager d = new DownloadManager(user, client, new CommandLineDownloadProgress());
+			
+			if (CommandLineOptions.val_test != null) {
+				if (CommandLineOptions.val_test == 1) {
+					TestFeatures.test1();
+				} else if (CommandLineOptions.val_test == 2) {
+					TestFeatures.test2(user, client);
+				} else if (CommandLineOptions.val_test == 3) {
+					logger.debug(Message.get(39925).getMessage());
+				} else {
+					System.out.println("Unknown test " + CommandLineOptions.val_test);
+				}
+				System.exit(1);
+			}
+			
 			logger.debug("Calling DownloadManager.downloadMessages with limit {}", CommandLineOptions.val_limit_messages);
 			d.downloadMessages(CommandLineOptions.val_limit_messages);
 			

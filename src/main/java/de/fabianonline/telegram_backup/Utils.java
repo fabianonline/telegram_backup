@@ -180,7 +180,6 @@ public class Utils {
 	public static Gson getGson() {
 		return new GsonBuilder()
 			.registerTypeAdapter(TLBytes.class, new TLBytesSerializer())
-			.setPrettyPrinting()
 			.create();
 	}
 }

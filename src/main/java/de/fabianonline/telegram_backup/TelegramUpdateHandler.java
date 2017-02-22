@@ -22,7 +22,10 @@ import com.github.badoualy.telegram.api.Kotlogram;
 import com.github.badoualy.telegram.tl.api.*;
 import com.github.badoualy.telegram.tl.core.TLVector;
 
+import com.google.gson.Gson;
+
 import de.fabianonline.telegram_backup.Database;
+import de.fabianonline.telegram_backup.Utils;
 import de.fabianonline.telegram_backup.UserManager;
 import de.fabianonline.telegram_backup.mediafilemanager.AbstractMediaFileManager;
 import de.fabianonline.telegram_backup.mediafilemanager.FileManagerFactory;
@@ -31,6 +34,7 @@ class TelegramUpdateHandler implements UpdateCallback {
 	private UserManager user = null;
 	private Database db = null;
 	public boolean debug = false;
+	private Gson gson = Utils.getGson();
 	
 	public void setUser(UserManager user, TelegramClient client) { this.user = user; this.db = new Database(user, client, false);}
 	
@@ -41,8 +45,8 @@ class TelegramUpdateHandler implements UpdateCallback {
 			processUpdate(update, c);
 			if (debug) System.out.println("  " + update.getClass().getName());
 		}
-		db.saveUsers(u.getUsers());
-		db.saveChats(u.getChats());
+		db.saveUsers(u.getUsers(), gson);
+		db.saveChats(u.getChats(), gson);
 	}
 	
 	public void onUpdatesCombined(TelegramClient c, TLUpdatesCombined u) {
@@ -51,8 +55,8 @@ class TelegramUpdateHandler implements UpdateCallback {
 		for(TLAbsUpdate update : u.getUpdates()) {
 			processUpdate(update, c);
 		}
-		db.saveUsers(u.getUsers());
-		db.saveChats(u.getChats());
+		db.saveUsers(u.getUsers(), gson);
+		db.saveChats(u.getChats(), gson);
 	}
 		
 	public void onUpdateShort(TelegramClient c, TLUpdateShort u) {
@@ -86,7 +90,7 @@ class TelegramUpdateHandler implements UpdateCallback {
 			null);
 		TLVector<TLAbsMessage> vector = new TLVector<TLAbsMessage>(TLAbsMessage.class);
 		vector.add(msg);
-		db.saveMessages(vector, Kotlogram.API_LAYER);
+		db.saveMessages(vector, Kotlogram.API_LAYER, gson);
 		System.out.print('.');
 	}
 	
@@ -122,7 +126,7 @@ class TelegramUpdateHandler implements UpdateCallback {
 			null);
 		TLVector<TLAbsMessage> vector = new TLVector<TLAbsMessage>(TLAbsMessage.class);
 		vector.add(msg);
-		db.saveMessages(vector, Kotlogram.API_LAYER);
+		db.saveMessages(vector, Kotlogram.API_LAYER, gson);
 		System.out.print('.');
 	}
 	
@@ -134,7 +138,7 @@ class TelegramUpdateHandler implements UpdateCallback {
 			TLAbsMessage abs_msg = ((TLUpdateNewMessage)update).getMessage();
 			TLVector<TLAbsMessage> vector = new TLVector<TLAbsMessage>(TLAbsMessage.class);
 			vector.add(abs_msg);
-			db.saveMessages(vector, Kotlogram.API_LAYER);
+			db.saveMessages(vector, Kotlogram.API_LAYER, gson);
 			System.out.print('.');
 			if (abs_msg instanceof TLMessage) {
 				AbstractMediaFileManager fm = FileManagerFactory.getFileManager((TLMessage)abs_msg, user, client);

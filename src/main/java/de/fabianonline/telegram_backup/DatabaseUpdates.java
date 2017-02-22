@@ -32,6 +32,7 @@ public class DatabaseUpdates {
 		register(new DB_Update_5(conn, db));
 		register(new DB_Update_6(conn, db));
 		register(new DB_Update_7(conn, db));
+		register(new DB_Update_8(conn, db));
 	}
 	
 	public void doUpdates() {
@@ -299,5 +300,16 @@ class DB_Update_7 extends DatabaseUpdate {
 		stmt.executeUpdate("ALTER TABLE messages ADD COLUMN api_layer INTEGER");
 		
 		stmt.executeUpdate("UPDATE messages SET api_layer=51");
+	}
+}
+
+class DB_Update_8 extends DatabaseUpdate {
+	public int getVersion() { return 8; }
+	public DB_Update_8(Connection conn, Database db) { super(conn, db); }
+	
+	protected void _doUpdate() throws SQLException {
+		stmt.executeUpdate("ALTER TABLE messages ADD COLUMN json TEXT");
+		stmt.executeUpdate("ALTER TABLE chats ADD COLUMN json TEXT");
+		stmt.executeUpdate("ALTER TABLE users ADD COLUMN json TEXT");
 	}
 }

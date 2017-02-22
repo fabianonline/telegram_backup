@@ -212,14 +212,11 @@ public class DownloadManager {
 			//ObjectMapper om = new ObjectMapper();
 			//String json = om.writerWithDefaultPrettyPrinter().writeValueAsString(response.getMessages().get(1));
 			Gson gson = Utils.getGson();
-			String json = gson.toJson(response.getMessages());
-			System.out.println(json);
-			//System.exit(1);
 			
 			prog.onMessageDownloaded(response.getMessages().size());
-			//db.saveMessages(response.getMessages(), Kotlogram.API_LAYER);
-			//db.saveChats(response.getChats());
-			//db.saveUsers(response.getUsers());
+			db.saveMessages(response.getMessages(), Kotlogram.API_LAYER, gson);
+			db.saveChats(response.getChats(), gson);
+			db.saveUsers(response.getUsers(), gson);
 			logger.trace("Sleeping");
 			try {
 				TimeUnit.MILLISECONDS.sleep(Config.DELAY_AFTER_GET_MESSAGES);

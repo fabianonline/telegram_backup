@@ -21,6 +21,7 @@ import com.github.badoualy.telegram.tl.core.TLVector;
 import com.github.badoualy.telegram.api.TelegramClient;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import com.google.gson.Gson;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -166,16 +167,16 @@ public class Database {
 		}
 	}
 	
-	public synchronized void saveMessages(TLVector<TLAbsMessage> all, Integer api_layer) {
+	public synchronized void saveMessages(TLVector<TLAbsMessage> all, Integer api_layer, Gson gson) {
 		try {
 				//"(id, dialog_id, from_id, from_type, text, time, has_media, data, sticker, type) " +
 				//"VALUES " +
 				//"(?,  ?,         ?,       ?,         ?,    ?,    ?,         ?,    ?,       ?)");
 			String columns =
-				"(id, message_type, dialog_id, chat_id, sender_id, fwd_from_id, text, time, has_media, media_type, media_file, media_size, data, api_layer) "+
+				"(id, message_type, dialog_id, chat_id, sender_id, fwd_from_id, text, time, has_media, media_type, media_file, media_size, data, api_layer, json) "+
 				"VALUES " +
-				"(?,  ?,            ?,         ?,       ?,         ?,           ?,    ?,    ?,         ?,          ?,          ?,          ?,    ?)";
-				//1   2             3          4        5          6            7     8     9          10          11          12          13    14
+				"(?,  ?,            ?,         ?,       ?,         ?,           ?,    ?,    ?,         ?,          ?,          ?,          ?,    ?,         ?)";
+				//1   2             3          4        5          6            7     8     9          10          11          12          13    14         15
 			PreparedStatement ps = conn.prepareStatement("INSERT OR REPLACE INTO messages " + columns);
 			PreparedStatement ps_insert_or_ignore = conn.prepareStatement("INSERT OR IGNORE INTO messages " + columns);
 
@@ -232,6 +233,7 @@ public class Database {
 					msg.serializeBody(stream);
 					ps.setBytes(13, stream.toByteArray());
 					ps.setInt(14, api_layer);
+					ps.setString(15, gson.toJson(msg));
 					ps.addBatch();
 				} else if (abs instanceof TLMessageService) {
 					ps_insert_or_ignore.setInt(1, abs.getId());
@@ -248,6 +250,7 @@ public class Database {
 					ps_insert_or_ignore.setNull(12, Types.INTEGER);
 					ps_insert_or_ignore.setNull(13, Types.BLOB);
 					ps_insert_or_ignore.setInt(14, api_layer);
+					ps_insert_or_ignore.setString(15, gson.toJson((TLMessageService)abs));
 					ps_insert_or_ignore.addBatch();
 				} else if (abs instanceof TLMessageEmpty) {
 					ps_insert_or_ignore.setInt(1, abs.getId());
@@ -264,6 +267,7 @@ public class Database {
 					ps_insert_or_ignore.setNull(12, Types.INTEGER);
 					ps_insert_or_ignore.setNull(13, Types.BLOB);
 					ps_insert_or_ignore.setInt(14, api_layer);
+					ps_insert_or_ignore.setString(15, gson.toJson((TLMessageEmpty)abs));
 					ps_insert_or_ignore.addBatch();
 				} else {
 					throw new RuntimeException("Unexpected Message type: " + abs.getClass().getName());
@@ -282,18 +286,18 @@ public class Database {
 		}
 	}
 
-	public synchronized void saveChats(TLVector<TLAbsChat> all) {
+	public synchronized void saveChats(TLVector<TLAbsChat> all, Gson gson) {
 		try {
 			PreparedStatement ps_insert_or_replace = conn.prepareStatement(
 				"INSERT OR REPLACE INTO chats " +
-					"(id, name, type) "+
+					"(id, name, type, json) "+
 					"VALUES " +
-					"(?,  ?,    ?)");
+					"(?,  ?,    ?,    ?)");
 			PreparedStatement ps_insert_or_ignore = conn.prepareStatement(
 				"INSERT OR IGNORE INTO chats " +
-					"(id, name, type) "+
+					"(id, name, type, json) "+
 					"VALUES " +
-					"(?,  ?,    ?)");
+					"(?,  ?,    ?,    ?)");
 
 			for(TLAbsChat abs : all) {
 				ps_insert_or_replace.setInt(1, abs.getId());
@@ -301,22 +305,27 @@ public class Database {
 				if (abs instanceof TLChatEmpty) {
 					ps_insert_or_ignore.setNull(2, Types.VARCHAR);
 					ps_insert_or_ignore.setString(3, "empty_chat");
+					ps_insert_or_ignore.setString(4, gson.toJson((TLChatEmpty)abs));
 					ps_insert_or_ignore.addBatch();
 				} else if (abs instanceof TLChatForbidden) {
 					ps_insert_or_replace.setString(2, ((TLChatForbidden)abs).getTitle());
 					ps_insert_or_replace.setString(3, "chat");
+					ps_insert_or_replace.setString(4, gson.toJson((TLChatForbidden)abs));
 					ps_insert_or_replace.addBatch();
 				} else if (abs instanceof TLChannelForbidden) {
 					ps_insert_or_replace.setString(2, ((TLChannelForbidden)abs).getTitle());
 					ps_insert_or_replace.setString(3, "channel");
+					ps_insert_or_replace.setString(4, gson.toJson((TLChannelForbidden)abs));
 					ps_insert_or_replace.addBatch();
 				} else if (abs instanceof TLChat) {
 					ps_insert_or_replace.setString(2, ((TLChat) abs).getTitle());
 					ps_insert_or_replace.setString(3, "chat");
+					ps_insert_or_replace.setString(4, gson.toJson((TLChat) abs));
 					ps_insert_or_replace.addBatch();
 				} else if (abs instanceof TLChannel) {
 					ps_insert_or_replace.setString(2, ((TLChannel)abs).getTitle());
 					ps_insert_or_replace.setString(3, "channel");
+					ps_insert_or_replace.setString(4, gson.toJson((TLChannel)abs));
 					ps_insert_or_replace.addBatch();
 				} else {
 					throw new RuntimeException("Unexpected " + abs.getClass().getName());
@@ -335,18 +344,18 @@ public class Database {
 		}
 	}
 
-	public synchronized void saveUsers(TLVector<TLAbsUser> all) {
+	public synchronized void saveUsers(TLVector<TLAbsUser> all, Gson gson) {
 		try {
 			PreparedStatement ps_insert_or_replace = conn.prepareStatement(
 				"INSERT OR REPLACE INTO users " +
-					"(id, first_name, last_name, username, type, phone) " +
+					"(id, first_name, last_name, username, type, phone, json) " +
 					"VALUES " +
-					"(?,  ?,          ?,         ?,        ?,    ?)");
+					"(?,  ?,          ?,         ?,        ?,    ?,     ?)");
 			PreparedStatement ps_insert_or_ignore = conn.prepareStatement(
 				"INSERT OR IGNORE INTO users " +
-					"(id, first_name, last_name, username, type, phone) " +
+					"(id, first_name, last_name, username, type, phone, json) " +
 					"VALUES " +
-					"(?,  ?,          ?,         ?,        ?,    ?)");
+					"(?,  ?,          ?,         ?,        ?,    ?,     ?)");
 			for (TLAbsUser abs : all) {
 				if (abs instanceof TLUser) {
 					TLUser user = (TLUser)abs;
@@ -356,6 +365,7 @@ public class Database {
 					ps_insert_or_replace.setString(4, user.getUsername());
 					ps_insert_or_replace.setString(5, "user");
 					ps_insert_or_replace.setString(6, user.getPhone());
+					ps_insert_or_replace.setString(7, gson.toJson(user));
 					ps_insert_or_replace.addBatch();
 				} else if (abs instanceof TLUserEmpty) {
 					ps_insert_or_ignore.setInt(1, abs.getId());
@@ -364,6 +374,7 @@ public class Database {
 					ps_insert_or_ignore.setNull(4, Types.VARCHAR);
 					ps_insert_or_ignore.setString(5, "empty_user");
 					ps_insert_or_ignore.setNull(6, Types.VARCHAR);
+					ps_insert_or_replace.setString(7, gson.toJson((TLUserEmpty)abs));
 					ps_insert_or_ignore.addBatch();
 				} else {
 					throw new RuntimeException("Unexpected " + abs.getClass().getName());
@@ -395,6 +406,19 @@ public class Database {
 			e.printStackTrace();
 			throw new RuntimeException("Exception occured. See above.");
 		}
+	}
+	
+	public String queryString(String query) {
+		String result = null;
+		try {
+			ResultSet rs = stmt.executeQuery(query);
+			rs.next();
+			result = rs.getString(1);
+			rs.close();
+		} catch (Exception e) {
+			logger.warn("Exception happened in queryString:", e);
+		}
+		return result;
 	}
 	
 	public int getMessagesFromUserCount() {
