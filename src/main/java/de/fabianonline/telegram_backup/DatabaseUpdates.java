@@ -35,6 +35,7 @@ public class DatabaseUpdates {
 		register(new DB_Update_6(conn, db));
 		register(new DB_Update_7(conn, db));
 		register(new DB_Update_8(conn, db));
+		register(new DB_Update_9(conn, db));
 	}
 	
 	public void doUpdates() {
@@ -328,5 +329,28 @@ class DB_Update_8 extends DatabaseUpdate {
 		ps.executeBatch();
 		conn.commit();
 		conn.setAutoCommit(true);
+	}
+}
+
+class DB_Update_9 extends DatabaseUpdate {
+	public int getVersion() { return 9; }
+	public DB_Update_9(Connection conn, Database db) { super(conn, db); }
+	
+	protected void _doUpdate() throws SQLException {
+		ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM messages WHERE api_layer=51 AND json IS NULL");
+		rs.next();
+		
+		if (rs.getInt(1)>0) {
+			System.out.println();
+			System.out.println("There are some old messages in your DB that cannot be automatically converted.");
+			System.out.println("Sorry for that. We made some changes to prevent this from happening, but");
+			System.out.println("your old messages have to be converted to continue. Don't worry, nothing bad will");
+			System.out.println("happen and your backup is safe.");
+			System.out.println("But still the messages will have to be converted in order to continue running.");
+			System.out.println();
+			System.out.println("Please grab _URL_ and run it just like you would run this tool. It will convert");
+			System.out.println("those old messages. After that, you can run this tool again and it will continue.");
+			System.exit(1);
+		}
 	}
 }
