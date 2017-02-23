@@ -52,7 +52,7 @@ public class CommandLineRunner {
 		
 		PatternLayoutEncoder encoder = new PatternLayoutEncoder();
 		encoder.setContext(rootContext);
-		encoder.setPattern("%d{HH:mm:ss} %-5level %-35.-35(%logger{0}.%method): %message%n");
+		encoder.setPattern("%d{HH:mm:ss.SSS} %-5level %-35.-35(%logger{0}.%method): %message%n");
 		encoder.start();
 		
 		ConsoleAppender<ILoggingEvent> appender = new ConsoleAppender<ILoggingEvent>();
