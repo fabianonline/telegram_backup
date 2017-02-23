@@ -45,9 +45,10 @@ import org.slf4j.LoggerFactory;
 public class HTMLExporter {
 	private static Logger logger = LoggerFactory.getLogger(HTMLExporter.class);
 	
-	public void export(UserManager user) throws IOException {
+	public void export() throws IOException {
 		try {
-			Database db = new Database(user, null);
+			UserManager user = UserManager.getInstance();
+			Database db = Database.getInstance();
 			
 			// Create base dir
 			logger.debug("Creating base dir");

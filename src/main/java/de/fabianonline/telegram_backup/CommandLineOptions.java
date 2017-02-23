@@ -29,6 +29,7 @@ class CommandLineOptions {
 	public static boolean cmd_daemon         = false;
 	public static boolean cmd_no_media       = false;
 	public static boolean cmd_anonymize      = false;
+	public static boolean cmd_stats          = false;
 	
 	public static String  val_account        = null;
 	public static Integer val_limit_messages = null;
@@ -112,6 +113,9 @@ class CommandLineOptions {
 				
 				case "--anonymize":
 					cmd_anonymize = true;           break;
+				
+				case "--stats":
+					cmd_stats = true;               break;
 					
 				default:
 					throw new RuntimeException("Unknown command " + arg);

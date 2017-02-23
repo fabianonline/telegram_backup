@@ -62,11 +62,11 @@ public class DownloadManager {
 	static boolean last_download_succeeded = true;
 	static final Logger logger = LoggerFactory.getLogger(DownloadManager.class);
 	
-	public DownloadManager(UserManager u, TelegramClient c, DownloadProgressInterface p) {
-		this.user = u;
+	public DownloadManager(TelegramClient c, DownloadProgressInterface p) {
+		this.user = UserManager.getInstance();
 		this.client = c;
 		this.prog = p;
-		this.db = new Database(u, c);
+		this.db = Database.getInstance();
 	}
 	
 	public void downloadMessages(Integer limit) throws RpcErrorException, IOException {

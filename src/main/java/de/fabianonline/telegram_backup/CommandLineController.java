@@ -30,6 +30,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Scanner;
 import java.util.Vector;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
@@ -38,7 +40,6 @@ public class CommandLineController {
 	private static Logger logger = LoggerFactory.getLogger(CommandLineController.class);
 	private ApiStorage storage;
 	public TelegramApp app;
-	public UserManager user = null;
 	
 	public CommandLineController() {
 		logger.info("CommandLineController started. App version {}", Config.APP_APPVER);
@@ -77,8 +78,11 @@ public class CommandLineController {
 		TelegramClient client = Kotlogram.getDefaultClient(app, storage, Kotlogram.PROD_DC4, handler);
 		
 		try {
-			logger.info("Creating UserManager");
-			user = new UserManager(client);
+			logger.info("Initializing UserManager");
+			UserManager.init(client);
+			Database.init(client);
+			
+			UserManager user = UserManager.getInstance();
 
 			if (!CommandLineOptions.cmd_login && !user.isLoggedIn()) {
 				System.out.println("Your authorization data is invalid or missing. You will have to login with Telegram again.");
@@ -91,12 +95,15 @@ public class CommandLineController {
 				}
 			}
 			
-			
+			if (CommandLineOptions.cmd_stats) {
+				cmd_stats();
+				System.exit(0);
+			}
 			
 			logger.debug("CommandLineOptions.val_export: {}", CommandLineOptions.val_export);
 			if (CommandLineOptions.val_export != null) {
 				if (CommandLineOptions.val_export.toLowerCase().equals("html")) {
-					(new HTMLExporter()).export(user);
+					(new HTMLExporter()).export();
 					System.exit(0);
 				} else {
 					show_error("Unknown export format.");
@@ -117,7 +124,6 @@ public class CommandLineController {
 			}
 			
 			logger.info("Initializing Download Manager");
-			DownloadManager d = new DownloadManager(user, client, new CommandLineDownloadProgress());
 			
 			if (CommandLineOptions.val_test != null) {
 				if (CommandLineOptions.val_test == 1) {
@@ -132,6 +138,7 @@ public class CommandLineController {
 				System.exit(1);
 			}
 			
+			DownloadManager d = new DownloadManager(client, new CommandLineDownloadProgress());
 			logger.debug("Calling DownloadManager.downloadMessages with limit {}", CommandLineOptions.val_limit_messages);
 			d.downloadMessages(CommandLineOptions.val_limit_messages);
 			
@@ -147,7 +154,7 @@ public class CommandLineController {
 			logger.error("Exception caught!", e);
 		} finally {
 			if (CommandLineOptions.cmd_daemon) {
-				handler.setUser(user, client);
+				handler.activate();
 				System.out.println("DAEMON mode requested - keeping running.");
 			} else {
 				client.close();
@@ -159,7 +166,7 @@ public class CommandLineController {
 	}
 	
 	private void printHeader() {
-		System.out.println("Telegram_Backup version " + Config.APP_APPVER + ", Copyright (C) 2016 Fabian Schlenz");
+		System.out.println("Telegram_Backup version " + Config.APP_APPVER + ", Copyright (C) 2016, 2017 Fabian Schlenz");
 		System.out.println();
 		System.out.println("Telegram_Backup comes with ABSOLUTELY NO WARRANTY. This is free software, and you are");
 		System.out.println("welcome to redistribute it under certain conditions; run it with '--license' for details.");
@@ -214,7 +221,20 @@ public class CommandLineController {
 		return account;
 	}
 	
+	private void cmd_stats() {
+		HashMap<String, Integer> map = new HashMap<String, Integer>();
+		map.put("count.accounts", Utils.getAccounts().size());
+		map.put("count.messages", Database.getInstance().getMessageCount());
+		map.put("messages.top_id", Database.getInstance().getTopMessageID());
+		for(Map.Entry<String, Integer> pair : Database.getInstance().getMessageMediaTypesWithCount().entrySet()) {
+			map.put(pair.getKey(), pair.getValue());
+		}
+		
+		System.out.println(map.toString());
+	}
+	
 	private void cmd_login(String phone) throws RpcErrorException, IOException {
+		UserManager user = UserManager.getInstance();
 		if (phone==null) {
 			System.out.println("Please enter your phone number in international format.");
 			System.out.println("Example: +4917077651234");
@@ -270,6 +290,7 @@ public class CommandLineController {
 		System.out.println("      --license                Displays the license of this program.");
 		System.out.println("  -d, --daemon                 Keep running and automatically save new messages.");
 		System.out.println("      --anonymize              (Try to) Remove all sensitive information from output. Useful for requesting support.");
+		System.out.println("      --stats                  Print some usage statistics.");
 	}
 	
 	private void list_accounts() {

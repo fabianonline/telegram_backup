@@ -43,8 +43,13 @@ public class UserManager {
 	private TLAuthorization auth = null;
 	private boolean password_needed = false;
 	private static Logger logger = LoggerFactory.getLogger(UserManager.class);
+	private static UserManager instance = null;
 	
-	public UserManager(TelegramClient c) throws IOException {
+	public static void init(TelegramClient c) throws IOException {
+		instance = new UserManager(c);
+	}
+	
+	private UserManager(TelegramClient c) throws IOException {
 		this.client = c;
 		logger.debug("Calling getFullUser");
 		try {
@@ -54,6 +59,11 @@ public class UserManager {
 			// This may happen. Ignoring it.
 			logger.debug("Ignoring exception:", e);
 		}
+	}
+	
+	public static UserManager getInstance() {
+		if (instance==null) throw new RuntimeException("UserManager is not yet initialized.");
+		return instance;
 	}
 	
 	public boolean isLoggedIn() { return user!=null; }

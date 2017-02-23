@@ -54,13 +54,10 @@ public class Database {
 	public UserManager user_manager;
 	public TelegramClient client;
 	private final static Logger logger = LoggerFactory.getLogger(Database.class);
+	private static Database instance = null;
 	
-	public Database(UserManager user_manager, TelegramClient client) {
-		this(user_manager, client, true);
-	}
-	
-	public Database(UserManager user_manager, TelegramClient client, boolean update_db) {
-		this.user_manager = user_manager;
+	private Database(TelegramClient client) {
+		this.user_manager = UserManager.getInstance();
 		this.client = client;
 		System.out.println("Opening database...");
 		try {
@@ -80,14 +77,20 @@ public class Database {
 			CommandLineController.show_error("Could not connect to SQLITE database.");
 		}
 		
-		this.init(update_db);
+		// Run updates
+		DatabaseUpdates updates = new DatabaseUpdates(conn, this);
+		updates.doUpdates();
+		
 		System.out.println("Database is ready.");
 	}
 	
-	private void init(boolean update_db) {
-		if (!update_db) return;
-		DatabaseUpdates updates = new DatabaseUpdates(conn, this);
-		updates.doUpdates();
+	public static void init(TelegramClient c) {
+		instance = new Database(c);
+	}
+	
+	public static Database getInstance() {
+		if (instance == null) throw new RuntimeException("Database is not initialized but getInstance() was called.");
+		return instance;
 	}
 	
 	public void backupDatabase(int currentVersion) {
