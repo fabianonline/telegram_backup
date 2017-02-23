@@ -102,7 +102,14 @@ public class Database {
 	
 	public void jsonify() {
 		try {
-			ResultSet rs = stmt.executeQuery("SELECT id, data FROM messages WHERE api_layer=51");
+			ResultSet rs = stmt.executeQuery("SELECT max(version) FROM database_versions");
+			rs.next();
+			if (rs.getInt(1) != 8) {
+				System.out.println("This tool will only run on a database version 8. Found: " + rs.getInt(1));
+				System.exit(1);
+			}
+			rs.close();
+			rs = stmt.executeQuery("SELECT id, data FROM messages WHERE api_layer=51");
 			PreparedStatement ps = conn.prepareStatement("UPDATE messages SET json=? WHERE id=?");
 			Gson gson = Utils.getGson();
 			while(rs.next()) {
