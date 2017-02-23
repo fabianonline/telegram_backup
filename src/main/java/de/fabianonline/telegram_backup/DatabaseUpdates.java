@@ -12,8 +12,10 @@ import java.sql.PreparedStatement;
 import com.github.badoualy.telegram.tl.api.*;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import com.google.gson.Gson;
 import de.fabianonline.telegram_backup.mediafilemanager.FileManagerFactory;
 import de.fabianonline.telegram_backup.mediafilemanager.AbstractMediaFileManager;
+import com.github.badoualy.telegram.api.Kotlogram;
 
 public class DatabaseUpdates {
 	protected Connection conn;
@@ -311,5 +313,20 @@ class DB_Update_8 extends DatabaseUpdate {
 		stmt.executeUpdate("ALTER TABLE messages ADD COLUMN json TEXT");
 		stmt.executeUpdate("ALTER TABLE chats ADD COLUMN json TEXT");
 		stmt.executeUpdate("ALTER TABLE users ADD COLUMN json TEXT");
+		
+		ResultSet rs = stmt.executeQuery("SELECT id, data FROM messages WHERE api_layer=" + Kotlogram.API_LAYER);
+		PreparedStatement ps = conn.prepareStatement("UPDATE messages SET json=? WHERE id=?");
+		Gson gson = Utils.getGson();
+		while(rs.next()) {
+			TLMessage msg = db.bytesToTLMessage(rs.getBytes(2));
+			ps.setInt(2, rs.getInt(1));
+			ps.setString(1, gson.toJson(msg));
+			ps.addBatch();
+		}
+		rs.close();
+		conn.setAutoCommit(false);
+		ps.executeBatch();
+		conn.commit();
+		conn.setAutoCommit(true);
 	}
 }
