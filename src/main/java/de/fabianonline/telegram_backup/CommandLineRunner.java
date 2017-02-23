@@ -75,18 +75,6 @@ public class CommandLineRunner {
 	}
 	
 	public static boolean checkVersion() {
-		Version v = Utils.getNewestVersion();
-		if (v!=null && v.isNewer) {
-			System.out.println("A newer version is vailable!");
-			System.out.println("You are using: " + Config.APP_APPVER);
-			System.out.println("Available:     " + v.version);
-			System.out.println("Get it here:   " + v.url);
-			System.out.println();
-			System.out.println("Changes in this version:");
-			System.out.println(v.body);
-			System.out.println();
-			return false;
-		}
 		return true;
 	}
 }

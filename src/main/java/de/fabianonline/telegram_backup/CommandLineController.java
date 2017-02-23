@@ -16,10 +16,6 @@
 
 package de.fabianonline.telegram_backup;
 
-import de.fabianonline.telegram_backup.TelegramUpdateHandler;
-import de.fabianonline.telegram_backup.exporter.HTMLExporter;
-import de.fabianonline.telegram_backup.models.Message;
-
 import com.github.badoualy.telegram.api.Kotlogram;
 import com.github.badoualy.telegram.api.TelegramApp;
 import com.github.badoualy.telegram.api.TelegramClient;
@@ -38,7 +34,6 @@ import org.slf4j.Logger;
 
 public class CommandLineController {
 	private static Logger logger = LoggerFactory.getLogger(CommandLineController.class);
-	private ApiStorage storage;
 	public TelegramApp app;
 	
 	public CommandLineController() {
@@ -70,103 +65,29 @@ public class CommandLineController {
 		
 		logger.debug("CommandLineOptions.cmd_login: {}", CommandLineOptions.cmd_login);
 
-		logger.info("Initializing ApiStorage");
-		storage = new ApiStorage(account);
-		logger.info("Initializing TelegramUpdateHandler");
-		TelegramUpdateHandler handler = new TelegramUpdateHandler();
 		logger.info("Creating Client");
-		TelegramClient client = Kotlogram.getDefaultClient(app, storage, Kotlogram.PROD_DC4, handler);
+		TelegramClient client = null; //Kotlogram.getDefaultClient(app, storage, Kotlogram.PROD_DC4, handler);
 		
 		try {
 			logger.info("Initializing UserManager");
-			UserManager.init(client);
+			UserManager.init(account);
 			Database.init(client);
 			
-			UserManager user = UserManager.getInstance();
-
-			if (!CommandLineOptions.cmd_login && !user.isLoggedIn()) {
-				System.out.println("Your authorization data is invalid or missing. You will have to login with Telegram again.");
-				CommandLineOptions.cmd_login = true;
-			}
-			if (account!=null && user.isLoggedIn()) {
-				if (!account.equals("+" + user.getUser().getPhone())) {
-					logger.error("Account: {}, user.getUser().getPhone(): +{}", Utils.anonymize(account), Utils.anonymize(user.getUser().getPhone()));
-					throw new RuntimeException("Account / User mismatch");
-				}
-			}
+			// do stuff
+			Database.getInstance().jsonify();
 			
-			if (CommandLineOptions.cmd_stats) {
-				cmd_stats();
-				System.exit(0);
-			}
-			
-			logger.debug("CommandLineOptions.val_export: {}", CommandLineOptions.val_export);
-			if (CommandLineOptions.val_export != null) {
-				if (CommandLineOptions.val_export.toLowerCase().equals("html")) {
-					(new HTMLExporter()).export();
-					System.exit(0);
-				} else {
-					show_error("Unknown export format.");
-				}
-			}
-		
-			logger.debug("CommandLineOptions.cmd_login: {}", CommandLineOptions.cmd_login);
-			if (CommandLineOptions.cmd_login) {
-				cmd_login(account);
-				System.exit(0);
-			}
-			
-			if (user.isLoggedIn()) {
-				System.out.println("You are logged in as " + Utils.anonymize(user.getUserString()));
-			} else {
-				System.out.println("You are not logged in.");
-				System.exit(1);
-			}
-			
-			logger.info("Initializing Download Manager");
-			
-			if (CommandLineOptions.val_test != null) {
-				if (CommandLineOptions.val_test == 1) {
-					TestFeatures.test1();
-				} else if (CommandLineOptions.val_test == 2) {
-					TestFeatures.test2(user, client);
-				} else if (CommandLineOptions.val_test == 3) {
-					logger.debug(Message.get(39925).getMessage());
-				} else {
-					System.out.println("Unknown test " + CommandLineOptions.val_test);
-				}
-				System.exit(1);
-			}
-			
-			DownloadManager d = new DownloadManager(client, new CommandLineDownloadProgress());
-			logger.debug("Calling DownloadManager.downloadMessages with limit {}", CommandLineOptions.val_limit_messages);
-			d.downloadMessages(CommandLineOptions.val_limit_messages);
-			
-			logger.debug("CommandLineOptions.cmd_no_media: {}", CommandLineOptions.cmd_no_media);
-			if (!CommandLineOptions.cmd_no_media) {
-				logger.debug("Calling DownloadManager.downloadMedia");
-				d.downloadMedia();
-			} else {
-				System.out.println("Skipping media download because --no-media is set.");
-			}
 		} catch (Exception e) {
 			e.printStackTrace();
 			logger.error("Exception caught!", e);
 		} finally {
-			if (CommandLineOptions.cmd_daemon) {
-				handler.activate();
-				System.out.println("DAEMON mode requested - keeping running.");
-			} else {
-				client.close();
-				System.out.println();
-				System.out.println("----- EXIT -----");
-				System.exit(0);
-			}
+			System.out.println();
+			System.out.println("----- EXIT -----");
+			System.exit(0);
 		}
 	}
 	
 	private void printHeader() {
-		System.out.println("Telegram_Backup version " + Config.APP_APPVER + ", Copyright (C) 2016, 2017 Fabian Schlenz");
+		System.out.println("Telegram_Backup 51convert version " + Config.APP_APPVER + ", Copyright (C) 2016, 2017 Fabian Schlenz");
 		System.out.println();
 		System.out.println("Telegram_Backup comes with ABSOLUTELY NO WARRANTY. This is free software, and you are");
 		System.out.println("welcome to redistribute it under certain conditions; run it with '--license' for details.");
@@ -221,18 +142,6 @@ public class CommandLineController {
 		return account;
 	}
 	
-	private void cmd_stats() {
-		HashMap<String, Integer> map = new HashMap<String, Integer>();
-		map.put("count.accounts", Utils.getAccounts().size());
-		map.put("count.messages", Database.getInstance().getMessageCount());
-		map.put("messages.top_id", Database.getInstance().getTopMessageID());
-		for(Map.Entry<String, Integer> pair : Database.getInstance().getMessageMediaTypesWithCount().entrySet()) {
-			map.put(pair.getKey(), pair.getValue());
-		}
-		
-		System.out.println(map.toString());
-	}
-	
 	private void cmd_login(String phone) throws RpcErrorException, IOException {
 		UserManager user = UserManager.getInstance();
 		if (phone==null) {
@@ -251,7 +160,6 @@ public class CommandLineController {
 			String pw = getPassword();
 			user.verifyPassword(pw);
 		}
-		storage.setPrefix("+" + user.getUser().getPhone());
 		
 		System.out.println("Everything seems fine. Please run this tool again with '--account +" + Utils.anonymize(user.getUser().getPhone()) + " to use this account.");
 	}
@@ -275,22 +183,6 @@ public class CommandLineController {
 	
 	private void show_help() {
 		System.out.println("Valid options are:");
-		System.out.println("  -h, --help                   Shows this help.");
-		System.out.println("  -a, --account <x>            Use account <x>.");
-		System.out.println("  -l, --login                  Login to an existing telegram account.");
-		System.out.println("      --debug                  Shows some debug information.");
-		System.out.println("      --trace                  Shows lots of debug information. Overrides --debug.");
-		System.out.println("      --trace-telegram         Shows lots of debug messages from the library used to access Telegram.");
-		System.out.println("  -A, --list-accounts          List all existing accounts ");
-		System.out.println("      --limit-messages <x>     Downloads at most the most recent <x> messages.");
-		System.out.println("      --no-media               Do not download media files.");
-		System.out.println("  -t, --target <x>             Target directory for the files.");
-		System.out.println("  -e, --export <format>        Export the database. Valid formats are:");
-		System.out.println("                               html - Creates HTML files.");
-		System.out.println("      --license                Displays the license of this program.");
-		System.out.println("  -d, --daemon                 Keep running and automatically save new messages.");
-		System.out.println("      --anonymize              (Try to) Remove all sensitive information from output. Useful for requesting support.");
-		System.out.println("      --stats                  Print some usage statistics.");
 	}
 	
 	private void list_accounts() {

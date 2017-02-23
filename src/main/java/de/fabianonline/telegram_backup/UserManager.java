@@ -45,20 +45,12 @@ public class UserManager {
 	private static Logger logger = LoggerFactory.getLogger(UserManager.class);
 	private static UserManager instance = null;
 	
-	public static void init(TelegramClient c) throws IOException {
-		instance = new UserManager(c);
+	public static void init(String phone) throws IOException {
+		instance = new UserManager(phone);
 	}
 	
-	private UserManager(TelegramClient c) throws IOException {
-		this.client = c;
-		logger.debug("Calling getFullUser");
-		try {
-			TLUserFull full_user = this.client.usersGetFullUser(new TLInputUserSelf());
-			this.user = full_user.getUser().getAsUser();
-		} catch (RpcErrorException e) {
-			// This may happen. Ignoring it.
-			logger.debug("Ignoring exception:", e);
-		}
+	private UserManager(String phone) throws IOException {
+		this.phone = phone;
 	}
 	
 	public static UserManager getInstance() {
@@ -69,19 +61,9 @@ public class UserManager {
 	public boolean isLoggedIn() { return user!=null; }
 	
 	public void sendCodeToPhoneNumber(String number) throws RpcErrorException, IOException {
-		this.phone = number;
-		this.sent_code = this.client.authSendCode(false, this.phone, true);
 	}
 	
 	public void verifyCode(String code) throws RpcErrorException, IOException {
-		this.code = code;
-		try {
-			this.auth = client.authSignIn(phone, this.sent_code.getPhoneCodeHash(), this.code);
-			this.user = auth.getUser().getAsUser();
-		} catch (RpcErrorException e) {
-			if (e.getCode()!=401 || !e.getTag().equals("SESSION_PASSWORD_NEEDED")) throw e;
-			this.password_needed = true;
-		}
 	}
 	
 	public boolean isPasswordNeeded() { return this.password_needed; }
@@ -126,6 +108,6 @@ public class UserManager {
 	public TLUser getUser() { return this.user; }
 	
 	public String getFileBase() {
-		return Config.FILE_BASE + File.separatorChar + "+" + this.user.getPhone() + File.separatorChar;
+		return Config.FILE_BASE + File.separatorChar + this.phone + File.separatorChar;
 	}
 }
