@@ -222,15 +222,24 @@ public class CommandLineController {
 	}
 	
 	private void cmd_stats() {
-		HashMap<String, Integer> map = new HashMap<String, Integer>();
-		map.put("count.accounts", Utils.getAccounts().size());
-		map.put("count.messages", Database.getInstance().getMessageCount());
-		map.put("messages.top_id", Database.getInstance().getTopMessageID());
+		System.out.println();
+		System.out.println("Stats:");
+		String format = "%40s: %d%n";
+		System.out.format(format, "Number of accounts", Utils.getAccounts().size());
+		System.out.format(format, "Number of messages", Database.getInstance().getMessageCount());
+		System.out.format(format, "Top message ID", Database.getInstance().getTopMessageID());
+		
+		System.out.println();
+		System.out.println("Media Types:");
 		for(Map.Entry<String, Integer> pair : Database.getInstance().getMessageMediaTypesWithCount().entrySet()) {
-			map.put(pair.getKey(), pair.getValue());
+			System.out.format(format, pair.getKey(), pair.getValue());
 		}
 		
-		System.out.println(map.toString());
+		System.out.println();
+		System.out.println("Api layers of messages:");
+		for(Map.Entry<String, Integer> pair : Database.getInstance().getMessageApiLayerWithCount().entrySet()) {
+			System.out.format(format, pair.getKey(), pair.getValue());
+		}
 	}
 	
 	private void cmd_login(String phone) throws RpcErrorException, IOException {

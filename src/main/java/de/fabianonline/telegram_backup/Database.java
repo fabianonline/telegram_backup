@@ -482,6 +482,20 @@ public class Database {
 		} catch (Exception e) { throw new RuntimeException(e); }
 	}
 	
+	public HashMap<String, Integer> getMessageApiLayerWithCount() {
+		HashMap<String, Integer> map = new HashMap<String, Integer>();
+		try {
+			ResultSet rs = stmt.executeQuery("SELECT COUNT(id), api_layer FROM messages GROUP BY api_layer ORDER BY api_layer");
+			while(rs.next()) {
+				Integer layer = rs.getInt(2);
+				if (layer==null) layer=0;
+				map.put("count.messages.api_layer." + layer, rs.getInt(1));
+			}
+			rs.close();
+			return map;
+		} catch (Exception e) { throw new RuntimeException(e); }
+	}
+	
 	public HashMap<String, Object> getMessageAuthorsWithCount() {
 		return getMessageAuthorsWithCount(new GlobalChat());
 	}
