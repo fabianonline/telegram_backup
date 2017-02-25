@@ -1,16 +1,16 @@
 /* Telegram_Backup
  * Copyright (C) 2016 Fabian Schlenz
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
@@ -20,6 +20,9 @@ import de.fabianonline.telegram_backup.UserManager;
 import de.fabianonline.telegram_backup.Database;
 import de.fabianonline.telegram_backup.StickerConverter;
 import de.fabianonline.telegram_backup.DownloadProgressInterface;
+import de.fabianonline.telegram_backup.models.Message;
+
+import com.google.gson.JsonObject;
 
 import com.github.badoualy.telegram.api.TelegramClient;
 import com.github.badoualy.telegram.tl.core.TLIntVector;
@@ -42,31 +45,33 @@ import java.util.concurrent.TimeoutException;
 import org.apache.commons.io.FileUtils;
 
 public class FileManagerFactory {
-	public static AbstractMediaFileManager getFileManager(TLMessage m, UserManager u, TelegramClient c) {
-		if (m==null) return null;
-		TLAbsMessageMedia media = m.getMedia();
+	public static AbstractMediaFileManager getFileManager(Message msg) {
+		if (msg==null) return null;
+		JsonObject media = msg.getMedia();
 		if (media==null) return null;
-		
-		if (media instanceof TLMessageMediaPhoto) {
-			return new PhotoFileManager(m, u, c);
-		} else if (media instanceof TLMessageMediaDocument) {
-			DocumentFileManager d = new DocumentFileManager(m, u, c);
+
+		String media_constructor = media.getAsJsonPrimitive("_constructor").getAsString();
+
+		if (media_constructor.startsWith("messageMediaPhoto#")) {
+			return new PhotoFileManager(msg);
+		} else if (media_constructor.startsWith("messageMediaDocument#")) {
+			DocumentFileManager d = new DocumentFileManager(msg);
 			if (d.isSticker()) {
-				return new StickerFileManager(m, u, c);
+				return new StickerFileManager(msg);
 			}
 			return d;
-		} else if (media instanceof TLMessageMediaGeo) {
-			return new GeoFileManager(m, u, c);
-		} else if (media instanceof TLMessageMediaEmpty) {
-			return new UnsupportedFileManager(m, u, c, "empty");
-		} else if (media instanceof TLMessageMediaUnsupported) {
-			return new UnsupportedFileManager(m, u, c, "unsupported");
-		} else if (media instanceof TLMessageMediaWebPage) {
-			return new UnsupportedFileManager(m, u, c, "webpage");
-		} else if (media instanceof TLMessageMediaContact) {
-			return new UnsupportedFileManager(m, u, c, "contact");
-		} else if (media instanceof TLMessageMediaVenue) {
-			return new UnsupportedFileManager(m, u, c, "venue");
+		} else if (media_constructor.startsWith("messageMediaGeo#")) {
+			return new GeoFileManager(msg);
+		} else if (media_constructor.startsWith("messageMediaEmpty#")) {
+			return new UnsupportedFileManager(msg, "empty");
+		} else if (media_constructor.startsWith("messageMediaUnsupported#")) {
+			return new UnsupportedFileManager(msg, "unsupported");
+		} else if (media_constructor.startsWith("messageMediaWebpage#")) {
+			return new UnsupportedFileManager(msg, "webpage");
+		} else if (media_constructor.startsWith("messageMediaContact#")) {
+			return new UnsupportedFileManager(msg, "contact");
+		} else if (media_constructor.startsWith("messageMediaVenue#")) {
+			return new UnsupportedFileManager(msg, "venue");
 		} else {
 			AbstractMediaFileManager.throwUnexpectedObjectError(media);
 		}

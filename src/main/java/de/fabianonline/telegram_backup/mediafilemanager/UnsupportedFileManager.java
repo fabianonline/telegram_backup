@@ -1,16 +1,16 @@
 /* Telegram_Backup
  * Copyright (C) 2016 Fabian Schlenz
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
@@ -45,27 +45,27 @@ import org.apache.commons.io.FileUtils;
 
 public class UnsupportedFileManager extends AbstractMediaFileManager {
 	String type = null;
-	public UnsupportedFileManager(TLMessage msg, UserManager user, TelegramClient client, String type) {
-		super(msg, user, client);
+	public UnsupportedFileManager(Message msg, String type) {
+		super(msg);
 		this.type = type;
 	}
 
 	public String getTargetFilename() {
 		return "";
 	}
-	
+
 	public String getTargetPath() {
 		return "";
-	}	
-	
+	}
+
 	public String getExtension() { return ""; }
-	
+
 	public int getSize() { return 0; }
-	
+
 	public boolean isEmpty() { return false; }
-	public void download() {}
+	public void download(TelegramClient c) {}
 	public boolean isDownloaded() { return false; }
-	
+
 	public String getLetter() { return " "; }
 	public String getName() { return type; }
 	public String getDescription() { return "Unsupported / non-downloadable Media"; }

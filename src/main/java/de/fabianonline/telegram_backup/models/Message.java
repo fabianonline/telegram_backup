@@ -7,6 +7,7 @@ import com.google.gson.JsonObject;
 public class Message {
 	protected static String tableName = "messages";
 	private JsonObject json;
+	private JsonObject media;
 	private String message = null;
 	private Integer id = null;
 
@@ -27,5 +28,10 @@ public class Message {
 	public int getId() {
 		if (id==null) id=json.getAsJsonPrimitive("id").getAsInt();
 		return id;
+	}
+
+	public JsonObject getMedia() {
+		if (media==null) media=json.getAsJsonObject("media");
+		return media;
 	}
 }
