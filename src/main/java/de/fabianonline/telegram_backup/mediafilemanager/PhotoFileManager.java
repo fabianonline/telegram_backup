@@ -27,6 +27,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonElement;
 
 import com.github.badoualy.telegram.api.TelegramClient;
+import com.github.badoualy.telegram.tl.exception.RpcErrorException;
 
 import java.io.IOException;
 import java.io.File;

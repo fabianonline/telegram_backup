@@ -27,6 +27,7 @@ import de.fabianonline.telegram_backup.models.Message;
 import com.google.gson.JsonObject;
 
 import com.github.badoualy.telegram.api.TelegramClient;
+import com.github.badoualy.telegram.tl.exception.RpcErrorException;
 
 import java.io.IOException;
 import java.io.File;

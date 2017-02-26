@@ -22,6 +22,7 @@ import de.fabianonline.telegram_backup.StickerConverter;
 import de.fabianonline.telegram_backup.DownloadProgressInterface;
 import de.fabianonline.telegram_backup.mediafilemanager.FileManagerFactory;
 import de.fabianonline.telegram_backup.mediafilemanager.AbstractMediaFileManager;
+import de.fabianonline.telegram_backup.models.Message;
 
 import com.github.badoualy.telegram.api.TelegramClient;
 import com.github.badoualy.telegram.api.Kotlogram;
@@ -263,10 +264,10 @@ public class DownloadManager {
 			downloadMessages(ids);
 		}
 
-		LinkedList<TLMessage> messages = this.db.getMessagesWithMedia();
+		LinkedList<Message> messages = this.db.getMessagesWithMedia();
 		logger.debug("Database returned {} messages with media", messages.size());
 		prog.onMediaDownloadStart(messages.size());
-		for (TLMessage msg : messages) {
+		for (Message msg : messages) {
 			AbstractMediaFileManager m = FileManagerFactory.getFileManager(msg);
 			logger.trace("message {}, {}, {}, {}, {}",
 				msg.getId(),
