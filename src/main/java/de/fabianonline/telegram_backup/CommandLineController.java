@@ -223,6 +223,8 @@ public class CommandLineController {
 		String format = "%40s: %d%n";
 		System.out.format(format, "Number of accounts", Utils.getAccounts().size());
 		System.out.format(format, "Number of messages", Database.getInstance().getMessageCount());
+		System.out.format(format, "Number of chats", Database.getInstance().getChatCount());
+		System.out.format(format, "Number of users", Database.getInstance().getUserCount());
 		System.out.format(format, "Top message ID", Database.getInstance().getTopMessageID());
 		
 		System.out.println();

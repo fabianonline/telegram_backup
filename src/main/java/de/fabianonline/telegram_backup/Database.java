@@ -133,15 +133,19 @@ public class Database {
 		} catch (SQLException e) {}
 	}
 	
-	public int getMessageCount() {
+	public int queryInt(String query) {
 		try {
-			ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM messages");
+			ResultSet rs = stmt.executeQuery(query);
 			rs.next();
 			return rs.getInt(1);
 		} catch (SQLException e) {
 			throw new RuntimeException("Could not get count of messages.");
 		}
 	}
+	
+	public int getMessageCount() { return queryInt("SELECT COUNT(*) FROM messages"); }
+	public int getChatCount() { return queryInt("SELECT COUNT(*) FROM chats"); }
+	public int getUserCount() { return queryInt("SELECT COUNT(*) FROM users"); }
 	
 	public LinkedList<Integer> getMissingIDs() {
 		try {
