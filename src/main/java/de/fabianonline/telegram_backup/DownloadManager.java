@@ -336,6 +336,10 @@ public class DownloadManager {
 					if (e.getTag().startsWith("420: FLOOD_WAIT_")) {
 						try_again = true;
 						Utils.obeyFloodWaitException(e);
+					} else if (e.getCode()==400) {
+						//Somehow this file is broken. No idea why. Let's skip it for now
+						try_again = true;
+						return false;
 					} else {
 						throw e;
 					}
