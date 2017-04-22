@@ -323,7 +323,7 @@ public class DownloadManager {
 			boolean try_again;
 			do {
 				try_again = false;
-				int block_size = size;
+				int block_size = 1024;
 				logger.trace("offset: {} block_size: {} size: {}", offset, block_size, size);
 				TLRequestUploadGetFile req = new TLRequestUploadGetFile(loc, offset, block_size);
 				try {
@@ -350,7 +350,6 @@ public class DownloadManager {
 				
 				fos.write(response.getBytes().getData());
 				fos.flush();
-				try { TimeUnit.MILLISECONDS.sleep(Config.DELAY_AFTER_GET_FILE); } catch(InterruptedException e) {}
 			} while(offset < size && (response.getBytes().getData().length>0 || try_again));
 			fos.close();
 			if (offset < size) {
@@ -377,6 +376,7 @@ public class DownloadManager {
 				throw last_exception;
 			}
 			last_download_succeeded = true;
+			try { TimeUnit.MILLISECONDS.sleep(Config.DELAY_AFTER_GET_FILE); } catch(InterruptedException e) {}
 			return true;
 		} catch (java.io.IOException ex) {
 			if (fos!=null) fos.close();
