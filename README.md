@@ -73,7 +73,7 @@ this will be detected at the next run of this program and then tried again.
 The files are being saved in your User directory in a folder named
 `telegram_backup`. Under windows, this would typically be under
 `C:\Users\<username>\telegram_backup`. Linux users should look unter
-`/home/<username>/telegram_backup`.
+`/home/<username>/.telegram_backup`.
 
 You can change this directory by supplying `--target <dir>` when calling
 Telegram_Backup.
