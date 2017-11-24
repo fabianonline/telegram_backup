@@ -47,6 +47,7 @@ import java.text.SimpleDateFormat;
 
 import de.fabianonline.telegram_backup.mediafilemanager.AbstractMediaFileManager;
 import de.fabianonline.telegram_backup.mediafilemanager.FileManagerFactory;
+import de.fabianonline.telegram_backup.models.Message;
 
 public class Database {
 	private Connection conn;
@@ -396,12 +397,12 @@ public class Database {
 		}
 	}
 	
-	public LinkedList<TLMessage> getMessagesWithMedia() {
+	public LinkedList<Message> getMessagesWithMedia() {
 		try {
-			LinkedList<TLMessage> list = new LinkedList<TLMessage>();
-			ResultSet rs = stmt.executeQuery("SELECT data FROM messages WHERE has_media=1");
+			LinkedList<Message> list = new LinkedList<Message>();
+			ResultSet rs = stmt.executeQuery("SELECT json FROM messages WHERE has_media=1");
 			while (rs.next()) {
-				list.add(bytesToTLMessage(rs.getBytes(1)));
+				list.add(new Message(rs.getString(1)));
 			}
 			rs.close();
 			return list;

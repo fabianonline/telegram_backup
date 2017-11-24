@@ -137,7 +137,7 @@ class TelegramUpdateHandler implements UpdateCallback {
 	private void processUpdate(TLAbsUpdate update, TelegramClient client) {
 		if (update instanceof TLUpdateNewMessage) {
 			TLAbsMessage abs_msg = ((TLUpdateNewMessage)update).getMessage();
-			Message msg = new Message(abs_msg);
+			Message msg = Message.fromObject(abs_msg);
 			msg.save();
 			System.out.print('.');
 			AbstractMediaFileManager fm = FileManagerFactory.getFileManager(msg);

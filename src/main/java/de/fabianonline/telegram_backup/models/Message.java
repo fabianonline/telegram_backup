@@ -1,6 +1,7 @@
 package de.fabianonline.telegram_backup.models;
 
 import de.fabianonline.telegram_backup.Database;
+import de.fabianonline.telegram_backup.Utils;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonObject;
 
@@ -13,6 +14,10 @@ public class Message {
 
 	public Message(String json) {
 		this.json = new JsonParser().parse(json).getAsJsonObject();
+	}
+	
+	public static Message fromObject(TLAbsMessage msg) {
+		return new Message(Utils.getGson().fromObject(msg));
 	}
 
 	public static Message get(int id) {
