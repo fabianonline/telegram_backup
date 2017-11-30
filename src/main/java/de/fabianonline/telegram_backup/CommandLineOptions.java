@@ -1,16 +1,16 @@
 /* Telegram_Backup
  * Copyright (C) 2016 Fabian Schlenz
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
@@ -30,7 +30,8 @@ class CommandLineOptions {
 	public static boolean cmd_no_media       = false;
 	public static boolean cmd_anonymize      = false;
 	public static boolean cmd_stats          = false;
-	
+	public static boolean cmd_channels_and_supergroups = false;
+
 	public static String  val_account        = null;
 	public static Integer val_limit_messages = null;
 	public static String  val_target         = null;
@@ -45,16 +46,16 @@ class CommandLineOptions {
 				switch (last_cmd) {
 					case "--account":
 						val_account = arg;                          break;
-						
+
 					case "--limit-messages":
 						val_limit_messages = Integer.parseInt(arg); break;
-						
+
 					case "--target":
 						val_target = arg;                           break;
-						
+
 					case "--export":
 						val_export = arg;                           break;
-					
+
 					case "--test":
 						val_test = Integer.parseInt(arg);           break;
 				}
@@ -65,58 +66,61 @@ class CommandLineOptions {
 			switch (arg) {
 				case "-a": case "--account":
 					last_cmd = "--account";         continue;
-					
+
 				case "-h": case "--help":
 					cmd_help = true;                break;
-					
+
 				case "-l": case "--login":
 					cmd_login = true;               break;
-					
+
 				case "--debug":
 					cmd_debug = true;               break;
-				
+
 				case "--trace":
 				    cmd_trace = true;               break;
-				
+
 				case "--trace-telegram":
 					cmd_trace_telegram = true;      break;
-					
+
 				case "-A": case "--list-accounts":
 					cmd_list_accounts = true;       break;
-					
+
 				case "--limit-messages":
 					last_cmd = arg;                 continue;
-					
+
 				case "--console":
 					cmd_console = true;             break;
-					
+
 				case "-t": case "--target":
 					last_cmd = "--target";          continue;
-					
+
 				case "-V": case "--version":
 					cmd_version = true;             break;
-				
+
 				case "-e": case "--export":
 					last_cmd = "--export";          continue;
-				
+
 				case "--license":
 					cmd_license = true;             break;
-				
+
 				case "-d": case "--daemon":
 					cmd_daemon = true;              break;
-				
+
 				case "--no-media":
 					cmd_no_media = true;            break;
-				
+
 				case "--test":
 					last_cmd = "--test";            continue;
-				
+
 				case "--anonymize":
 					cmd_anonymize = true;           break;
-				
+
 				case "--stats":
 					cmd_stats = true;               break;
-					
+
+				case "--with-channels-and-supergroups":
+					cmd_channels_and_supergroups = true; break;
+
 				default:
 					throw new RuntimeException("Unknown command " + arg);
 			}

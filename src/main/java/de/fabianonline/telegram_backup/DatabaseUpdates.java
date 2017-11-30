@@ -20,7 +20,7 @@ public class DatabaseUpdates {
 	protected Database db;
 	private static final Logger logger = LoggerFactory.getLogger(DatabaseUpdates.class);
 	private static LinkedList<DatabaseUpdate> updates = new LinkedList<DatabaseUpdate>();
-	
+
 	public DatabaseUpdates(Connection conn, Database db) {
 		this.conn = conn;
 		this.db = db;
@@ -32,8 +32,9 @@ public class DatabaseUpdates {
 		register(new DB_Update_5(conn, db));
 		register(new DB_Update_6(conn, db));
 		register(new DB_Update_7(conn, db));
+		register(new DB_Update_8(conn, db));
 	}
-	
+
 	public void doUpdates() {
 		try {
 			Statement stmt = conn.createStatement();
@@ -59,7 +60,7 @@ public class DatabaseUpdates {
 			logger.debug("version: {}", version);
 			System.out.println("Database version: " + version);
 			logger.debug("Max available database version is {}", getMaxPossibleVersion());
-			
+
 			if (version < getMaxPossibleVersion()) {
 				logger.debug("Update is necessary. {} => {}.", version, getMaxPossibleVersion());
 				boolean backup = false;
@@ -77,7 +78,7 @@ public class DatabaseUpdates {
 						logger.debug("NOT performing a backup, because we are creating a fresh database and don't need a backup of that.");
 					}
 				}
-				
+
 				logger.debug("Applying updates");
 				try {
 					for (int i=version+1; i<=getMaxPossibleVersion(); i++) {
@@ -87,18 +88,18 @@ public class DatabaseUpdates {
 			} else {
 				logger.debug("No update necessary.");
 			}
-			
+
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
 	}
-	
+
 	private DatabaseUpdate getUpdateToVersion(int i) { return updates.get(i-1); }
-	
+
 	private int getMaxPossibleVersion() {
 		return updates.size();
 	}
-	
+
 	private void register(DatabaseUpdate d) {
 		logger.debug("Registering {} as update to version {}", d.getClass().getName(), d.getVersion());
 		if (d.getVersion() != updates.size()+1) {
@@ -119,7 +120,7 @@ abstract class DatabaseUpdate {
 			stmt = conn.createStatement();
 		} catch (SQLException e) { throw new RuntimeException(e); }
 		this.db = db;
-	
+
 	}
 	public void doUpdate() throws SQLException {
 		logger.debug("Applying update to version {}", getVersion());
@@ -128,16 +129,20 @@ abstract class DatabaseUpdate {
 		logger.debug("Saving current database version to the db");
 		stmt.executeUpdate("INSERT INTO database_versions (version) VALUES (" + getVersion() + ")");
 	}
-	
+
 	protected abstract void _doUpdate() throws SQLException;
 	public abstract int getVersion();
 	public boolean needsBackup() { return false; }
+	protected void execute(String sql) throws SQLException {
+		logger.debug("Executing: {}", sql);
+		stmt.executeUpdate(sql);
+	}
 }
 
 class DB_Update_1 extends DatabaseUpdate {
 	public int getVersion() { return 1; }
 	public DB_Update_1(Connection conn, Database db) { super(conn, db); }
-	
+
 	protected void _doUpdate() throws SQLException {
 		stmt.executeUpdate("CREATE TABLE messages ("
 			+ "id INTEGER PRIMARY KEY ASC, "
@@ -162,14 +167,14 @@ class DB_Update_1 extends DatabaseUpdate {
 			+ "username TEXT, "
 			+ "type TEXT)");
 		stmt.executeUpdate("CREATE TABLE database_versions ("
-			+ "version INTEGER)");		
+			+ "version INTEGER)");
 	}
 }
 
 class DB_Update_2 extends DatabaseUpdate {
 	public int getVersion() { return 2; }
 	public DB_Update_2(Connection conn, Database db) { super(conn, db); }
-	
+
 	protected void _doUpdate() throws SQLException {
 		stmt.executeUpdate("ALTER TABLE people RENAME TO 'users'");
 		stmt.executeUpdate("ALTER TABLE users ADD COLUMN phone TEXT");
@@ -179,7 +184,7 @@ class DB_Update_2 extends DatabaseUpdate {
 class DB_Update_3 extends DatabaseUpdate {
 	public int getVersion() { return 3; }
 	public DB_Update_3(Connection conn, Database db) { super(conn, db); }
-	
+
 	protected void _doUpdate() throws SQLException {
 		stmt.executeUpdate("ALTER TABLE dialogs RENAME TO 'chats'");
 	}
@@ -188,7 +193,7 @@ class DB_Update_3 extends DatabaseUpdate {
 class DB_Update_4 extends DatabaseUpdate {
 	public int getVersion() { return 4; }
 	public DB_Update_4(Connection conn, Database db) { super(conn, db); }
-	
+
 	protected void _doUpdate() throws SQLException {
 		stmt.executeUpdate("CREATE TABLE messages_new (id INTEGER PRIMARY KEY ASC, dialog_id INTEGER, to_id INTEGER, from_id INTEGER, from_type TEXT, text TEXT, time INTEGER, has_media BOOLEAN, sticker TEXT, data BLOB, type TEXT);");
 		stmt.executeUpdate("INSERT INTO messages_new SELECT * FROM messages");
@@ -210,7 +215,7 @@ class DB_Update_6 extends DatabaseUpdate {
 	public int getVersion() { return 6; }
 	public DB_Update_6(Connection conn, Database db) { super(conn, db); }
 	public boolean needsBackup() { return true; }
-	
+
 	protected void _doUpdate() throws SQLException {
 		stmt.executeUpdate(
 			"CREATE TABLE messages_new (\n" +
@@ -256,7 +261,7 @@ class DB_Update_6 extends DatabaseUpdate {
 		}
 		query.append("\nFROM messages");
 		stmt.executeUpdate(query.toString());
-		
+
 		System.out.println("    Updating the data (this might take some time)...");
 		ResultSet rs = stmt.executeQuery("SELECT id, data FROM messages_new");
 		PreparedStatement ps = conn.prepareStatement("UPDATE messages_new SET fwd_from_id=?, media_type=?, media_file=?, media_size=? WHERE id=?");
@@ -294,10 +299,51 @@ class DB_Update_7 extends DatabaseUpdate {
 	public int getVersion() { return 7; }
 	public boolean needsBackup() { return true; }
 	public DB_Update_7(Connection conn, Database db) { super(conn, db); }
-	
+
 	protected void _doUpdate() throws SQLException {
 		stmt.executeUpdate("ALTER TABLE messages ADD COLUMN api_layer INTEGER");
-		
+
 		stmt.executeUpdate("UPDATE messages SET api_layer=51");
+	}
+}
+
+class DB_Update_8 extends DatabaseUpdate {
+	public int getVersion() { return 8; }
+	public DB_Update_8(Connection conn, Database db) { super(conn, db); }
+	public boolean needsBackup() { return true; }
+
+	protected void _doUpdate() throws SQLException {
+		execute("ALTER TABLE messages ADD COLUMN source_type TEXT");
+		execute("ALTER TABLE messages ADD COLUMN source_id INTEGER");
+		execute("update messages set source_type='dialog', source_id=dialog_id where dialog_id is not null");
+		execute("update messages set source_type='group', source_id=chat_id where chat_id is not null");
+
+		execute("CREATE TABLE messages_new (" +
+			"id INTEGER PRIMARY KEY AUTOINCREMENT," +
+			"message_id INTEGER," +
+		    "message_type TEXT," +
+			"source_type TEXT," +
+			"source_id INTEGER," +
+		    "sender_id INTEGER," +
+		    "fwd_from_id INTEGER," +
+		    "text TEXT," +
+		    "time INTEGER," +
+		    "has_media BOOLEAN," +
+		    "media_type TEXT," +
+		    "media_file TEXT," +
+		    "media_size INTEGER," +
+		    "media_json TEXT," +
+		    "markup_json TEXT," +
+		    "data BLOB," +
+			"api_layer INTEGER)");
+		execute("INSERT INTO messages_new" +
+			"(message_id, message_type, source_type, source_id, sender_id, fwd_from_id, text, time, has_media, media_type," +
+			"media_file, media_size, media_json, markup_json, data, api_layer)" +
+			"SELECT " +
+			"id, message_type, source_type, source_id, sender_id, fwd_from_id, text, time, has_media, media_type," +
+			"media_file, media_size, media_json, markup_json, data, api_layer FROM messages");
+		execute("DROP TABLE messages");
+		execute("ALTER TABLE messages_new RENAME TO 'messages'");
+		execute("CREATE UNIQUE INDEX unique_messages ON messages (source_type, source_id, message_id)");
 	}
 }

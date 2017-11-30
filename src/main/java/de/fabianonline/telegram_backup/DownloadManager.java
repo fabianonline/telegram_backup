@@ -1,16 +1,16 @@
 /* Telegram_Backup
  * Copyright (C) 2016 Fabian Schlenz
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
@@ -42,6 +42,7 @@ import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.HashMap;
 import java.util.Random;
 import java.net.URL;
 import java.util.concurrent.TimeoutException;
@@ -59,14 +60,15 @@ public class DownloadManager {
 	static TelegramClient download_client;
 	static boolean last_download_succeeded = true;
 	static final Logger logger = LoggerFactory.getLogger(DownloadManager.class);
-	
+	static public enum DownloadType { NORMAL, CHANNELS_AND_SUPERGROUPS }
+
 	public DownloadManager(TelegramClient c, DownloadProgressInterface p) {
 		this.user = UserManager.getInstance();
 		this.client = c;
 		this.prog = p;
 		this.db = Database.getInstance();
 	}
-	
+
 	public void downloadMessages(Integer limit) throws RpcErrorException, IOException {
 		boolean completed = true;
 		do {
@@ -90,7 +92,7 @@ public class DownloadManager {
 			}
 		} while (!completed);
 	}
-	
+
 	public void _downloadMessages(Integer limit) throws RpcErrorException, IOException, TimeoutException {
 		logger.info("This is _downloadMessages with limit {}", limit);
 		int dialog_limit = 100;
@@ -103,6 +105,7 @@ public class DownloadManager {
 			new TLInputPeerEmpty(),
 			dialog_limit);
 		logger.debug("Got {} dialogs", dialogs.getDialogs().size());
+
 		for (TLDialog d : dialogs.getDialogs()) {
 			if (d.getTopMessage() > max_message_id && ! (d.getPeer() instanceof TLPeerChannel)) {
 				logger.trace("Updating top message id: {} => {}. Dialog type: {}", max_message_id, d.getTopMessage(), d.getPeer().getClass().getName());
@@ -131,11 +134,11 @@ public class DownloadManager {
 		} else {
 			int start_id = max_database_id + 1;
 			int end_id = max_message_id;
-			
+
 			List<Integer> ids = makeIdList(start_id, end_id);
-			downloadMessages(ids);
+			downloadMessages(ids, null);
 		}
-		
+
 		logger.info("Searching for missing messages in the db");
 		int count_missing = 0;
 		System.out.println("Checking message database for completeness...");
@@ -143,8 +146,8 @@ public class DownloadManager {
 		int db_max = db.getTopMessageID();
 		logger.debug("db_count: {}", db_count);
 		logger.debug("db_max: {}", db_max);
-		
-		if (db_count != db_max) {
+
+		/*if (db_count != db_max) {
 			if (limit != null) {
 				System.out.println("You are missing messages in your database. But since you're using '--limit-messages', I won't download these now.");
 			} else {
@@ -156,19 +159,57 @@ public class DownloadManager {
 				count_missing = all_missing_ids.size();
 				System.out.println("" + all_missing_ids.size() + " messages are missing in your Database.");
 				System.out.println("I can (and will) download " + downloadable_missing_ids.size() + " of them.");
-				
-				downloadMessages(downloadable_missing_ids);
+
+				downloadMessages(downloadable_missing_ids, null);
+			}
+
+			logger.info("Logging this run");
+			db.logRun(Math.min(max_database_id + 1, max_message_id), max_message_id, count_missing);
+		}
+		*/
+
+		if (CommandLineOptions.cmd_channels_and_supergroups) {
+			logger.info("Processing channels and supergroups...");
+
+			HashMap<Integer, Long> channel_access_hashes = new HashMap<Integer, Long>();
+
+			// TODO Add chat title (and other stuff?) to the database
+			for (TLAbsChat c : dialogs.getChats()) {
+				if (c instanceof TLChannel) {
+					TLChannel ch = (TLChannel)c;
+					channel_access_hashes.put(c.getId(), ch.getAccessHash());
+					// Channel: TLChannel
+					// Supergroup: getMegagroup()==true
+					System.out.println("" + c.getId() + " - " + (ch.getMegagroup() ? "Supergroup" : "Channel") +": " + ch.getTitle());
+				}
+			}
+
+
+
+			for (TLDialog d : dialogs.getDialogs()) {
+				if (d.getPeer() instanceof TLPeerChannel) {
+					int channel_id = ((TLPeerChannel)d.getPeer()).getChannelId();
+					int max_known_id = db.getTopMessageIDForChannel(channel_id);
+					if (d.getTopMessage() > max_known_id) {
+						List<Integer> ids = makeIdList(max_known_id+1, d.getTopMessage());
+						//messagesPerChannel.put(id, makeIdList(max_known_id+1, d.getTopMessage()));
+						Long access_hash = channel_access_hashes.get(channel_id);
+						if (access_hash==null) {
+							throw new RuntimeException("AccessHash for Channel missing.");
+						}
+						TLInputChannel channel = new TLInputChannel(channel_id, access_hash);
+						downloadMessages(ids, channel);
+					}
+					System.out.println("" + channel_id + " - Known: " + max_known_id + " Availalble: " + d.getTopMessage());
+				}
 			}
 		}
-		
-		logger.info("Logging this run");
-		db.logRun(Math.min(max_database_id + 1, max_message_id), max_message_id, count_missing);
 	}
-	
-	private void downloadMessages(List<Integer> ids) throws RpcErrorException, IOException {
+
+	private void downloadMessages(List<Integer> ids, TLInputChannel channel) throws RpcErrorException, IOException {
 		prog.onMessageDownloadStart(ids.size());
 		boolean has_seen_flood_wait_message = false;
-		
+
 		logger.debug("Entering download loop");
 		while (ids.size()>0) {
 			logger.trace("Loop");
@@ -181,7 +222,7 @@ public class DownloadManager {
 			}
 			logger.trace("vector.size(): {}", vector.size());
 			logger.trace("ids.size(): {}", ids.size());
-			
+
 			TLAbsMessages response;
 			int tries = 0;
 			while(true) {
@@ -191,7 +232,11 @@ public class DownloadManager {
 				}
 				tries++;
 				try {
-					response = client.messagesGetMessages(vector);
+					if (channel == null) {
+						response = client.messagesGetMessages(vector);
+					} else {
+						response = client.channelsGetMessages(channel, vector);
+					}
 					break;
 				} catch (RpcErrorException e) {
 					if (e.getCode()==420) { // FLOOD_WAIT
@@ -206,6 +251,7 @@ public class DownloadManager {
 			if (response.getMessages().size() != vector.size()) {
 				CommandLineController.show_error("Requested " + vector.size() + " messages, but got " + response.getMessages().size() + ". That is unexpected. Quitting.");
 			}
+
 			prog.onMessageDownloaded(response.getMessages().size());
 			db.saveMessages(response.getMessages(), Kotlogram.API_LAYER);
 			db.saveChats(response.getChats());
@@ -216,10 +262,10 @@ public class DownloadManager {
 			} catch (InterruptedException e) {}
 		}
 		logger.debug("Finished.");
-		
+
 		prog.onMessageDownloadFinished();
 	}
-	
+
 	public void downloadMedia() throws RpcErrorException, IOException {
 		download_client = client.getDownloaderClient();
 		boolean completed = true;
@@ -245,7 +291,7 @@ public class DownloadManager {
 			}*/
 		} while (!completed);
 	}
-	
+
 	private void _downloadMedia() throws RpcErrorException, IOException {
 		logger.info("This is _downloadMedia");
 		logger.info("Checking if there are messages in the DB with a too old API layer");
@@ -253,9 +299,9 @@ public class DownloadManager {
 		if (ids.size()>0) {
 			System.out.println("You have " + ids.size() + " messages in your db that need an update. Doing that now.");
 			logger.debug("Found {} messages", ids.size());
-			downloadMessages(ids);
+			downloadMessages(ids, null);
 		}
-		
+
 		LinkedList<TLMessage> messages = this.db.getMessagesWithMedia();
 		logger.debug("Database returned {} messages with media", messages.size());
 		prog.onMediaDownloadStart(messages.size());
@@ -283,30 +329,30 @@ public class DownloadManager {
 		}
 		prog.onMediaDownloadFinished();
 	}
-	
+
 	private List<Integer> makeIdList(int start, int end) {
 		LinkedList<Integer> a = new LinkedList<Integer>();
 		for (int i=start; i<=end; i++) a.add(i);
-		return a; 
+		return a;
 	}
-	
+
 	public static void downloadFile(TelegramClient client, String targetFilename, int size, int dcId, long volumeId, int localId, long secret) throws RpcErrorException, IOException, TimeoutException {
 		TLInputFileLocation loc = new TLInputFileLocation(volumeId, localId, secret);
 		downloadFileFromDc(client, targetFilename, loc, dcId, size);
 	}
-	
+
 	public static void downloadFile(TelegramClient client, String targetFilename, int size, int dcId, long id, long accessHash) throws RpcErrorException, IOException, TimeoutException {
 		TLInputDocumentFileLocation loc = new TLInputDocumentFileLocation(id, accessHash);
 		downloadFileFromDc(client, targetFilename, loc, dcId, size);
 	}
-	
+
 	private static boolean downloadFileFromDc(TelegramClient client, String target, TLAbsInputFileLocation loc, Integer dcID, int size) throws RpcErrorException, IOException, TimeoutException {
 		FileOutputStream fos = null;
 		try {
 			String temp_filename = target + ".downloading";
 			logger.debug("Downloading file {}", target);
 			logger.trace("Temporary filename: {}", temp_filename);
-			
+
 			int offset = 0;
 			if (new File(temp_filename).isFile()) {
 				logger.info("Temporary filename already exists; continuing this file");
@@ -340,10 +386,10 @@ public class DownloadManager {
 						throw e;
 					}
 				}
-				
+
 				offset += response.getBytes().getData().length;
 				logger.trace("response: {} total size: {}", response.getBytes().getData().length, offset);
-				
+
 				fos.write(response.getBytes().getData());
 				fos.flush();
 				try { TimeUnit.MILLISECONDS.sleep(Config.DELAY_AFTER_GET_FILE); } catch(InterruptedException e) {}
@@ -394,7 +440,7 @@ public class DownloadManager {
 			throw ex;
 		}
 	}
-	
+
 	public static boolean downloadExternalFile(String target, String url) throws IOException {
 		FileUtils.copyURLToFile(new URL(url), new File(target), 5000, 5000);
 		return true;

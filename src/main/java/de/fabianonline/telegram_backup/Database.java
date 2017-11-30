@@ -1,16 +1,16 @@
 /* Telegram_Backup
  * Copyright (C) 2016 Fabian Schlenz
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
@@ -54,7 +54,7 @@ public class Database {
 	public TelegramClient client;
 	private final static Logger logger = LoggerFactory.getLogger(Database.class);
 	private static Database instance = null;
-	
+
 	private Database(TelegramClient client) {
 		this.user_manager = UserManager.getInstance();
 		this.client = client;
@@ -64,34 +64,34 @@ public class Database {
 		} catch(ClassNotFoundException e) {
 			CommandLineController.show_error("Could not load jdbc-sqlite class.");
 		}
-		
+
 		String path = "jdbc:sqlite:" +
 			user_manager.getFileBase() +
 			Config.FILE_NAME_DB;
-		
+
 		try {
 			conn = DriverManager.getConnection(path);
 			stmt = conn.createStatement();
 		} catch (SQLException e) {
 			CommandLineController.show_error("Could not connect to SQLITE database.");
 		}
-		
+
 		// Run updates
 		DatabaseUpdates updates = new DatabaseUpdates(conn, this);
 		updates.doUpdates();
-		
+
 		System.out.println("Database is ready.");
 	}
-	
+
 	public static void init(TelegramClient c) {
 		instance = new Database(c);
 	}
-	
+
 	public static Database getInstance() {
 		if (instance == null) throw new RuntimeException("Database is not initialized but getInstance() was called.");
 		return instance;
 	}
-	
+
 	public void backupDatabase(int currentVersion) {
 		String filename = String.format(Config.FILE_NAME_DB_BACKUP, currentVersion);
 		System.out.println("  Creating a backup of your database as " + filename);
@@ -109,17 +109,21 @@ public class Database {
 			throw new RuntimeException("Could not create backup.");
 		}
 	}
-	
+
 	public int getTopMessageID() {
 		try {
-			ResultSet rs = stmt.executeQuery("SELECT MAX(id) FROM messages");
+			ResultSet rs = stmt.executeQuery("SELECT MAX(message_id) FROM messages WHERE source_type IN ('group', 'dialog')");
 			rs.next();
 			return rs.getInt(1);
 		} catch (SQLException e) {
 			return 0;
 		}
 	}
-	
+
+	public int getTopMessageIDForChannel(int id) {
+		return queryInt("SELECT MAX(message_id) FROM messages WHERE source_id=" + id + " AND source_type IN('channel', 'supergroup')");
+	}
+
 	public void logRun(int start_id, int end_id, int count) {
 		try {
 			PreparedStatement ps = conn.prepareStatement("INSERT INTO runs "+
@@ -132,7 +136,7 @@ public class Database {
 			ps.execute();
 		} catch (SQLException e) {}
 	}
-	
+
 	public int queryInt(String query) {
 		try {
 			ResultSet rs = stmt.executeQuery(query);
@@ -142,16 +146,16 @@ public class Database {
 			throw new RuntimeException("Could not get count of messages.");
 		}
 	}
-	
+
 	public int getMessageCount() { return queryInt("SELECT COUNT(*) FROM messages"); }
 	public int getChatCount() { return queryInt("SELECT COUNT(*) FROM chats"); }
 	public int getUserCount() { return queryInt("SELECT COUNT(*) FROM users"); }
-	
+
 	public LinkedList<Integer> getMissingIDs() {
 		try {
 			LinkedList<Integer> missing = new LinkedList<Integer>();
 			int max = getTopMessageID();
-			ResultSet rs = stmt.executeQuery("SELECT id FROM messages ORDER BY id");
+			ResultSet rs = stmt.executeQuery("SELECT message_id FROM messages WHERE source_type IN ('group', 'dialog') ORDER BY id");
 			rs.next();
 			int id=rs.getInt(1);
 			for (int i=1; i<=max; i++) {
@@ -172,17 +176,17 @@ public class Database {
 			throw new RuntimeException("Could not get list of ids.");
 		}
 	}
-	
+
 	public synchronized void saveMessages(TLVector<TLAbsMessage> all, Integer api_layer) {
 		try {
 				//"(id, dialog_id, from_id, from_type, text, time, has_media, data, sticker, type) " +
 				//"VALUES " +
 				//"(?,  ?,         ?,       ?,         ?,    ?,    ?,         ?,    ?,       ?)");
 			String columns =
-				"(id, message_type, dialog_id, chat_id, sender_id, fwd_from_id, text, time, has_media, media_type, media_file, media_size, data, api_layer) "+
+				"(message_id, message_type, source_type, source_id, sender_id, fwd_from_id, text, time, has_media, media_type, media_file, media_size, data, api_layer) "+
 				"VALUES " +
-				"(?,  ?,            ?,         ?,       ?,         ?,           ?,    ?,    ?,         ?,          ?,          ?,          ?,    ?)";
-				//1   2             3          4        5          6            7     8     9          10          11          12          13    14
+				"(?,          ?,            ?,           ?,         ?,         ?,           ?,    ?,    ?,         ?,          ?,          ?,          ?,    ?)";
+				//1           2             3            4          5          6            7     8     9          10          11          12          13    14
 			PreparedStatement ps = conn.prepareStatement("INSERT OR REPLACE INTO messages " + columns);
 			PreparedStatement ps_insert_or_ignore = conn.prepareStatement("INSERT OR IGNORE INTO messages " + columns);
 
@@ -193,20 +197,29 @@ public class Database {
 					ps.setString(2, "message");
 					TLAbsPeer peer = msg.getToId();
 					if (peer instanceof TLPeerChat) {
-						ps.setNull(3, Types.INTEGER);
+						ps.setString(3, "group");
 						ps.setInt(4, ((TLPeerChat)peer).getChatId());
 					} else if (peer instanceof TLPeerUser) {
 						int id = ((TLPeerUser)peer).getUserId();
 						if (id==this.user_manager.getUser().getId()) {
 							id = msg.getFromId();
 						}
-						ps.setInt(3, id);
-						ps.setNull(4, Types.INTEGER);
+						ps.setString(3, "dialog");
+						ps.setInt(4, id);
+					} else if (peer instanceof TLPeerChannel) {
+						ps.setString(3, "channel");
+						ps.setInt(4, ((TLPeerChannel)peer).getChannelId());
 					} else {
 						throw new RuntimeException("Unexpected Peer type: " + peer.getClass().getName());
 					}
-					ps.setInt(5, msg.getFromId());
-					
+
+					if (peer instanceof TLPeerChannel) {
+						// Message in a channel don't have a sender -> insert a null
+						ps.setNull(5, Types.INTEGER);
+					} else {
+						ps.setInt(5, msg.getFromId());
+					}
+
 					if (msg.getFwdFrom() != null && msg.getFwdFrom().getFromId() != null) {
 						ps.setInt(6, msg.getFwdFrom().getFromId());
 					} else {
@@ -388,7 +401,7 @@ public class Database {
 			throw new RuntimeException("Exception shown above happened.");
 		}
 	}
-	
+
 	public LinkedList<TLMessage> getMessagesWithMedia() {
 		try {
 			LinkedList<TLMessage> list = new LinkedList<TLMessage>();
@@ -403,7 +416,7 @@ public class Database {
 			throw new RuntimeException("Exception occured. See above.");
 		}
 	}
-	
+
 	public int getMessagesFromUserCount() {
 		try {
 			ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM messages WHERE sender_id=" + user_manager.getUser().getId());
@@ -413,7 +426,7 @@ public class Database {
 			throw new RuntimeException(e);
 		}
 	}
-	
+
 	public LinkedList<Integer> getIdsFromQuery(String query) {
 		try {
 			LinkedList<Integer> list = new LinkedList<Integer>();
@@ -423,31 +436,31 @@ public class Database {
 			return list;
 		} catch (SQLException e) { throw new RuntimeException(e); }
 	}
-	
+
 	public HashMap<String, Integer> getMessageTypesWithCount() {
 		return getMessageTypesWithCount(new GlobalChat());
-	}		
-	
+	}
+
 	public HashMap<String, Integer> getMessageTypesWithCount(AbstractChat c) {
 		HashMap<String, Integer> map = new HashMap<String, Integer>();
 		try {
-			ResultSet rs = stmt.executeQuery("SELECT message_type, COUNT(id) FROM messages WHERE " + c.getQuery() + " GROUP BY message_type");
+			ResultSet rs = stmt.executeQuery("SELECT message_type, COUNT(message_id) FROM messages WHERE " + c.getQuery() + " GROUP BY message_type");
 			while (rs.next()) {
 				map.put("count.messages.type." + rs.getString(1), rs.getInt(2));
 			}
 			return map;
 		} catch (Exception e) { throw new RuntimeException(e); }
 	}
-	
+
 	public HashMap<String, Integer> getMessageMediaTypesWithCount() {
 		return getMessageMediaTypesWithCount(new GlobalChat());
 	}
-	
+
 	public HashMap<String, Integer> getMessageMediaTypesWithCount(AbstractChat c) {
 		HashMap<String, Integer> map = new HashMap<String, Integer>();
 		try {
 			int count = 0;
-			ResultSet rs = stmt.executeQuery("SELECT media_type, COUNT(id) FROM messages WHERE " + c.getQuery() + " GROUP BY media_type");
+			ResultSet rs = stmt.executeQuery("SELECT media_type, COUNT(message_id) FROM messages WHERE " + c.getQuery() + " GROUP BY media_type");
 			while (rs.next()) {
 				String s = rs.getString(1);
 				if (s==null) {
@@ -461,7 +474,7 @@ public class Database {
 			return map;
 		} catch (Exception e) { throw new RuntimeException(e); }
 	}
-	
+
 	public HashMap<String, Integer> getMessageApiLayerWithCount() {
 		HashMap<String, Integer> map = new HashMap<String, Integer>();
 		try {
@@ -475,11 +488,11 @@ public class Database {
 			return map;
 		} catch (Exception e) { throw new RuntimeException(e); }
 	}
-	
+
 	public HashMap<String, Object> getMessageAuthorsWithCount() {
 		return getMessageAuthorsWithCount(new GlobalChat());
 	}
-	
+
 	public HashMap<String, Object> getMessageAuthorsWithCount(AbstractChat c) {
 		HashMap<String, Object> map = new HashMap<String, Object>();
 		HashMap<User, Integer> user_map = new HashMap<User, Integer>();
@@ -501,7 +514,7 @@ public class Database {
 			return map;
 		} catch (Exception e) { throw new RuntimeException(e); }
 	}
-	
+
 	public int[][] getMessageTimesMatrix() {
 		return getMessageTimesMatrix(new GlobalChat());
 	}
@@ -530,13 +543,13 @@ public class Database {
 			return "unknown";
 		}
 	}
-			
-	
+
+
 	public LinkedList<Chat> getListOfChatsForExport() {
 		LinkedList<Chat> list = new LinkedList<Chat>();
 		try {
 			ResultSet rs = stmt.executeQuery("SELECT chats.id, chats.name, COUNT(messages.id) as c "+
-				"FROM chats, messages WHERE messages.chat_id IS NOT NULL AND messages.chat_id=chats.id "+
+				"FROM chats, messages WHERE messages.source_type IN('group', 'supergroup', 'channel') AND messages.source_id=chats.id "+
 				"GROUP BY chats.id ORDER BY c DESC");
 			while (rs.next()) {
 				list.add(new Chat(rs.getInt(1), rs.getString(2), rs.getInt(3)));
@@ -548,14 +561,14 @@ public class Database {
 			throw new RuntimeException("Exception above!");
 		}
 	}
-	
-	
+
+
 	public LinkedList<Dialog> getListOfDialogsForExport() {
 		LinkedList<Dialog> list = new LinkedList<Dialog>();
 		try {
 			ResultSet rs = stmt.executeQuery(
 				"SELECT users.id, first_name, last_name, username, COUNT(messages.id) as c " +
-				"FROM users, messages WHERE messages.dialog_id IS NOT NULL AND messages.dialog_id=users.id " +
+				"FROM users, messages WHERE messages.source_type='dialog' AND messages.source_id=users.id " +
 				"GROUP BY users.id ORDER BY c DESC");
 			while (rs.next()) {
 				list.add(new Dialog(rs.getInt(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getInt(5)));
@@ -567,23 +580,25 @@ public class Database {
 			throw new RuntimeException("Exception above!");
 		}
 	}
-	
+
 	public LinkedList<HashMap<String, Object>> getMessagesForExport(AbstractChat c) {
 		try {
-			
-			ResultSet rs = stmt.executeQuery("SELECT messages.id as message_id, text, time*1000 as time, has_media, " +
+
+			ResultSet rs = stmt.executeQuery("SELECT messages.message_id as message_id, text, time*1000 as time, has_media, " +
 				"media_type, media_file, media_size, users.first_name as user_first_name, users.last_name as user_last_name, " +
 				"users.username as user_username, users.id as user_id, " +
 				"users_fwd.first_name as user_fwd_first_name, users_fwd.last_name as user_fwd_last_name, users_fwd.username as user_fwd_username " +
-				"FROM messages, users LEFT JOIN users AS users_fwd ON users_fwd.id=fwd_from_id WHERE " +
-				"users.id=messages.sender_id AND " + c.getQuery() + " " +
-				"ORDER BY messages.id");
+				"FROM messages " +
+				"LEFT JOIN users ON users.id=messages.sender_id " +
+				"LEFT JOIN users AS users_fwd ON users_fwd.id=fwd_from_id WHERE " +
+				c.getQuery() + " " +
+				"ORDER BY messages.message_id");
 			SimpleDateFormat format_time = new SimpleDateFormat("HH:mm:ss");
 			SimpleDateFormat format_date = new SimpleDateFormat("d MMM yy");
 			ResultSetMetaData meta = rs.getMetaData();
 			int columns = meta.getColumnCount();
 			LinkedList<HashMap<String, Object>> list = new LinkedList<HashMap<String, Object>>();
-			
+
 			Integer count=0;
 			String old_date = null;
 			Integer old_user = null;
@@ -606,7 +621,7 @@ public class Database {
 				h.put("same_user", old_user!=null && rs.getInt("user_id")==old_user);
 				old_user = rs.getInt("user_id");
 				old_date = date;
-				
+
 				list.add(h);
 				count++;
 			}
@@ -617,7 +632,7 @@ public class Database {
 			throw new RuntimeException("Exception above!");
 		}
 	}
-	
+
 	public static TLMessage bytesToTLMessage(byte[] b) {
 		try {
 			if (b==null) return null;
@@ -630,22 +645,22 @@ public class Database {
 			throw new RuntimeException("Could not deserialize message.");
 		}
 	}
-	
-		
-	
-	
-	
+
+
+
+
+
 	public abstract class AbstractChat {
 		public abstract String getQuery();
 	}
-	
+
 	public class Dialog extends AbstractChat{
 		public int id;
 		public String first_name;
 		public String last_name;
 		public String username;
 		public int count;
-		
+
 		public Dialog (int id, String first_name, String last_name, String username, int count) {
 			this.id = id;
 			this.first_name = first_name;
@@ -653,28 +668,28 @@ public class Database {
 			this.username = username;
 			this.count = count;
 		}
-		
-		public String getQuery() { return "dialog_id=" + id; }
+
+		public String getQuery() { return "source_type='dialog' AND source_id=" + id; }
 	}
-	
+
 	public class Chat extends AbstractChat {
 		public int id;
 		public String name;
 		public int count;
-		
+
 		public Chat(int id, String name, int count) {
 			this.id = id;
 			this.name = name;
 			this.count = count;
 		}
-		
-		public String getQuery() {return "chat_id=" + id; }
+
+		public String getQuery() {return "source_type IN('group', 'supergroup', 'channel') AND source_id=" + id; }
 	}
-	
+
 	public class User {
 		public String name;
 		public boolean isMe;
-		
+
 		public User(int id, String first_name, String last_name, String username) {
 			isMe = id==user_manager.getUser().getId();
 			StringBuilder s = new StringBuilder();
@@ -683,7 +698,7 @@ public class Database {
 			name = s.toString().trim();
 		}
 	}
-	
+
 	public class GlobalChat extends AbstractChat {
 		public String getQuery() { return "1=1"; }
 	}
