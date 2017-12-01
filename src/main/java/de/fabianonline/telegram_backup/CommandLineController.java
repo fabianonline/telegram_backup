@@ -298,8 +298,8 @@ public class CommandLineController {
 		System.out.println("  -d, --daemon                 Keep running and automatically save new messages.");
 		System.out.println("      --anonymize              (Try to) Remove all sensitive information from output. Useful for requesting support.");
 		System.out.println("      --stats                  Print some usage statistics.");
-		System.out.println("      --with-channels-and-supergroups");
-		System.out.println("                               Backup channels and supergroups as well.");
+		System.out.println("      --with-channels          Backup channels as well.");
+		System.out.println("      --with-supergroups       Backup supergroups as well.");
 	}
 
 	private void list_accounts() {

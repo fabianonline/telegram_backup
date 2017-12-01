@@ -169,11 +169,14 @@ public class DownloadManager {
 		}
 		*/
 
-		if (CommandLineOptions.cmd_channels_and_supergroups) {
-			System.out.println("Processing channels and supergroups...");
+		if (CommandLineOptions.cmd_channels || CommandLineOptions.cmd_supergroups) {
+			System.out.println("Processing channels and/or supergroups...");
+			System.out.println("Please note that only channels/supergroups in the last 100 active chats are processed.");
 
 			HashMap<Integer, Long> channel_access_hashes = new HashMap<Integer, Long>();
 			HashMap<Integer, String> channel_names = new HashMap<Integer, String>();
+			LinkedList<Integer> channels = new LinkedList<Integer>();
+			LinkedList<Integer> supergroups = new LinkedList<Integer>();
 
 			// TODO Add chat title (and other stuff?) to the database
 			for (TLAbsChat c : dialogs.getChats()) {
@@ -181,6 +184,11 @@ public class DownloadManager {
 					TLChannel ch = (TLChannel)c;
 					channel_access_hashes.put(c.getId(), ch.getAccessHash());
 					channel_names.put(c.getId(), ch.getTitle());
+					if (ch.getMegagroup()) {
+						supergroups.add(c.getId());
+					} else {
+						channels.add(c.getId());
+					}
 					// Channel: TLChannel
 					// Supergroup: getMegagroup()==true
 				}
@@ -191,6 +199,14 @@ public class DownloadManager {
 			for (TLDialog d : dialogs.getDialogs()) {
 				if (d.getPeer() instanceof TLPeerChannel) {
 					int channel_id = ((TLPeerChannel)d.getPeer()).getChannelId();
+
+					// If this is a channel and we don't want to download channels OR
+					// it is a supergroups and we don't want to download supergroups, then
+					if ((channels.contains(channel_id) && !CommandLineOptions.cmd_channels) ||
+						(supergroups.contains(channel_id) && !CommandLineOptions.cmd_supergroups)) {
+						// Skip this chat.
+						continue;
+					}
 					int max_known_id = db.getTopMessageIDForChannel(channel_id);
 					if (d.getTopMessage() > max_known_id) {
 						List<Integer> ids = makeIdList(max_known_id+1, d.getTopMessage());

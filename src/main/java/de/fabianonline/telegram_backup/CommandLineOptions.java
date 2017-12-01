@@ -30,7 +30,8 @@ class CommandLineOptions {
 	public static boolean cmd_no_media       = false;
 	public static boolean cmd_anonymize      = false;
 	public static boolean cmd_stats          = false;
-	public static boolean cmd_channels_and_supergroups = false;
+	public static boolean cmd_channels       = false;
+	public static boolean cmd_supergroups    = false;
 
 	public static String  val_account        = null;
 	public static Integer val_limit_messages = null;
@@ -118,8 +119,11 @@ class CommandLineOptions {
 				case "--stats":
 					cmd_stats = true;               break;
 
-				case "--with-channels-and-supergroups":
-					cmd_channels_and_supergroups = true; break;
+				case "--with-channels":
+					cmd_channels = true;            break;
+
+				case "--with-supergroups":
+					cmd_supergroups = true;         break;
 
 				default:
 					throw new RuntimeException("Unknown command " + arg);
