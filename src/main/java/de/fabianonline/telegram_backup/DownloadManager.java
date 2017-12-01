@@ -35,6 +35,7 @@ import com.github.badoualy.telegram.tl.exception.RpcErrorException;
 import com.github.badoualy.telegram.tl.api.request.TLRequestUploadGetFile;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import com.google.gson.Gson;
 
 import java.io.IOException;
 import java.io.File;
@@ -60,7 +61,7 @@ public class DownloadManager {
 	static TelegramClient download_client;
 	static boolean last_download_succeeded = true;
 	static final Logger logger = LoggerFactory.getLogger(DownloadManager.class);
-	static public enum DownloadType { NORMAL, CHANNELS_AND_SUPERGROUPS }
+	boolean has_seen_flood_wait_message = false;
 
 	public DownloadManager(TelegramClient c, DownloadProgressInterface p) {
 		this.user = UserManager.getInstance();
@@ -136,7 +137,7 @@ public class DownloadManager {
 			int end_id = max_message_id;
 
 			List<Integer> ids = makeIdList(start_id, end_id);
-			downloadMessages(ids, null);
+			downloadMessages(ids, null, null);
 		}
 
 		logger.info("Searching for missing messages in the db");
@@ -169,18 +170,19 @@ public class DownloadManager {
 		*/
 
 		if (CommandLineOptions.cmd_channels_and_supergroups) {
-			logger.info("Processing channels and supergroups...");
+			System.out.println("Processing channels and supergroups...");
 
 			HashMap<Integer, Long> channel_access_hashes = new HashMap<Integer, Long>();
+			HashMap<Integer, String> channel_names = new HashMap<Integer, String>();
 
 			// TODO Add chat title (and other stuff?) to the database
 			for (TLAbsChat c : dialogs.getChats()) {
 				if (c instanceof TLChannel) {
 					TLChannel ch = (TLChannel)c;
 					channel_access_hashes.put(c.getId(), ch.getAccessHash());
+					channel_names.put(c.getId(), ch.getTitle());
 					// Channel: TLChannel
 					// Supergroup: getMegagroup()==true
-					System.out.println("" + c.getId() + " - " + (ch.getMegagroup() ? "Supergroup" : "Channel") +": " + ch.getTitle());
 				}
 			}
 
@@ -192,23 +194,24 @@ public class DownloadManager {
 					int max_known_id = db.getTopMessageIDForChannel(channel_id);
 					if (d.getTopMessage() > max_known_id) {
 						List<Integer> ids = makeIdList(max_known_id+1, d.getTopMessage());
-						//messagesPerChannel.put(id, makeIdList(max_known_id+1, d.getTopMessage()));
 						Long access_hash = channel_access_hashes.get(channel_id);
 						if (access_hash==null) {
 							throw new RuntimeException("AccessHash for Channel missing.");
 						}
+						String channel_name = channel_names.get(channel_id);
+						if (channel_name == null) {
+							channel_name = "?";
+						}
 						TLInputChannel channel = new TLInputChannel(channel_id, access_hash);
-						downloadMessages(ids, channel);
+						downloadMessages(ids, channel, "channel " + channel_name);
 					}
-					System.out.println("" + channel_id + " - Known: " + max_known_id + " Availalble: " + d.getTopMessage());
 				}
 			}
 		}
 	}
 
-	private void downloadMessages(List<Integer> ids, TLInputChannel channel) throws RpcErrorException, IOException {
-		prog.onMessageDownloadStart(ids.size());
-		boolean has_seen_flood_wait_message = false;
+	private void downloadMessages(List<Integer> ids, TLInputChannel channel, String source_string) throws RpcErrorException, IOException {
+		prog.onMessageDownloadStart(ids.size(), source_string);
 
 		logger.debug("Entering download loop");
 		while (ids.size()>0) {
@@ -299,7 +302,7 @@ public class DownloadManager {
 		if (ids.size()>0) {
 			System.out.println("You have " + ids.size() + " messages in your db that need an update. Doing that now.");
 			logger.debug("Found {} messages", ids.size());
-			downloadMessages(ids, null);
+			downloadMessages(ids, null, null);
 		}
 
 		LinkedList<TLMessage> messages = this.db.getMessagesWithMedia();
