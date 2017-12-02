@@ -497,11 +497,21 @@ public class Database {
 		HashMap<String, Object> map = new HashMap<String, Object>();
 		HashMap<User, Integer> user_map = new HashMap<User, Integer>();
 		int count_others = 0;
+		// Set a default value for 'me' to fix the charts for channels - cause I
+		// possibly didn't send any messages there.
+		map.put("authors.count.me", 0);
 		try {
 			ResultSet rs = stmt.executeQuery("SELECT users.id, users.first_name, users.last_name, users.username, COUNT(messages.id) "+
-				"FROM messages, users WHERE users.id=messages.sender_id AND " + c.getQuery() + " GROUP BY sender_id");
+				"FROM messages " +
+				"LEFT JOIN users ON users.id=messages.sender_id " +
+				"WHERE " + c.getQuery() + " GROUP BY sender_id");
 			while (rs.next()) {
-				User u = new User(rs.getInt(1), rs.getString(2), rs.getString(3), rs.getString(4));
+				User u;
+				if (rs.getString(2)!=null || rs.getString(3)!=null || rs.getString(4)!=null) {
+					u = new User(rs.getInt(1), rs.getString(2), rs.getString(3), rs.getString(4));
+				} else {
+					u = new User(rs.getInt(1), "Unknown", "", "");
+				}
 				if (u.isMe) {
 					map.put("authors.count.me", rs.getInt(5));
 				} else {
