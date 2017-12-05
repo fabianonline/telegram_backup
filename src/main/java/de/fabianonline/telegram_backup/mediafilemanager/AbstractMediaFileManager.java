@@ -1,16 +1,16 @@
 /* Telegram_Backup
  * Copyright (C) 2016 Fabian Schlenz
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
@@ -48,7 +48,7 @@ public abstract class AbstractMediaFileManager {
 	protected TLMessage message;
 	protected TelegramClient client;
 	protected boolean isEmpty = false;
-	
+
 	public AbstractMediaFileManager(TLMessage msg, UserManager user, TelegramClient client) {this.user = user; this.message = msg; this.client = client;};
 	public abstract int getSize();
 	public abstract String getExtension();
@@ -64,22 +64,27 @@ public abstract class AbstractMediaFileManager {
 		new File(path).mkdirs();
 		return path;
 	}
-	public String getTargetFilename() { return "" + message.getId() + "." + getExtension(); }
+	public String getTargetFilename() {
+		if (message.getToId() instanceof TLPeerChannel) {
+			return "channel_" + ((TLPeerChannel)message.getToId()).getChannelId() + "_" + message.getId() + "." + getExtension();
+		}
+		return "" + message.getId() + "." + getExtension();
+	}
 	public String getTargetPathAndFilename() { return getTargetPath() + getTargetFilename(); }
-	
+
 	protected String extensionFromMimetype(String mime) {
 		switch(mime) {
 			case "text/plain": return "txt";
 		}
-		
+
 		int i = mime.lastIndexOf('/');
 		String ext = mime.substring(i+1).toLowerCase();
-		
+
 		if (ext=="unknown") return "dat";
-		
+
 		return ext;
 	}
-	
+
 	public abstract String getLetter();
 	public abstract String getName();
 	public abstract String getDescription();

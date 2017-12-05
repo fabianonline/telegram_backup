@@ -1,16 +1,16 @@
 /* Telegram_Backup
  * Copyright (C) 2016 Fabian Schlenz
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
@@ -39,11 +39,11 @@ public class CommandLineController {
 	private static Logger logger = LoggerFactory.getLogger(CommandLineController.class);
 	private ApiStorage storage;
 	public TelegramApp app;
-	
+
 	public CommandLineController() {
 		logger.info("CommandLineController started. App version {}", Config.APP_APPVER);
 		this.printHeader();
-		
+
 		if (CommandLineOptions.cmd_version) {
 			System.exit(0);
 		} else if (CommandLineOptions.cmd_help) {
@@ -53,20 +53,20 @@ public class CommandLineController {
 			this.show_license();
 			System.exit(0);
 		}
-		
+
 		this.setupFileBase();
-		
+
 		if (CommandLineOptions.cmd_list_accounts) {
 			this.list_accounts();
 			System.exit(0);
 		}
-		
+
 		logger.debug("Initializing TelegramApp");
 		app = new TelegramApp(Config.APP_ID, Config.APP_HASH, Config.APP_MODEL, Config.APP_SYSVER, Config.APP_APPVER, Config.APP_LANG);
 
 		logger.trace("Checking accounts");
 		String account = this.selectAccount();
-		
+
 		logger.debug("CommandLineOptions.cmd_login: {}", CommandLineOptions.cmd_login);
 
 		logger.info("Initializing ApiStorage");
@@ -75,12 +75,12 @@ public class CommandLineController {
 		TelegramUpdateHandler handler = new TelegramUpdateHandler();
 		logger.info("Creating Client");
 		TelegramClient client = Kotlogram.getDefaultClient(app, storage, Kotlogram.PROD_DC4, handler);
-		
+
 		try {
 			logger.info("Initializing UserManager");
 			UserManager.init(client);
 			Database.init(client);
-			
+
 			UserManager user = UserManager.getInstance();
 
 			if (!CommandLineOptions.cmd_login && !user.isLoggedIn()) {
@@ -93,12 +93,12 @@ public class CommandLineController {
 					throw new RuntimeException("Account / User mismatch");
 				}
 			}
-			
+
 			if (CommandLineOptions.cmd_stats) {
 				cmd_stats();
 				System.exit(0);
 			}
-			
+
 			if (CommandLineOptions.val_test != null) {
 				if (CommandLineOptions.val_test == 1) {
 					TestFeatures.test1();
@@ -109,7 +109,7 @@ public class CommandLineController {
 				}
 				System.exit(1);
 			}
-			
+
 			logger.debug("CommandLineOptions.val_export: {}", CommandLineOptions.val_export);
 			if (CommandLineOptions.val_export != null) {
 				if (CommandLineOptions.val_export.toLowerCase().equals("html")) {
@@ -119,25 +119,25 @@ public class CommandLineController {
 					show_error("Unknown export format.");
 				}
 			}
-		
+
 			logger.debug("CommandLineOptions.cmd_login: {}", CommandLineOptions.cmd_login);
 			if (CommandLineOptions.cmd_login) {
 				cmd_login(account);
 				System.exit(0);
 			}
-			
+
 			if (user.isLoggedIn()) {
 				System.out.println("You are logged in as " + Utils.anonymize(user.getUserString()));
 			} else {
 				System.out.println("You are not logged in.");
 				System.exit(1);
 			}
-			
+
 			logger.info("Initializing Download Manager");
 			DownloadManager d = new DownloadManager(client, new CommandLineDownloadProgress());
 			logger.debug("Calling DownloadManager.downloadMessages with limit {}", CommandLineOptions.val_limit_messages);
 			d.downloadMessages(CommandLineOptions.val_limit_messages);
-			
+
 			logger.debug("CommandLineOptions.cmd_no_media: {}", CommandLineOptions.cmd_no_media);
 			if (!CommandLineOptions.cmd_no_media) {
 				logger.debug("Calling DownloadManager.downloadMedia");
@@ -160,7 +160,7 @@ public class CommandLineController {
 			}
 		}
 	}
-	
+
 	private void printHeader() {
 		System.out.println("Telegram_Backup version " + Config.APP_APPVER + ", Copyright (C) 2016, 2017 Fabian Schlenz");
 		System.out.println();
@@ -168,17 +168,17 @@ public class CommandLineController {
 		System.out.println("welcome to redistribute it under certain conditions; run it with '--license' for details.");
 		System.out.println();
 	}
-	
+
 	private void setupFileBase() {
 		logger.debug("Target dir at startup: {}", Utils.anonymize(Config.FILE_BASE));
 		if (CommandLineOptions.val_target != null) {
 			Config.FILE_BASE = CommandLineOptions.val_target;
 		}
 		logger.debug("Target dir after options: {}", Utils.anonymize(Config.FILE_BASE));
-		
+
 		System.out.println("Base directory for files: " + Utils.anonymize(Config.FILE_BASE));
 	}
-	
+
 	private String selectAccount() {
 		String account = null;
 		Vector<String> accounts = Utils.getAccounts();
@@ -216,7 +216,7 @@ public class CommandLineController {
 		logger.debug("account: {}", Utils.anonymize(account));
 		return account;
 	}
-	
+
 	private void cmd_stats() {
 		System.out.println();
 		System.out.println("Stats:");
@@ -226,20 +226,20 @@ public class CommandLineController {
 		System.out.format(format, "Number of chats", Database.getInstance().getChatCount());
 		System.out.format(format, "Number of users", Database.getInstance().getUserCount());
 		System.out.format(format, "Top message ID", Database.getInstance().getTopMessageID());
-		
+
 		System.out.println();
 		System.out.println("Media Types:");
 		for(Map.Entry<String, Integer> pair : Database.getInstance().getMessageMediaTypesWithCount().entrySet()) {
 			System.out.format(format, pair.getKey(), pair.getValue());
 		}
-		
+
 		System.out.println();
 		System.out.println("Api layers of messages:");
 		for(Map.Entry<String, Integer> pair : Database.getInstance().getMessageApiLayerWithCount().entrySet()) {
 			System.out.format(format, pair.getKey(), pair.getValue());
 		}
 	}
-	
+
 	private void cmd_login(String phone) throws RpcErrorException, IOException {
 		UserManager user = UserManager.getInstance();
 		if (phone==null) {
@@ -248,21 +248,21 @@ public class CommandLineController {
 			phone = getLine();
 		}
 		user.sendCodeToPhoneNumber(phone);
-		
+
 		System.out.println("Telegram sent you a code. Please enter it here.");
 		String code = getLine();
 		user.verifyCode(code);
-		
+
 		if (user.isPasswordNeeded()) {
 			System.out.println("We also need your account password. Please enter it now. It should not be printed, so it's okay if you see nothing while typing it.");
 			String pw = getPassword();
 			user.verifyPassword(pw);
 		}
 		storage.setPrefix("+" + user.getUser().getPhone());
-		
+
 		System.out.println("Everything seems fine. Please run this tool again with '--account +" + Utils.anonymize(user.getUser().getPhone()) + " to use this account.");
 	}
-	
+
 	private String getLine() {
 		if (System.console()!=null) {
 			return System.console().readLine("> ");
@@ -271,7 +271,7 @@ public class CommandLineController {
 			return new Scanner(System.in).nextLine();
 		}
 	}
-	
+
 	private String getPassword() {
 		if (System.console()!=null) {
 			return String.valueOf(System.console().readPassword("> "));
@@ -279,7 +279,7 @@ public class CommandLineController {
 			return getLine();
 		}
 	}
-	
+
 	private void show_help() {
 		System.out.println("Valid options are:");
 		System.out.println("  -h, --help                   Shows this help.");
@@ -298,8 +298,10 @@ public class CommandLineController {
 		System.out.println("  -d, --daemon                 Keep running and automatically save new messages.");
 		System.out.println("      --anonymize              (Try to) Remove all sensitive information from output. Useful for requesting support.");
 		System.out.println("      --stats                  Print some usage statistics.");
+		System.out.println("      --with-channels          Backup channels as well.");
+		System.out.println("      --with-supergroups       Backup supergroups as well.");
 	}
-	
+
 	private void list_accounts() {
 		System.out.println("List of available accounts:");
 		List<String> accounts = Utils.getAccounts();
@@ -313,13 +315,13 @@ public class CommandLineController {
 			System.out.println("Use '--login' to login to a telegram account.");
 		}
 	}
-	
+
 	public static void show_error(String error) {
 		logger.error(error);
 		System.out.println("ERROR: " + error);
 		System.exit(1);
 	}
-	
+
 	public static void show_license() {
 		System.out.println(
 			"GNU GENERAL PUBLIC LICENSE\n" +
@@ -942,7 +944,7 @@ public class CommandLineController {
 			"Program, unless a warranty or assumption of liability accompanies a\n" +
 			"copy of the Program in return for a fee.\n" +
 			"\n" +
-			"        END OF TERMS AND CONDITIONS");	
+			"        END OF TERMS AND CONDITIONS");
 	}
-	
+
 }
