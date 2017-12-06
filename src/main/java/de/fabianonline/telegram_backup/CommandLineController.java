@@ -79,8 +79,7 @@ public class CommandLineController {
 		try {
 			logger.info("Initializing UserManager");
 			UserManager.init(client);
-			Database.init(client);
-
+			
 			UserManager user = UserManager.getInstance();
 
 			if (!CommandLineOptions.cmd_login && !user.isLoggedIn()) {
@@ -93,7 +92,19 @@ public class CommandLineController {
 					throw new RuntimeException("Account / User mismatch");
 				}
 			}
+			
+			logger.debug("CommandLineOptions.cmd_login: {}", CommandLineOptions.cmd_login);
+			if (CommandLineOptions.cmd_login) {
+				cmd_login(account);
+				System.exit(0);
+			}
+			
+			// If we reach this point, we can assume that there is an account and a database can be loaded / created.
 
+			Database.init(client);
+
+			
+			
 			if (CommandLineOptions.cmd_stats) {
 				cmd_stats();
 				System.exit(0);
@@ -120,11 +131,7 @@ public class CommandLineController {
 				}
 			}
 
-			logger.debug("CommandLineOptions.cmd_login: {}", CommandLineOptions.cmd_login);
-			if (CommandLineOptions.cmd_login) {
-				cmd_login(account);
-				System.exit(0);
-			}
+			
 
 			if (user.isLoggedIn()) {
 				System.out.println("You are logged in as " + Utils.anonymize(user.getUserString()));
