@@ -45,19 +45,16 @@ import org.apache.commons.io.FileUtils
 
 abstract class AbstractMediaFileManager(protected var message: TLMessage, protected var user: UserManager, protected var client: TelegramClient) {
     var isEmpty = false
-        protected set
     abstract val size: Int
     abstract val extension: String
-    val isDownloaded: Boolean
-        get() = File(targetPathAndFilename).isFile()
-    val isDownloading: Boolean
-        get() = File(targetPathAndFilename + ".downloading").isFile()
-    val targetPath: String
-        get() {
-            val path = user.getFileBase() + Config.FILE_FILES_BASE + File.separatorChar
-            File(path).mkdirs()
-            return path
-        }
+
+    fun isDownloaded() { return File(targetPathAndFilename).isFile() }
+    fun isDownloading() {return File(targetPathAndFilename + ".downloading").isFile() }
+    fun targetPath() {
+        val path = user.getFileBase() + Config.FILE_FILES_BASE + File.separatorChar
+        File(path).mkdirs()
+        return path
+    }
     val targetFilename: String
         get() = if (message.getToId() is TLPeerChannel) {
             "channel_" + (message.getToId() as TLPeerChannel).getChannelId() + "_" + message.getId() + "." + extension
