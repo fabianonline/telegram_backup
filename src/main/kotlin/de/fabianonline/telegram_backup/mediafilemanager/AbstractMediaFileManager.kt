@@ -50,17 +50,21 @@ abstract class AbstractMediaFileManager(protected var message: TLMessage, protec
 
     fun isDownloaded() { return File(targetPathAndFilename).isFile() }
     fun isDownloading() {return File(targetPathAndFilename + ".downloading").isFile() }
-    fun targetPath() {
+    fun getTargetPath() {
         val path = user.getFileBase() + Config.FILE_FILES_BASE + File.separatorChar
         File(path).mkdirs()
         return path
     }
-    val targetFilename: String
-        get() = if (message.getToId() is TLPeerChannel) {
-            "channel_" + (message.getToId() as TLPeerChannel).getChannelId() + "_" + message.getId() + "." + extension
-        } else "" + message.getId() + "." + extension
-    val targetPathAndFilename: String
-        get() = targetPath + targetFilename
+    fun getTargetFilename() {
+    	val message_id = message.getId()
+        if (message.getToId() is TLPeerChannel) {
+        	val channel_id = message.getToId().getChannelId()
+            return "channel_${channel_id}_${message_id}.$extension"
+        } else return "${message_id}.$extension"
+	}
+    val getTargetPathAndFilename() {
+        return getTargetPath() + getTargetFilename()
+	}
 
     abstract val letter: String
     abstract val name: String
@@ -80,9 +84,7 @@ abstract class AbstractMediaFileManager(protected var message: TLMessage, protec
 
     }
 
-    companion object {
-        fun throwUnexpectedObjectError(o: Object) {
-            throw RuntimeException("Unexpected " + o.getClass().getName())
-        }
+    fun throwUnexpectedObjectError(o: Object) {
+        throw RuntimeException("Unexpected " + o.getClass().getName())
     }
 }
