@@ -89,6 +89,15 @@ containing all your messages and other data. The folder `files` contains all
 media files, named after the ID of the message they belong to. Last but not
 least the folder `export` contains exported data.
 
+### What are EmptyMessages? Why are there so many messages?
+If you are a member of a normal group (non-supergroup), all messages sent to
+that group are being copied to your personal messages at Telegram's servers.
+
+If you later leave this group, those messages are being deleted at Telegram,
+but since all messages are continuously numbered, you can't simply delete
+them because that would leave a hole in your message numbers. So these
+messages are instead replaced by EmptyMessages - those things contain zero
+information, they are just saying "here was a message but it was deleted".
 
 ## Attribution
 This tool uses libraries from other developers which are covered by other licenses,
