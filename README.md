@@ -18,8 +18,6 @@ You can find the whole app packed into one fat jar file under
   only.
 * Incremental backups - if you run the tool at a later time, it will only
   download new messages / media.
-* You will be able to use an HTML exporter to create static HTML files
-  containing your chats. This feature is still in the works.
 
 ## Limitations
 This tool relies on Telegram's API. They started rate limiting the calls
@@ -42,6 +40,15 @@ Append `--help` to get a list of all available commands.
 Basically, you have to call it with `--login` first to login to your telegram account and then
 call it again with `--account <phone>` to use this account and download all
 it's history. If you have just one account, you can omit this parameter.
+
+Use `--with-supergroups` and / or `--with-channels` to also download all
+messages from the supergroups / channels you have joined that have been
+active in the last time.
+
+After making a backup, call it again with `--export html` to create a few
+more-or-less nice to look at HTML files containing all your chats. They will
+be created in the subfolder `files` of your backup. You can just open the
+file index.html in your browser to look at the files.
 
 ## Donations
 I've put quite some time into this tool. If you want to donate a small
