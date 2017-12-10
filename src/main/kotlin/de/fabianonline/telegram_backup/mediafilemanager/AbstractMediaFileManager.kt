@@ -48,23 +48,30 @@ abstract class AbstractMediaFileManager(protected var message: TLMessage, protec
     abstract val size: Int
     abstract val extension: String
 
-    fun isDownloaded() { return File(targetPathAndFilename).isFile() }
-    fun isDownloading() {return File(targetPathAndFilename + ".downloading").isFile() }
-    fun getTargetPath() {
-        val path = user.getFileBase() + Config.FILE_FILES_BASE + File.separatorChar
-        File(path).mkdirs()
-        return path
-    }
-    fun getTargetFilename() {
-    	val message_id = message.getId()
-        if (message.getToId() is TLPeerChannel) {
-        	val channel_id = message.getToId().getChannelId()
-            return "channel_${channel_id}_${message_id}.$extension"
-        } else return "${message_id}.$extension"
-	}
-    val getTargetPathAndFilename() {
-        return getTargetPath() + getTargetFilename()
-	}
+    val downloaded: Boolean
+    	get() = File(targetPathAndFilename).isFile()
+    
+    val downloading: Boolean
+    	get() = File("${targetPathAndFilename}.downloading").isFile()
+    
+	val targetPath: String
+		get() {
+	        val path = user.getFileBase() + Config.FILE_FILES_BASE + File.separatorChar
+    	    File(path).mkdirs()
+    	    return path
+		}
+    
+    val targetFilename: String
+    	get() {
+			val message_id = message.getId()
+			if (message.getToId() is TLPeerChannel) {
+				val channel_id = message.getToId().getChannelId()
+				return "channel_${channel_id}_${message_id}.$extension"
+			} else return "${message_id}.$extension"
+		}
+
+    val targetPathAndFilenam: String
+    	get() = targetPath + targetFilename
 
     abstract val letter: String
     abstract val name: String
