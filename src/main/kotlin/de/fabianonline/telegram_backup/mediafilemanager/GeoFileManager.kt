@@ -44,24 +44,21 @@ import java.util.concurrent.TimeoutException
 import org.apache.commons.io.FileUtils
 
 class GeoFileManager(msg: TLMessage, user: UserManager, client: TelegramClient) : AbstractMediaFileManager(msg, user, client) {
-    protected var geo: TLGeoPoint
+    protected lateinit var geo: TLGeoPoint
 
     // We don't know the size, so we just guess.
-    val size: Int
+    override val size: Int
         get() {
-            val f = File(getTargetPathAndFilename())
-            return if (f.isFile()) f.length() else 100000
+            val f = File(targetPathAndFilename)
+            return if (f.isFile()) (f.length() as Int) else 100000
         }
 
-    val extension: String
+    override val extension: String
         get() = "png"
 
-    val letter: String
-        get() = "g"
-    val name: String
-        get() = "geo"
-    val description: String
-        get() = "Geolocation"
+    override val letter = "g"
+    override val name = "geo"
+    override val description = "Geolocation"
 
     init {
         val g = (msg.getMedia() as TLMessageMediaGeo).getGeo()
@@ -75,11 +72,11 @@ class GeoFileManager(msg: TLMessage, user: UserManager, client: TelegramClient) 
     }
 
     @Throws(IOException::class)
-    fun download() {
+    override fun download() {
         val url = "https://maps.googleapis.com/maps/api/staticmap?" +
                 "center=" + geo.getLat() + "," + geo.getLong() + "&" +
                 "zoom=14&size=300x150&scale=2&format=png&" +
                 "key=" + Config.SECRET_GMAPS
-        DownloadManager.downloadExternalFile(getTargetPathAndFilename(), url)
+        DownloadManager.downloadExternalFile(targetPathAndFilename, url)
     }
 }

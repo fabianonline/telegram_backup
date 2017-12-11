@@ -37,18 +37,18 @@ internal class TelegramUpdateHandler : UpdateCallback {
         this.db = Database.getInstance()
     }
 
-    fun onUpdates(c: TelegramClient, u: TLUpdates) {
+    override fun onUpdates(c: TelegramClient, u: TLUpdates) {
         if (db == null) return
-        if (debug) System.out.println("onUpdates - " + u.getUpdates().size() + " Updates, " + u.getUsers().size() + " Users, " + u.getChats().size() + " Chats")
+        if (debug) System.out.println("onUpdates - " + u.getUpdates().size + " Updates, " + u.getUsers().size + " Users, " + u.getChats().size + " Chats")
         for (update in u.getUpdates()) {
             processUpdate(update, c)
-            if (debug) System.out.println("  " + update.getClass().getName())
+            if (debug) System.out.println("  " + update.javaClass.getName())
         }
         db!!.saveUsers(u.getUsers())
         db!!.saveChats(u.getChats())
     }
 
-    fun onUpdatesCombined(c: TelegramClient, u: TLUpdatesCombined) {
+    override fun onUpdatesCombined(c: TelegramClient, u: TLUpdatesCombined) {
         if (db == null) return
         if (debug) System.out.println("onUpdatesCombined")
         for (update in u.getUpdates()) {
@@ -58,14 +58,14 @@ internal class TelegramUpdateHandler : UpdateCallback {
         db!!.saveChats(u.getChats())
     }
 
-    fun onUpdateShort(c: TelegramClient, u: TLUpdateShort) {
+    override fun onUpdateShort(c: TelegramClient, u: TLUpdateShort) {
         if (db == null) return
         if (debug) System.out.println("onUpdateShort")
         processUpdate(u.getUpdate(), c)
-        if (debug) System.out.println("  " + u.getUpdate().getClass().getName())
+        if (debug) System.out.println("  " + u.getUpdate().javaClass.getName())
     }
 
-    fun onShortChatMessage(c: TelegramClient, m: TLUpdateShortChatMessage) {
+    override fun onShortChatMessage(c: TelegramClient, m: TLUpdateShortChatMessage) {
         if (db == null) return
         if (debug) System.out.println("onShortChatMessage - " + m.getMessage())
         val msg = TLMessage(
@@ -89,16 +89,16 @@ internal class TelegramUpdateHandler : UpdateCallback {
         System.out.print('.')
     }
 
-    fun onShortMessage(c: TelegramClient, m: TLUpdateShortMessage) {
+    override fun onShortMessage(c: TelegramClient, m: TLUpdateShortMessage) {
         if (db == null) return
         if (debug) System.out.println("onShortMessage - " + m.getOut() + " - " + m.getUserId() + " - " + m.getMessage())
         val from_id: Int
         val to_id: Int
         if (m.getOut() === true) {
-            from_id = user!!.getUser().getId()
+            from_id = user!!.user!!.getId()
             to_id = m.getUserId()
         } else {
-            to_id = user!!.getUser().getId()
+            to_id = user!!.user!!.getId()
             from_id = m.getUserId()
         }
         val msg = TLMessage(
@@ -122,12 +122,12 @@ internal class TelegramUpdateHandler : UpdateCallback {
         System.out.print('.')
     }
 
-    fun onShortSentMessage(c: TelegramClient, m: TLUpdateShortSentMessage) {
+    override fun onShortSentMessage(c: TelegramClient, m: TLUpdateShortSentMessage) {
         if (db == null) return
         System.out.println("onShortSentMessage")
     }
 
-    fun onUpdateTooLong(c: TelegramClient) {
+    override fun onUpdateTooLong(c: TelegramClient) {
         if (db == null) return
         System.out.println("onUpdateTooLong")
     }
@@ -140,8 +140,8 @@ internal class TelegramUpdateHandler : UpdateCallback {
             db!!.saveMessages(vector, Kotlogram.API_LAYER)
             System.out.print('.')
             if (abs_msg is TLMessage) {
-                val fm = FileManagerFactory.getFileManager(abs_msg as TLMessage, user, client)
-                if (fm != null && !fm!!.isEmpty() && !fm!!.isDownloaded()) {
+                val fm = FileManagerFactory.getFileManager(abs_msg as TLMessage, user!!, client)
+                if (fm != null && !fm!!.isEmpty && !fm!!.downloaded) {
                     try {
                         fm!!.download()
                     } catch (e: Exception) {

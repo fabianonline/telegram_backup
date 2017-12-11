@@ -50,26 +50,26 @@ class HTMLExporter {
 
             // Create base dir
             logger.debug("Creating base dir")
-            val base = user.getFileBase() + "files" + File.separatorChar
+            val base = user.fileBase + "files" + File.separatorChar
             File(base).mkdirs()
             File(base + "dialogs").mkdirs()
 
             logger.debug("Fetching dialogs")
             val dialogs = db.getListOfDialogsForExport()
-            logger.trace("Got {} dialogs", dialogs.size())
+            logger.trace("Got {} dialogs", dialogs.size)
             logger.debug("Fetching chats")
             val chats = db.getListOfChatsForExport()
-            logger.trace("Got {} chats", chats.size())
+            logger.trace("Got {} chats", chats.size)
 
             logger.debug("Generating index.html")
-            val scope = HashMap<String, Object>()
+            val scope = HashMap<String, Any>()
             scope.put("user", user)
             scope.put("dialogs", dialogs)
             scope.put("chats", chats)
 
             // Collect stats data
-            scope.put("count.chats", chats.size())
-            scope.put("count.dialogs", dialogs.size())
+            scope.put("count.chats", chats.size)
+            scope.put("count.dialogs", dialogs.size)
 
             var count_messages_chats = 0
             var count_messages_dialogs = 0
@@ -97,10 +97,10 @@ class HTMLExporter {
             mustache = mf.compile("templates/html/chat.mustache")
 
             var i = 0
-            logger.debug("Generating {} dialog pages", dialogs.size())
+            logger.debug("Generating {} dialog pages", dialogs.size)
             for (d in dialogs) {
                 i++
-                logger.trace("Dialog {}/{}: {}", i, dialogs.size(), Utils.anonymize("" + d.id))
+                logger.trace("Dialog {}/{}: {}", i, dialogs.size, Utils.anonymize("" + d.id))
                 val messages = db.getMessagesForExport(d)
                 scope.clear()
                 scope.put("user", user)
@@ -118,10 +118,10 @@ class HTMLExporter {
             }
 
             i = 0
-            logger.debug("Generating {} chat pages", chats.size())
+            logger.debug("Generating {} chat pages", chats.size)
             for (c in chats) {
                 i++
-                logger.trace("Chat {}/{}: {}", i, chats.size(), Utils.anonymize("" + c.id))
+                logger.trace("Chat {}/{}: {}", i, chats.size, Utils.anonymize("" + c.id))
                 val messages = db.getMessagesForExport(c)
                 scope.clear()
                 scope.put("user", user)
@@ -140,7 +140,7 @@ class HTMLExporter {
 
             logger.debug("Generating additional files")
             // Copy CSS
-            val cssFile = getClass().getResource("/templates/html/style.css")
+            val cssFile = javaClass.getResource("/templates/html/style.css")
             val dest = File(base + "style.css")
             FileUtils.copyURLToFile(cssFile, dest)
             logger.debug("Done exporting.")
@@ -173,8 +173,8 @@ class HTMLExporter {
 
     private fun mapToString(map: Map<String, Integer>): String {
         val sb = StringBuilder("[")
-        for (entry in map.entrySet()) {
-            sb.append("['" + entry.getKey() + "', " + entry.getValue() + "],")
+        for ((key, value) in map) {
+            sb.append("['$key', $value],")
         }
         sb.append("]")
         return sb.toString()

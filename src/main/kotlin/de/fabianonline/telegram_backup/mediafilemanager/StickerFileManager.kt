@@ -52,13 +52,12 @@ import org.apache.commons.io.FileUtils
 
 class StickerFileManager(msg: TLMessage, user: UserManager, client: TelegramClient) : DocumentFileManager(msg, user, client) {
 
-    val isSticker: Boolean
-        get() = true
+    override val isSticker = true
 
     private val filenameBase: String
         get() {
             var sticker: TLDocumentAttributeSticker? = null
-            for (attr in doc.getAttributes()) {
+            for (attr in doc!!.getAttributes()) {
                 if (attr is TLDocumentAttributeSticker) {
                     sticker = attr as TLDocumentAttributeSticker
                 }
@@ -75,34 +74,33 @@ class StickerFileManager(msg: TLMessage, user: UserManager, client: TelegramClie
             return file.toString()
         }
 
-    val targetFilename: String
+    override val targetFilename: String
         get() = filenameBase + "." + extension
 
-    val targetPath: String
+    override val targetPath: String
         get() {
-            val path = user.getFileBase() + Config.FILE_FILES_BASE + File.separatorChar + Config.FILE_STICKER_BASE + File.separatorChar
+            val path = user.fileBase + Config.FILE_FILES_BASE + File.separatorChar + Config.FILE_STICKER_BASE + File.separatorChar
             File(path).mkdirs()
             return path
         }
 
-    val extension: String
-        get() = "webp"
+    override var extension = "webp"
 
-    val letter: String
+    override val letter: String
         get() = "s"
-    val name: String
+    override val name: String
         get() = "sticker"
-    val description: String
+    override val description: String
         get() = "Sticker"
 
     @Throws(RpcErrorException::class, IOException::class, TimeoutException::class)
-    fun download() {
+    override fun download() {
         val old_file = Config.FILE_BASE + File.separatorChar + Config.FILE_STICKER_BASE + File.separatorChar + targetFilename
 
         logger.trace("Old filename exists: {}", File(old_file).exists())
 
         if (File(old_file).exists()) {
-            Files.copy(Paths.get(old_file), Paths.get(getTargetPathAndFilename()), StandardCopyOption.REPLACE_EXISTING)
+            Files.copy(Paths.get(old_file), Paths.get(targetPathAndFilename), StandardCopyOption.REPLACE_EXISTING)
             return
         }
         super.download()

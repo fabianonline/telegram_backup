@@ -30,29 +30,24 @@ import org.slf4j.Logger
 class CommandLineController {
   private val storage:ApiStorage
   var app:TelegramApp
-  private val line:String
-  get() {
-    if (System.console() != null)
-    {
+  
+  private fun getLine():String {
+    if (System.console() != null) {
       return System.console().readLine("> ")
-    }
-    else
-    {
+    } else {
       print("> ")
       return Scanner(System.`in`).nextLine()
     }
   }
-  private val password:String
-  get() {
-    if (System.console() != null)
-    {
+  
+  private fun getPassword():String {
+    if (System.console() != null) {
       return String(System.console().readPassword("> "))
-    }
-    else
-    {
-      return line
+    } else {
+      return getLine()
     }
   }
+  
   init{
     logger.info("CommandLineController started. App version {}", Config.APP_APPVER)
     this.printHeader()
@@ -67,7 +62,7 @@ class CommandLineController {
     }
     else if (CommandLineOptions.cmd_license)
     {
-      this.show_license()
+      CommandLineController.show_license()
       System.exit(0)
     }
     this.setupFileBase()
@@ -92,16 +87,16 @@ class CommandLineController {
       logger.info("Initializing UserManager")
       UserManager.init(client)
       val user = UserManager.getInstance()
-      if (!CommandLineOptions.cmd_login && !user.isLoggedIn())
+      if (!CommandLineOptions.cmd_login && !user.loggedIn)
       {
         println("Your authorization data is invalid or missing. You will have to login with Telegram again.")
         CommandLineOptions.cmd_login = true
       }
-      if (account != null && user.isLoggedIn())
+      if (account != null && user.loggedIn)
       {
-        if (account != "+" + user.getUser().getPhone())
+        if (account != "+" + user.user!!.getPhone())
         {
-          logger.error("Account: {}, user.getUser().getPhone(): +{}", Utils.anonymize(account), Utils.anonymize(user.getUser().getPhone()))
+          logger.error("Account: {}, user.user!!.getPhone(): +{}", Utils.anonymize(account), Utils.anonymize(user.user!!.getPhone()))
           throw RuntimeException("Account / User mismatch")
         }
       }
@@ -137,7 +132,7 @@ class CommandLineController {
       logger.debug("CommandLineOptions.val_export: {}", CommandLineOptions.val_export)
       if (CommandLineOptions.val_export != null)
       {
-        if (CommandLineOptions.val_export.toLowerCase().equals("html"))
+        if (CommandLineOptions.val_export!!.toLowerCase().equals("html"))
         {
           (HTMLExporter()).export()
           System.exit(0)
@@ -147,9 +142,9 @@ class CommandLineController {
           show_error("Unknown export format.")
         }
       }
-      if (user.isLoggedIn())
+      if (user.loggedIn)
       {
-        System.out.println("You are logged in as " + Utils.anonymize(user.getUserString()))
+        System.out.println("You are logged in as " + Utils.anonymize(user.userString))
       }
       else
       {
@@ -202,13 +197,13 @@ class CommandLineController {
     logger.debug("Target dir at startup: {}", Utils.anonymize(Config.FILE_BASE))
     if (CommandLineOptions.val_target != null)
     {
-      Config.FILE_BASE = CommandLineOptions.val_target
+      Config.FILE_BASE = CommandLineOptions.val_target!!
     }
     logger.debug("Target dir after options: {}", Utils.anonymize(Config.FILE_BASE))
     System.out.println("Base directory for files: " + Utils.anonymize(Config.FILE_BASE))
   }
-  private fun selectAccount():String {
-    val account:String = null
+  private fun selectAccount():String? {
+    var account = "none"
     val accounts = Utils.getAccounts()
     if (CommandLineOptions.cmd_login)
     {
@@ -217,9 +212,9 @@ class CommandLineController {
     }
     else if (CommandLineOptions.val_account != null)
     {
-      logger.debug("Account requested: {}", Utils.anonymize(CommandLineOptions.val_account))
+      logger.debug("Account requested: {}", Utils.anonymize(CommandLineOptions.val_account!!))
       logger.trace("Checking accounts for match.")
-      val found = false
+      var found = false
       for (acc in accounts)
       {
         logger.trace("Checking {}", Utils.anonymize(acc))
@@ -232,16 +227,17 @@ class CommandLineController {
       }
       if (!found)
       {
-        show_error("Couldn't find account '" + Utils.anonymize(CommandLineOptions.val_account) + "'. Maybe you want to use '--login' first?")
+        show_error("Couldn't find account '" + Utils.anonymize(CommandLineOptions.val_account!!) + "'. Maybe you want to use '--login' first?")
       }
-      account = CommandLineOptions.val_account
+      account = CommandLineOptions.val_account!!
     }
-    else if (accounts.size() == 0)
+    else if (accounts.size == 0)
     {
       println("No accounts found. Starting login process...")
       CommandLineOptions.cmd_login = true
+      return null
     }
-    else if (accounts.size() == 1)
+    else if (accounts.size == 1)
     {
       account = accounts.firstElement()
       System.out.println("Using only available account: " + Utils.anonymize(account))
@@ -251,8 +247,9 @@ class CommandLineController {
       show_error(("You didn't specify which account to use.\n" +
                   "Use '--account <x>' to use account <x>.\n" +
                   "Use '--list-accounts' to see all available accounts."))
+	  System.exit(1)
     }
-    logger.debug("accounts.size(): {}", accounts.size())
+    logger.debug("accounts.size: {}", accounts.size)
     logger.debug("account: {}", Utils.anonymize(account))
     return account
   }
@@ -260,45 +257,48 @@ class CommandLineController {
     println()
     println("Stats:")
     val format = "%40s: %d%n"
-    System.out.format(format, "Number of accounts", Utils.getAccounts().size())
+    System.out.format(format, "Number of accounts", Utils.getAccounts().size)
     System.out.format(format, "Number of messages", Database.getInstance().getMessageCount())
     System.out.format(format, "Number of chats", Database.getInstance().getChatCount())
     System.out.format(format, "Number of users", Database.getInstance().getUserCount())
     System.out.format(format, "Top message ID", Database.getInstance().getTopMessageID())
     println()
     println("Media Types:")
-    for (pair in Database.getInstance().getMessageMediaTypesWithCount().entrySet())
+    for ((key, value) in Database.getInstance().getMessageMediaTypesWithCount())
     {
-      System.out.format(format, pair.key, pair.value)
+      System.out.format(format, key, value)
     }
     println()
     println("Api layers of messages:")
-    for (pair in Database.getInstance().getMessageApiLayerWithCount().entrySet())
+    for ((key, value) in Database.getInstance().getMessageApiLayerWithCount())
     {
-      System.out.format(format, pair.key, pair.value)
+      System.out.format(format, key, value)
     }
   }
   @Throws(RpcErrorException::class, IOException::class)
-  private fun cmd_login(phone:String) {
+  private fun cmd_login(phoneToUse:String?) {
     val user = UserManager.getInstance()
-    if (phone == null)
+    val phone: String
+    if (phoneToUse == null)
     {
       println("Please enter your phone number in international format.")
       println("Example: +4917077651234")
-      phone = line
-    }
+      phone = getLine()
+    } else {
+    	phone = phoneToUse
+	}
     user.sendCodeToPhoneNumber(phone)
     println("Telegram sent you a code. Please enter it here.")
-    val code = line
+    val code = getLine()
     user.verifyCode(code)
-    if (user.isPasswordNeeded())
+    if (user.isPasswordNeeded)
     {
       println("We also need your account password. Please enter it now. It should not be printed, so it's okay if you see nothing while typing it.")
-      val pw = password
+      val pw = getPassword()
       user.verifyPassword(pw)
     }
-    storage.setPrefix("+" + user.getUser().getPhone())
-    System.out.println("Everything seems fine. Please run this tool again with '--account +" + Utils.anonymize(user.getUser().getPhone()) + " to use this account.")
+    storage.setPrefix("+" + user.user!!.getPhone())
+    System.out.println("Everything seems fine. Please run this tool again with '--account +" + Utils.anonymize(user.user!!.getPhone()) + " to use this account.")
   }
   private fun show_help() {
     println("Valid options are:")
@@ -340,14 +340,14 @@ class CommandLineController {
   }
   companion object {
     private val logger = LoggerFactory.getLogger(CommandLineController::class.java)
-    fun show_error(error:String) {
-      logger.error(error)
-      println("ERROR: " + error)
-      System.exit(1)
-    }
-    fun show_license() {
-      println("TODO: Print the GPL.")
-        
-    }
+  
+  public fun show_error(error:String) {
+    logger.error(error)
+    println("ERROR: " + error)
+    System.exit(1)
   }
+  fun show_license() {
+    println("TODO: Print the GPL.")
+  }
+}
 }

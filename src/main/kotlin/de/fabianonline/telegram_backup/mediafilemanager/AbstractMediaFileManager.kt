@@ -44,33 +44,34 @@ import java.util.concurrent.TimeoutException
 import org.apache.commons.io.FileUtils
 
 abstract class AbstractMediaFileManager(protected var message: TLMessage, protected var user: UserManager, protected var client: TelegramClient) {
-    var isEmpty = false
+    open var isEmpty = false
     abstract val size: Int
     abstract val extension: String
 
-    val downloaded: Boolean
+    open val downloaded: Boolean
     	get() = File(targetPathAndFilename).isFile()
     
     val downloading: Boolean
     	get() = File("${targetPathAndFilename}.downloading").isFile()
     
-	val targetPath: String
+	open val targetPath: String
 		get() {
-	        val path = user.getFileBase() + Config.FILE_FILES_BASE + File.separatorChar
+	        val path = user.fileBase + Config.FILE_FILES_BASE + File.separatorChar
     	    File(path).mkdirs()
     	    return path
 		}
     
-    val targetFilename: String
+    open val targetFilename: String
     	get() {
 			val message_id = message.getId()
-			if (message.getToId() is TLPeerChannel) {
-				val channel_id = message.getToId().getChannelId()
+			var to = message.getToId()
+			if (to is TLPeerChannel) {
+				val channel_id = to.getChannelId()
 				return "channel_${channel_id}_${message_id}.$extension"
 			} else return "${message_id}.$extension"
 		}
 
-    val targetPathAndFilenam: String
+    open val targetPathAndFilename: String
     	get() = targetPath + targetFilename
 
     abstract val letter: String
@@ -91,7 +92,9 @@ abstract class AbstractMediaFileManager(protected var message: TLMessage, protec
 
     }
 
-    fun throwUnexpectedObjectError(o: Object) {
-        throw RuntimeException("Unexpected " + o.getClass().getName())
+    companion object {
+    fun throwUnexpectedObjectError(o: Any) {
+        throw RuntimeException("Unexpected " + o.javaClass.getName())
+    }
     }
 }

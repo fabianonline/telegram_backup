@@ -24,7 +24,7 @@ import java.awt.event.ActionEvent
 import java.awt.event.ActionListener
 import java.util.Vector
 
-class GUIController {
+class GUIController() {
     init {
         showAccountChooserDialog()
     }
@@ -50,24 +50,8 @@ class GUIController {
         accountChooser.add(vert)
         accountChooser.setVisible(true)
         accountChooser.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE)
-
-        list.addListSelectionListener(object : ListSelectionListener() {
-            @Override
-            fun valueChanged(e: ListSelectionEvent) {
-                btnLogin.setEnabled(true)
-            }
-        })
-
-        btnAddAccount.addActionListener(object : ActionListener() {
-            @Override
-            fun actionPerformed(e: ActionEvent) {
-                accountChooser.setVisible(false)
-                accountChooser.dispose()
-                addAccountDialog()
-            }
-        })
-    }
-
+	}
+	
     private fun addAccountDialog() {
         val loginDialog = JDialog()
         loginDialog.setTitle("Add an account")

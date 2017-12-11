@@ -39,13 +39,13 @@ private constructor(c: TelegramClient) {
     var user: TLUser? = null
     var phone: String? = null
     private var code: String? = null
-    private val client: TelegramClient? = null
+    private val client: TelegramClient
     private var sent_code: TLSentCode? = null
     private var auth: TLAuthorization? = null
     var isPasswordNeeded = false
         private set
 
-    val isLoggedIn: Boolean
+    val loggedIn: Boolean
         get() = user != null
 
     val userString: String
@@ -86,7 +86,7 @@ private constructor(c: TelegramClient) {
     @Throws(RpcErrorException::class, IOException::class)
     fun sendCodeToPhoneNumber(number: String) {
         this.phone = number
-        this.sent_code = this.client!!.authSendCode(false, this.phone, true)
+        this.sent_code = this.client!!.authSendCode(false, number, true)
     }
 
     @Throws(RpcErrorException::class, IOException::class)
@@ -104,7 +104,7 @@ private constructor(c: TelegramClient) {
 
     @Throws(RpcErrorException::class, IOException::class)
     fun verifyPassword(pw: String) {
-        val password = pw.getBytes("UTF-8")
+        val password = pw.toByteArray(charset=Charsets.UTF_8)
         val salt = (client!!.accountGetPassword() as TLPassword).getCurrentSalt().getData()
         var md: MessageDigest? = null
         try {
@@ -125,7 +125,7 @@ private constructor(c: TelegramClient) {
 
     companion object {
         private val logger = LoggerFactory.getLogger(UserManager::class.java)
-        private var instance: UserManager? = null
+        internal var instance: UserManager? = null
 
         @Throws(IOException::class)
         fun init(c: TelegramClient) {
@@ -134,7 +134,7 @@ private constructor(c: TelegramClient) {
 
         fun getInstance(): UserManager {
             if (instance == null) throw RuntimeException("UserManager is not yet initialized.")
-            return instance
+            return instance!!
         }
     }
 }

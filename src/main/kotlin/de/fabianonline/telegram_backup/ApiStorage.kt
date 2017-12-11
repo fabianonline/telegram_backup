@@ -27,7 +27,7 @@ import java.io.File
 import java.io.FileNotFoundException
 import java.io.IOException
 
-internal class ApiStorage(prefix: String) : TelegramApiStorage {
+internal class ApiStorage(prefix: String?) : TelegramApiStorage {
     private var prefix: String? = null
     private var do_save = false
     private var auth_key: AuthKey? = null
@@ -39,7 +39,7 @@ internal class ApiStorage(prefix: String) : TelegramApiStorage {
         this.setPrefix(prefix)
     }
 
-    fun setPrefix(prefix: String) {
+    fun setPrefix(prefix: String?) {
         this.prefix = prefix
         this.do_save = this.prefix != null
         if (this.do_save) {
@@ -57,7 +57,7 @@ internal class ApiStorage(prefix: String) : TelegramApiStorage {
         }
     }
 
-    fun saveAuthKey(authKey: AuthKey) {
+    override fun saveAuthKey(authKey: AuthKey) {
         this.auth_key = authKey
         this._saveAuthKey()
     }
@@ -65,7 +65,7 @@ internal class ApiStorage(prefix: String) : TelegramApiStorage {
     private fun _saveAuthKey() {
         if (this.do_save && this.auth_key != null) {
             try {
-                FileUtils.writeByteArrayToFile(this.file_auth_key, this.auth_key!!.getKey())
+                FileUtils.writeByteArrayToFile(this.file_auth_key, this.auth_key!!.key)
             } catch (e: IOException) {
                 e.printStackTrace()
             }
@@ -73,7 +73,7 @@ internal class ApiStorage(prefix: String) : TelegramApiStorage {
         }
     }
 
-    fun loadAuthKey(): AuthKey? {
+    override fun loadAuthKey(): AuthKey? {
         if (this.auth_key != null) return this.auth_key
         if (this.file_auth_key != null) {
             try {
@@ -87,7 +87,7 @@ internal class ApiStorage(prefix: String) : TelegramApiStorage {
         return null
     }
 
-    fun saveDc(dc: DataCenter) {
+    override fun saveDc(dc: DataCenter) {
         this.dc = dc
         this._saveDc()
     }
@@ -103,7 +103,7 @@ internal class ApiStorage(prefix: String) : TelegramApiStorage {
         }
     }
 
-    fun loadDc(): DataCenter? {
+    override fun loadDc(): DataCenter? {
         if (this.dc != null) return this.dc
         if (this.file_dc != null) {
             try {
@@ -117,7 +117,7 @@ internal class ApiStorage(prefix: String) : TelegramApiStorage {
         return null
     }
 
-    fun deleteAuthKey() {
+    override fun deleteAuthKey() {
         if (this.do_save) {
             try {
                 FileUtils.forceDelete(this.file_auth_key)
@@ -128,7 +128,7 @@ internal class ApiStorage(prefix: String) : TelegramApiStorage {
         }
     }
 
-    fun deleteDc() {
+    override fun deleteDc() {
         if (this.do_save) {
             try {
                 FileUtils.forceDelete(this.file_dc)
@@ -139,9 +139,9 @@ internal class ApiStorage(prefix: String) : TelegramApiStorage {
         }
     }
 
-    fun saveSession(session: MTSession) {}
+    override fun saveSession(session: MTSession?) {}
 
-    fun loadSession(): MTSession? {
+    override fun loadSession(): MTSession? {
         return null
     }
 }

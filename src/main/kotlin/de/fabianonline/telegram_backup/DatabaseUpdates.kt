@@ -18,7 +18,7 @@ import de.fabianonline.telegram_backup.mediafilemanager.AbstractMediaFileManager
 class DatabaseUpdates(protected var conn: Connection, protected var db: Database) {
 
     private val maxPossibleVersion: Int
-        get() = updates.size()
+        get() = updates.size
 
     init {
         logger.debug("Registering Database Updates...")
@@ -62,7 +62,7 @@ class DatabaseUpdates(protected var conn: Connection, protected var db: Database
                 logger.debug("Update is necessary. {} => {}.", version, maxPossibleVersion)
                 var backup = false
                 for (i in version + 1..maxPossibleVersion) {
-                    if (getUpdateToVersion(i).needsBackup()) {
+                    if (getUpdateToVersion(i).needsBackup) {
                         logger.debug("Update to version {} needs a backup", i)
                         backup = true
                     }
@@ -100,9 +100,9 @@ class DatabaseUpdates(protected var conn: Connection, protected var db: Database
     }
 
     private fun register(d: DatabaseUpdate) {
-        logger.debug("Registering {} as update to version {}", d.getClass().getName(), d.version)
-        if (d.version != updates.size() + 1) {
-            throw RuntimeException("Tried to register DB update to version " + d.version + ", but would need update to version " + (updates.size() + 1))
+        logger.debug("Registering {} as update to version {}", d.javaClass, d.version)
+        if (d.version != updates.size + 1) {
+            throw RuntimeException("Tried to register DB update to version ${d.version}, but would need update to version ${updates.size + 1}")
         }
         updates.add(d)
     }
@@ -138,9 +138,7 @@ internal abstract class DatabaseUpdate(protected var conn: Connection, protected
     @Throws(SQLException::class)
     protected abstract fun _doUpdate()
 
-    fun needsBackup(): Boolean {
-        return false
-    }
+    open val needsBackup = false
 
     @Throws(SQLException::class)
     protected fun execute(sql: String) {
@@ -233,9 +231,7 @@ internal class DB_Update_6(conn: Connection, db: Database) : DatabaseUpdate(conn
     override val version: Int
         get() = 6
 
-    override fun needsBackup(): Boolean {
-        return true
-    }
+    override val needsBackup = true
 
     @Throws(SQLException::class)
     override fun _doUpdate() {
@@ -269,14 +265,14 @@ internal class DB_Update_6(conn: Connection, db: Database) : DatabaseUpdate(conn
         val query = StringBuilder("INSERT INTO messages_new\n(")
         var first: Boolean
         first = true
-        for (s in mappings.keySet()) {
+        for (s in mappings.keys) {
             if (!first) query.append(", ")
             query.append(s)
             first = false
         }
         query.append(")\nSELECT \n")
         first = true
-        for (s in mappings.values()) {
+        for (s in mappings.values) {
             if (!first) query.append(", ")
             query.append(s)
             first = false
@@ -289,7 +285,7 @@ internal class DB_Update_6(conn: Connection, db: Database) : DatabaseUpdate(conn
         val ps = conn.prepareStatement("UPDATE messages_new SET fwd_from_id=?, media_type=?, media_file=?, media_size=? WHERE id=?")
         while (rs.next()) {
             ps.setInt(5, rs.getInt(1))
-            val msg = db.bytesToTLMessage(rs.getBytes(2))
+            val msg = Database.bytesToTLMessage(rs.getBytes(2))
             if (msg == null || msg!!.getFwdFrom() == null) {
                 ps.setNull(1, Types.INTEGER)
             } else {
@@ -301,9 +297,9 @@ internal class DB_Update_6(conn: Connection, db: Database) : DatabaseUpdate(conn
                 ps.setNull(3, Types.VARCHAR)
                 ps.setNull(4, Types.INTEGER)
             } else {
-                ps.setString(2, f!!.getName())
-                ps.setString(3, f!!.getTargetFilename())
-                ps.setInt(4, f!!.getSize())
+                ps.setString(2, f.name)
+                ps.setString(3, f.targetFilename)
+                ps.setInt(4, f.size)
             }
             ps.addBatch()
         }
@@ -321,9 +317,7 @@ internal class DB_Update_7(conn: Connection, db: Database) : DatabaseUpdate(conn
     override val version: Int
         get() = 7
 
-    override fun needsBackup(): Boolean {
-        return true
-    }
+    override val needsBackup = true
 
     @Throws(SQLException::class)
     override fun _doUpdate() {
@@ -337,9 +331,7 @@ internal class DB_Update_8(conn: Connection, db: Database) : DatabaseUpdate(conn
     override val version: Int
         get() = 8
 
-    override fun needsBackup(): Boolean {
-        return true
-    }
+    override val needsBackup = true
 
     @Throws(SQLException::class)
     override fun _doUpdate() {

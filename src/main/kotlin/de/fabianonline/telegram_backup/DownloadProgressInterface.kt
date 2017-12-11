@@ -19,7 +19,7 @@ package de.fabianonline.telegram_backup
 import de.fabianonline.telegram_backup.mediafilemanager.AbstractMediaFileManager
 
 interface DownloadProgressInterface {
-    fun onMessageDownloadStart(count: Int, source: String)
+    fun onMessageDownloadStart(count: Int, source: String?)
     fun onMessageDownloaded(number: Int)
     fun onMessageDownloadFinished()
 

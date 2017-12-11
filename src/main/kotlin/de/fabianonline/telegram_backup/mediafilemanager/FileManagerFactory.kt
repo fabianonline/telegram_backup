@@ -50,7 +50,7 @@ object FileManagerFactory {
             return PhotoFileManager(m, u, c)
         } else if (media is TLMessageMediaDocument) {
             val d = DocumentFileManager(m, u, c)
-            return if (d.isSticker()) {
+            return if (d.isSticker) {
                 StickerFileManager(m, u, c)
             } else d
         } else if (media is TLMessageMediaGeo) {

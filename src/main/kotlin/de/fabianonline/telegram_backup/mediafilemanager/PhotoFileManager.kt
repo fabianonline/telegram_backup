@@ -43,18 +43,14 @@ import java.util.concurrent.TimeoutException
 import org.apache.commons.io.FileUtils
 
 class PhotoFileManager(msg: TLMessage, user: UserManager, client: TelegramClient) : AbstractMediaFileManager(msg, user, client) {
-    private var photo: TLPhoto? = null
-    private var size: TLPhotoSize? = null
+    private lateinit var photo: TLPhoto
+    override var size = 0
+    private lateinit var photo_size: TLPhotoSize
 
-    val extension: String
-        get() = "jpg"
-
-    val letter: String
-        get() = "p"
-    val name: String
-        get() = "photo"
-    val description: String
-        get() = "Photo"
+    override val extension = "jpg"
+    override val letter = "p"
+    override val name = "photo"
+    override val description = "Photo"
 
     init {
         val p = (msg.getMedia() as TLMessageMediaPhoto).getPhoto()
@@ -72,7 +68,8 @@ class PhotoFileManager(msg: TLMessage, user: UserManager, client: TelegramClient
             if (biggest == null) {
                 throw RuntimeException("Could not find a size for a photo.")
             }
-            this.size = biggest
+            this.photo_size = biggest
+            this.size = biggest.getSize()
         } else if (p is TLPhotoEmpty) {
             this.isEmpty = true
         } else {
@@ -80,14 +77,10 @@ class PhotoFileManager(msg: TLMessage, user: UserManager, client: TelegramClient
         }
     }
 
-    fun getSize(): Int {
-        return if (size != null) size!!.getSize() else 0
-    }
-
     @Throws(RpcErrorException::class, IOException::class, TimeoutException::class)
-    fun download() {
+    override fun download() {
         if (isEmpty) return
-        val loc = size!!.getLocation() as TLFileLocation
-        DownloadManager.downloadFile(client, getTargetPathAndFilename(), getSize(), loc.getDcId(), loc.getVolumeId(), loc.getLocalId(), loc.getSecret())
+        val loc = photo_size.getLocation() as TLFileLocation
+        DownloadManager.downloadFile(client, targetPathAndFilename, size, loc.getDcId(), loc.getVolumeId(), loc.getLocalId(), loc.getSecret())
     }
 }

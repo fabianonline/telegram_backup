@@ -52,8 +52,7 @@ class Database private constructor(var client: TelegramClient) {
     private var stmt: Statement? = null
     var user_manager: UserManager
 
-    val topMessageID: Int
-        get() {
+    fun getTopMessageID(): Int {
             try {
                 val rs = stmt!!.executeQuery("SELECT MAX(message_id) FROM messages WHERE source_type IN ('group', 'dialog')")
                 rs.next()
@@ -64,18 +63,15 @@ class Database private constructor(var client: TelegramClient) {
 
         }
 
-    val messageCount: Int
-        get() = queryInt("SELECT COUNT(*) FROM messages")
-    val chatCount: Int
-        get() = queryInt("SELECT COUNT(*) FROM chats")
-    val userCount: Int
-        get() = queryInt("SELECT COUNT(*) FROM users")
+    fun getMessageCount(): Int = queryInt("SELECT COUNT(*) FROM messages")
+    fun getChatCount(): Int = queryInt("SELECT COUNT(*) FROM chats")
+    fun getUserCount(): Int = queryInt("SELECT COUNT(*) FROM users")
 
-    val missingIDs: LinkedList<Integer>
+    val missingIDs: LinkedList<Int>
         get() {
             try {
-                val missing = LinkedList<Integer>()
-                val max = topMessageID
+                val missing = LinkedList<Int>()
+                val max = getTopMessageID()
                 val rs = stmt!!.executeQuery("SELECT message_id FROM messages WHERE source_type IN ('group', 'dialog') ORDER BY id")
                 rs.next()
                 var id = rs.getInt(1)
@@ -99,10 +95,9 @@ class Database private constructor(var client: TelegramClient) {
 
         }
 
-    val messagesWithMedia: LinkedList<TLMessage>
-        get() {
+    fun getMessagesWithMedia(): LinkedList<TLMessage?> {
             try {
-                val list = LinkedList<TLMessage>()
+                val list = LinkedList<TLMessage?>()
                 val rs = stmt!!.executeQuery("SELECT data FROM messages WHERE has_media=1")
                 while (rs.next()) {
                     list.add(bytesToTLMessage(rs.getBytes(1)))
@@ -116,10 +111,9 @@ class Database private constructor(var client: TelegramClient) {
 
         }
 
-    val messagesFromUserCount: Int
-        get() {
+    fun getMessagesFromUserCount(): Int {
             try {
-                val rs = stmt!!.executeQuery("SELECT COUNT(*) FROM messages WHERE sender_id=" + user_manager.getUser().getId())
+                val rs = stmt!!.executeQuery("SELECT COUNT(*) FROM messages WHERE sender_id=" + user_manager.user!!.getId())
                 rs.next()
                 return rs.getInt(1)
             } catch (e: SQLException) {
@@ -128,15 +122,12 @@ class Database private constructor(var client: TelegramClient) {
 
         }
 
-    val messageTypesWithCount: HashMap<String, Integer>
-        get() = getMessageTypesWithCount(GlobalChat())
+    fun getMessageTypesWithCount(): HashMap<String, Int> = getMessageTypesWithCount(GlobalChat())
 
-    val messageMediaTypesWithCount: HashMap<String, Integer>
-        get() = getMessageMediaTypesWithCount(GlobalChat())
+    fun getMessageMediaTypesWithCount(): HashMap<String, Int> = getMessageMediaTypesWithCount(GlobalChat())
 
-    val messageApiLayerWithCount: HashMap<String, Integer>
-        get() {
-            val map = HashMap<String, Integer>()
+    fun getMessageApiLayerWithCount(): HashMap<String, Int> {
+            val map = HashMap<String, Int>()
             try {
                 val rs = stmt!!.executeQuery("SELECT COUNT(id), api_layer FROM messages GROUP BY api_layer ORDER BY api_layer")
                 while (rs.next()) {
@@ -149,17 +140,13 @@ class Database private constructor(var client: TelegramClient) {
             } catch (e: Exception) {
                 throw RuntimeException(e)
             }
-
         }
 
-    val messageAuthorsWithCount: HashMap<String, Object>
-        get() = getMessageAuthorsWithCount(GlobalChat())
+    fun getMessageAuthorsWithCount(): HashMap<String, Any> = getMessageAuthorsWithCount(GlobalChat())
 
-    val messageTimesMatrix: Array<IntArray>
-        get() = getMessageTimesMatrix(GlobalChat())
+    fun getMessageTimesMatrix(): Array<IntArray> = getMessageTimesMatrix(GlobalChat())
 
-    val encoding: String
-        get() {
+    fun getEncoding(): String {
             try {
                 val rs = stmt!!.executeQuery("PRAGMA encoding")
                 rs.next()
@@ -172,8 +159,7 @@ class Database private constructor(var client: TelegramClient) {
         }
 
 
-    val listOfChatsForExport: LinkedList<Chat>
-        get() {
+    fun getListOfChatsForExport(): LinkedList<Chat> {
             val list = LinkedList<Chat>()
             try {
                 val rs = stmt!!.executeQuery("SELECT chats.id, chats.name, COUNT(messages.id) as c " +
@@ -192,8 +178,7 @@ class Database private constructor(var client: TelegramClient) {
         }
 
 
-    val listOfDialogsForExport: LinkedList<Dialog>
-        get() {
+    fun getListOfDialogsForExport(): LinkedList<Dialog> {
             val list = LinkedList<Dialog>()
             try {
                 val rs = stmt!!.executeQuery(
@@ -221,9 +206,7 @@ class Database private constructor(var client: TelegramClient) {
             CommandLineController.show_error("Could not load jdbc-sqlite class.")
         }
 
-        val path = "jdbc:sqlite:" +
-                user_manager.getFileBase() +
-                Config.FILE_NAME_DB
+        val path = "jdbc:sqlite:${user_manager.fileBase}${Config.FILE_NAME_DB}"
 
         try {
             conn = DriverManager.getConnection(path)
@@ -233,7 +216,7 @@ class Database private constructor(var client: TelegramClient) {
         }
 
         // Run updates
-        val updates = DatabaseUpdates(conn, this)
+        val updates = DatabaseUpdates(conn!!, this)
         updates.doUpdates()
 
         System.out.println("Database is ready.")
@@ -243,8 +226,8 @@ class Database private constructor(var client: TelegramClient) {
         val filename = String.format(Config.FILE_NAME_DB_BACKUP, currentVersion)
         System.out.println("  Creating a backup of your database as " + filename)
         try {
-            val src = user_manager.getFileBase() + Config.FILE_NAME_DB
-            val dst = user_manager.getFileBase() + filename
+            val src = user_manager.fileBase + Config.FILE_NAME_DB
+            val dst = user_manager.fileBase + filename
             logger.debug("Copying {} to {}", src, dst)
             Files.copy(
                     File(src).toPath(),
@@ -289,7 +272,7 @@ class Database private constructor(var client: TelegramClient) {
     }
 
     @Synchronized
-    fun saveMessages(all: TLVector<TLAbsMessage>, api_layer: Integer) {
+    fun saveMessages(all: TLVector<TLAbsMessage>, api_layer: Int) {
         try {
             //"(id, dialog_id, from_id, from_type, text, time, has_media, data, sticker, type) " +
             //"VALUES " +
@@ -312,16 +295,16 @@ class Database private constructor(var client: TelegramClient) {
                         ps.setInt(4, (peer as TLPeerChat).getChatId())
                     } else if (peer is TLPeerUser) {
                         var id = (peer as TLPeerUser).getUserId()
-                        if (id == this.user_manager.getUser().getId()) {
+                        if (id == this.user_manager.user!!.getId()) {
                             id = msg.getFromId()
                         }
                         ps.setString(3, "dialog")
                         ps.setInt(4, id)
                     } else if (peer is TLPeerChannel) {
                         ps.setString(3, "channel")
-                        ps.setInt(4, (peer as TLPeerChannel).getChannelId())
+                        ps.setInt(4, peer.getChannelId())
                     } else {
-                        throw RuntimeException("Unexpected Peer type: " + peer.getClass().getName())
+                        throw RuntimeException("Unexpected Peer type: " + peer.javaClass)
                     }
 
                     if (peer is TLPeerChannel) {
@@ -355,9 +338,9 @@ class Database private constructor(var client: TelegramClient) {
                         ps.setNull(12, Types.INTEGER)
                     } else {
                         ps.setBoolean(9, true)
-                        ps.setString(10, f!!.getName())
-                        ps.setString(11, f!!.getTargetFilename())
-                        ps.setInt(12, f!!.getSize())
+                        ps.setString(10, f.name)
+                        ps.setString(11, f.targetFilename)
+                        ps.setInt(12, f.size)
                     }
                     val stream = ByteArrayOutputStream()
                     msg.serializeBody(stream)
@@ -397,7 +380,7 @@ class Database private constructor(var client: TelegramClient) {
                     ps_insert_or_ignore.setInt(14, api_layer)
                     ps_insert_or_ignore.addBatch()
                 } else {
-                    throw RuntimeException("Unexpected Message type: " + abs.getClass().getName())
+                    throw RuntimeException("Unexpected Message type: " + abs.javaClass)
                 }
             }
             conn!!.setAutoCommit(false)
@@ -452,7 +435,7 @@ class Database private constructor(var client: TelegramClient) {
                     ps_insert_or_replace.setString(3, "channel")
                     ps_insert_or_replace.addBatch()
                 } else {
-                    throw RuntimeException("Unexpected " + abs.getClass().getName())
+                    throw RuntimeException("Unexpected " + abs.javaClass)
                 }
             }
             conn!!.setAutoCommit(false)
@@ -501,7 +484,7 @@ class Database private constructor(var client: TelegramClient) {
                     ps_insert_or_ignore.setNull(6, Types.VARCHAR)
                     ps_insert_or_ignore.addBatch()
                 } else {
-                    throw RuntimeException("Unexpected " + abs.getClass().getName())
+                    throw RuntimeException("Unexpected " + abs.javaClass)
                 }
             }
             conn!!.setAutoCommit(false)
@@ -518,9 +501,9 @@ class Database private constructor(var client: TelegramClient) {
 
     }
 
-    fun getIdsFromQuery(query: String): LinkedList<Integer> {
+    fun getIdsFromQuery(query: String): LinkedList<Int> {
         try {
-            val list = LinkedList<Integer>()
+            val list = LinkedList<Int>()
             val rs = stmt!!.executeQuery(query)
             while (rs.next()) {
                 list.add(rs.getInt(1))
@@ -533,8 +516,8 @@ class Database private constructor(var client: TelegramClient) {
 
     }
 
-    fun getMessageTypesWithCount(c: AbstractChat): HashMap<String, Integer> {
-        val map = HashMap<String, Integer>()
+    fun getMessageTypesWithCount(c: AbstractChat): HashMap<String, Int> {
+        val map = HashMap<String, Int>()
         try {
             val rs = stmt!!.executeQuery("SELECT message_type, COUNT(message_id) FROM messages WHERE " + c.query + " GROUP BY message_type")
             while (rs.next()) {
@@ -547,8 +530,8 @@ class Database private constructor(var client: TelegramClient) {
 
     }
 
-    fun getMessageMediaTypesWithCount(c: AbstractChat): HashMap<String, Integer> {
-        val map = HashMap<String, Integer>()
+    fun getMessageMediaTypesWithCount(c: AbstractChat): HashMap<String, Int> {
+        val map = HashMap<String, Int>()
         try {
             var count = 0
             val rs = stmt!!.executeQuery("SELECT media_type, COUNT(message_id) FROM messages WHERE " + c.query + " GROUP BY media_type")
@@ -569,9 +552,9 @@ class Database private constructor(var client: TelegramClient) {
 
     }
 
-    fun getMessageAuthorsWithCount(c: AbstractChat): HashMap<String, Object> {
-        val map = HashMap<String, Object>()
-        val user_map = HashMap<User, Integer>()
+    fun getMessageAuthorsWithCount(c: AbstractChat): HashMap<String, Any> {
+        val map = HashMap<String, Any>()
+        val user_map = HashMap<User, Int>()
         var count_others = 0
         // Set a default value for 'me' to fix the charts for channels - cause I
         // possibly didn't send any messages there.
@@ -596,7 +579,7 @@ class Database private constructor(var client: TelegramClient) {
                 }
             }
             map.put("authors.count.others", count_others)
-            map.put("authors.all", user_map.entrySet())
+            map.put("authors.all", user_map)
             return map
         } catch (e: Exception) {
             throw RuntimeException(e)
@@ -621,7 +604,7 @@ class Database private constructor(var client: TelegramClient) {
 
     }
 
-    fun getMessagesForExport(c: AbstractChat): LinkedList<HashMap<String, Object>> {
+    fun getMessagesForExport(c: AbstractChat): LinkedList<HashMap<String, Any>> {
         try {
 
             val rs = stmt!!.executeQuery("SELECT messages.message_id as message_id, text, time*1000 as time, has_media, " +
@@ -637,13 +620,13 @@ class Database private constructor(var client: TelegramClient) {
             val format_date = SimpleDateFormat("d MMM yy")
             val meta = rs.getMetaData()
             val columns = meta.getColumnCount()
-            val list = LinkedList<HashMap<String, Object>>()
+            val list = LinkedList<HashMap<String, Any>>()
 
-            var count: Integer = 0
+            var count = 0
             var old_date: String? = null
-            var old_user: Integer? = null
+            var old_user = 0
             while (rs.next()) {
-                val h = HashMap<String, Object>(columns)
+                val h = HashMap<String, Any>(columns)
                 for (i in 1..columns) {
                     h.put(meta.getColumnName(i), rs.getObject(i))
                 }
@@ -655,7 +638,7 @@ class Database private constructor(var client: TelegramClient) {
                 if (rs.getString("media_type") != null) {
                     h.put("media_" + rs.getString("media_type"), true)
                 }
-                h.put("from_me", rs.getInt("user_id") === user_manager.getUser().getId())
+                h.put("from_me", rs.getInt("user_id") === user_manager.user!!.getId())
                 h.put("is_new_date", !date.equals(old_date))
                 h.put("odd_even", if (count % 2 == 0) "even" else "odd")
                 h.put("same_user", old_user != null && rs.getInt("user_id") === old_user)
@@ -696,7 +679,7 @@ class Database private constructor(var client: TelegramClient) {
         var isMe: Boolean = false
 
         init {
-            isMe = id == user_manager.getUser().getId()
+            isMe = id == user_manager.user!!.getId()
             val s = StringBuilder()
             if (first_name != null) s.append(first_name + " ")
             if (last_name != null) s.append(last_name)
@@ -711,7 +694,7 @@ class Database private constructor(var client: TelegramClient) {
 
     companion object {
         private val logger = LoggerFactory.getLogger(Database::class.java)
-        private var instance: Database? = null
+        internal var instance: Database? = null
 
         fun init(c: TelegramClient) {
             instance = Database(c)
@@ -719,7 +702,7 @@ class Database private constructor(var client: TelegramClient) {
 
         fun getInstance(): Database {
             if (instance == null) throw RuntimeException("Database is not initialized but getInstance() was called.")
-            return instance
+            return instance!!
         }
 
         fun bytesToTLMessage(b: ByteArray?): TLMessage? {

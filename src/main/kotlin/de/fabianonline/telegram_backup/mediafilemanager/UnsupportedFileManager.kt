@@ -44,34 +44,15 @@ import java.util.concurrent.TimeoutException
 import org.apache.commons.io.FileUtils
 
 class UnsupportedFileManager(msg: TLMessage, user: UserManager, client: TelegramClient, type: String) : AbstractMediaFileManager(msg, user, client) {
-    var name: String? = null
-        internal set
-
-    val targetFilename: String
-        get() = ""
-
-    val targetPath: String
-        get() = ""
-
-    val extension: String
-        get() = ""
-
-    val size: Int
-        get() = 0
-
-    val isEmpty: Boolean
-        get() = false
-    val isDownloaded: Boolean
-        get() = false
-
-    val letter: String
-        get() = " "
-    val description: String
-        get() = "Unsupported / non-downloadable Media"
-
-    init {
-        this.name = type
-    }
-
-    fun download() {}
+    override var name = type
+    override val targetFilename = ""
+    override val targetPath = ""
+    override val extension = ""
+    override val size = 0
+    override var isEmpty = false
+    override val downloaded = false
+    override val letter = " "
+    override val description = "Unsupported / non-downloadable Media"
+    
+    override fun download() {}
 }

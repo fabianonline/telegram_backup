@@ -37,12 +37,12 @@ object Config {
     val FILE_FILES_BASE = "files"
     val FILE_STICKER_BASE = "stickers"
 
-    var DELAY_AFTER_GET_MESSAGES = 400
-    var DELAY_AFTER_GET_FILE = 100
+    var DELAY_AFTER_GET_MESSAGES: Long = 400
+    var DELAY_AFTER_GET_FILE: Long = 100
     var GET_MESSAGES_BATCH_SIZE = 200
 
     var RENAMING_MAX_TRIES = 5
-    var RENAMING_DELAY = 1000
+    var RENAMING_DELAY: Long = 1000
 
     val SECRET_GMAPS = "AIzaSyBEtUDhCQKEH6i2Mn1GAiQ9M_tLN0vxHIs"
 

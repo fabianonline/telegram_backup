@@ -42,26 +42,23 @@ import java.util.concurrent.TimeoutException
 
 import org.apache.commons.io.FileUtils
 
-class DocumentFileManager(msg: TLMessage, user: UserManager, client: TelegramClient) : AbstractMediaFileManager(msg, user, client) {
+open class DocumentFileManager(msg: TLMessage, user: UserManager, client: TelegramClient) : AbstractMediaFileManager(msg, user, client) {
     protected var doc: TLDocument? = null
-    private var extension: String? = null
+    override lateinit var extension: String
 
-    val isSticker: Boolean
+    open val isSticker: Boolean
         get() {
             var sticker: TLDocumentAttributeSticker? = null
             if (this.isEmpty || doc == null) return false
-            return doc!!.getAttributes()?.filter{it is TLDocumentAttributeSticker}.isNotEmpty()
+            return doc!!.getAttributes()?.filter{it is TLDocumentAttributeSticker}?.isNotEmpty() ?: false
         }
 
-    val size: Int
+    override val size: Int
         get() = if (doc != null) doc!!.getSize() else 0
 
-    val letter: String
-        get() = "d"
-    val name: String
-        get() = "document"
-    val description: String
-        get() = "Document"
+    open override val letter: String = "d"
+    open override val name: String = "document"
+    open override val description: String = "Document"
 
     init {
         val d = (msg.getMedia() as TLMessageMediaDocument).getDocument()
@@ -72,9 +69,10 @@ class DocumentFileManager(msg: TLMessage, user: UserManager, client: TelegramCli
         } else {
             throwUnexpectedObjectError(d)
         }
+        extension = processExtension()
     }
 
-    fun getExtension(): String? {
+    private fun processExtension(): String {
         if (extension != null) return extension
         if (doc == null) return "empty"
         var ext: String? = null
@@ -97,14 +95,13 @@ class DocumentFileManager(msg: TLMessage, user: UserManager, client: TelegramCli
         // Sometimes, extensions contain a trailing double quote. Remove this. Fixes #12.
         ext = ext!!.replace("\"", "")
 
-        this.extension = ext
         return ext
     }
 
     @Throws(RpcErrorException::class, IOException::class, TimeoutException::class)
-    fun download() {
+    override fun download() {
         if (doc != null) {
-            DownloadManager.downloadFile(client, getTargetPathAndFilename(), size, doc!!.getDcId(), doc!!.getId(), doc!!.getAccessHash())
+            DownloadManager.downloadFile(client, targetPathAndFilename, size, doc!!.getDcId(), doc!!.getId(), doc!!.getAccessHash())
         }
     }
 }

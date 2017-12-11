@@ -28,16 +28,15 @@ import com.github.badoualy.telegram.tl.StreamUtils.readTLObject
 
 class TLRequestAccountGetPasswordWithCurrentSalt : TLMethod<TLPassword>() {
     private val _constructor = "account.getPassword#548a30f5"
-    val constructorId: Int
-        get() = CONSTRUCTOR_ID
+    override fun getConstructorId(): Int = CONSTRUCTOR_ID
 
     @Throws(IOException::class)
-    fun deserializeResponse(stream: InputStream, context: TLContext): TLPassword {
+    override fun deserializeResponse(stream: InputStream, context: TLContext): TLPassword {
         val response = (readTLObject(stream, context) ?: throw IOException("Unable to parse response")) as? TLPassword ?: throw IOException("Incorrect response type, expected getClass().getCanonicalName(), found response.getClass().getCanonicalName()")
         return response as TLPassword
     }
 
-    fun toString(): String {
+    override fun toString(): String {
         return _constructor
     }
 

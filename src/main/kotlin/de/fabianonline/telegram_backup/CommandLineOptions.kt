@@ -92,7 +92,7 @@ internal object CommandLineOptions {
     }
     if (last_cmd != null)
     {
-      CommandLineController.show_error("Command " + last_cmd + " had no parameter set.")
+      CommandLineController.show_error("Command $last_cmd had no parameter set.")
     }
   }
 }

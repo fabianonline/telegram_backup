@@ -65,7 +65,7 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
     }
 
     @Throws(RpcErrorException::class, IOException::class)
-    fun downloadMessages(limit: Integer) {
+    fun downloadMessages(limit: Int?) {
         var completed = true
         do {
             completed = true
@@ -95,7 +95,7 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
     }
 
     @Throws(RpcErrorException::class, IOException::class, TimeoutException::class)
-    fun _downloadMessages(limit: Integer?) {
+    fun _downloadMessages(limit: Int?) {
         logger.info("This is _downloadMessages with limit {}", limit)
         val dialog_limit = 100
         logger.info("Downloading the last {} dialogs", dialog_limit)
@@ -106,11 +106,11 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
                 0,
                 TLInputPeerEmpty(),
                 dialog_limit)
-        logger.debug("Got {} dialogs", dialogs.getDialogs().size())
+        logger.debug("Got {} dialogs", dialogs.getDialogs().size)
 
         for (d in dialogs.getDialogs()) {
             if (d.getTopMessage() > max_message_id && d.getPeer() !is TLPeerChannel) {
-                logger.trace("Updating top message id: {} => {}. Dialog type: {}", max_message_id, d.getTopMessage(), d.getPeer().getClass().getName())
+                logger.trace("Updating top message id: {} => {}. Dialog type: {}", max_message_id, d.getTopMessage(), d.getPeer().javaClass)
                 max_message_id = d.getTopMessage()
             }
         }
@@ -174,10 +174,10 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
             System.out.println("Processing channels and/or supergroups...")
             System.out.println("Please note that only channels/supergroups in the last 100 active chats are processed.")
 
-            val channel_access_hashes = HashMap<Integer, Long>()
-            val channel_names = HashMap<Integer, String>()
-            val channels = LinkedList<Integer>()
-            val supergroups = LinkedList<Integer>()
+            val channel_access_hashes = HashMap<Int, Long>()
+            val channel_names = HashMap<Int, String>()
+            val channels = LinkedList<Int>()
+            val supergroups = LinkedList<Int>()
 
             // TODO Add chat title (and other stuff?) to the database
             for (c in dialogs.getChats()) {
@@ -224,21 +224,21 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
     }
 
     @Throws(RpcErrorException::class, IOException::class)
-    private fun downloadMessages(ids: List<Integer>, channel: TLInputChannel?, source_string: String?) {
-        prog!!.onMessageDownloadStart(ids.size(), source_string)
+    private fun downloadMessages(ids: MutableList<Int>, channel: TLInputChannel?, source_string: String?) {
+        prog!!.onMessageDownloadStart(ids.size, source_string)
 
         logger.debug("Entering download loop")
-        while (ids.size() > 0) {
+        while (ids.size > 0) {
             logger.trace("Loop")
             val vector = TLIntVector()
             val download_count = Config.GET_MESSAGES_BATCH_SIZE
             logger.trace("download_count: {}", download_count)
             for (i in 0 until download_count) {
-                if (ids.size() === 0) break
-                vector.add(ids.remove(0))
+                if (ids.size === 0) break
+                vector.add(ids.removeAt(0))
             }
-            logger.trace("vector.size(): {}", vector.size())
-            logger.trace("ids.size(): {}", ids.size())
+            logger.trace("vector.size(): {}", vector.size)
+            logger.trace("ids.size(): {}", ids.size)
 
             var response: TLAbsMessages
             var tries = 0
@@ -265,12 +265,12 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
                 }
 
             }
-            logger.trace("response.getMessages().size(): {}", response.getMessages().size())
-            if (response.getMessages().size() !== vector.size()) {
-                CommandLineController.show_error("Requested " + vector.size() + " messages, but got " + response.getMessages().size() + ". That is unexpected. Quitting.")
+            logger.trace("response.getMessages().size(): {}", response.getMessages().size)
+            if (response.getMessages().size !== vector.size) {
+                CommandLineController.show_error("Requested ${vector.size} messages, but got ${response.getMessages().size}. That is unexpected. Quitting.")
             }
 
-            prog!!.onMessageDownloaded(response.getMessages().size())
+            prog!!.onMessageDownloaded(response.getMessages().size)
             db!!.saveMessages(response.getMessages(), Kotlogram.API_LAYER)
             db!!.saveChats(response.getChats())
             db!!.saveUsers(response.getUsers())
@@ -319,26 +319,27 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
         logger.info("This is _downloadMedia")
         logger.info("Checking if there are messages in the DB with a too old API layer")
         val ids = db!!.getIdsFromQuery("SELECT id FROM messages WHERE has_media=1 AND api_layer<" + Kotlogram.API_LAYER)
-        if (ids.size() > 0) {
-            System.out.println("You have " + ids.size() + " messages in your db that need an update. Doing that now.")
-            logger.debug("Found {} messages", ids.size())
+        if (ids.size > 0) {
+            System.out.println("You have ${ids.size} messages in your db that need an update. Doing that now.")
+            logger.debug("Found {} messages", ids.size)
             downloadMessages(ids, null, null)
         }
 
         val messages = this.db!!.getMessagesWithMedia()
-        logger.debug("Database returned {} messages with media", messages.size())
-        prog!!.onMediaDownloadStart(messages.size())
+        logger.debug("Database returned {} messages with media", messages.size)
+        prog!!.onMediaDownloadStart(messages.size)
         for (msg in messages) {
-            val m = FileManagerFactory.getFileManager(msg, user, client)
+        	if (msg==null) continue
+            val m = FileManagerFactory.getFileManager(msg, user!!, client!!)
             logger.trace("message {}, {}, {}, {}, {}",
                     msg.getId(),
-                    msg.getMedia().getClass().getSimpleName().replace("TLMessageMedia", "…"),
-                    m.getClass().getSimpleName(),
-                    if (m.isEmpty()) "empty" else "non-empty",
-                    if (m.isDownloaded()) "downloaded" else "not downloaded")
-            if (m.isEmpty()) {
+                    msg.getMedia().javaClass.getSimpleName().replace("TLMessageMedia", "…"),
+                    m!!.javaClass.getSimpleName(),
+                    if (m.isEmpty) "empty" else "non-empty",
+                    if (m.downloaded) "downloaded" else "not downloaded")
+            if (m.isEmpty) {
                 prog!!.onMediaDownloadedEmpty()
-            } else if (m.isDownloaded()) {
+            } else if (m.downloaded) {
                 prog!!.onMediaAlreadyPresent(m)
             } else {
                 try {
@@ -354,8 +355,8 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
         prog!!.onMediaDownloadFinished()
     }
 
-    private fun makeIdList(start: Int, end: Int): List<Integer> {
-        val a = LinkedList<Integer>()
+    private fun makeIdList(start: Int, end: Int): MutableList<Int> {
+        val a = LinkedList<Int>()
         for (i in start..end) a.add(i)
         return a
     }
@@ -378,7 +379,7 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
         }
 
         @Throws(RpcErrorException::class, IOException::class, TimeoutException::class)
-        private fun downloadFileFromDc(client: TelegramClient, target: String, loc: TLAbsInputFileLocation, dcID: Integer?, size: Int): Boolean {
+        private fun downloadFileFromDc(client: TelegramClient, target: String, loc: TLAbsInputFileLocation, dcID: Int, size: Int): Boolean {
             var fos: FileOutputStream? = null
             try {
                 val temp_filename = target + ".downloading"
@@ -388,7 +389,7 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
                 var offset = 0
                 if (File(temp_filename).isFile()) {
                     logger.info("Temporary filename already exists; continuing this file")
-                    offset = File(temp_filename).length()
+                    offset = File(temp_filename).length() as Int
                     if (offset >= size) {
                         logger.warn("Temporary file size is >= the target size. Assuming corrupt file & deleting it")
                         File(temp_filename).delete()
@@ -422,8 +423,8 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
                         }
                     }
 
-                    offset += response!!.getBytes().getData().length
-                    logger.trace("response: {} total size: {}", response!!.getBytes().getData().length, offset)
+                    offset += response!!.getBytes().getData().size
+                    logger.trace("response: {} total size: {}", response!!.getBytes().getData().size, offset)
 
                     fos!!.write(response!!.getBytes().getData())
                     fos!!.flush()
@@ -432,7 +433,7 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
                     } catch (e: InterruptedException) {
                     }
 
-                } while (offset < size && (response!!.getBytes().getData().length > 0 || try_again))
+                } while (offset < size && (response!!.getBytes().getData().size > 0 || try_again))
                 fos!!.close()
                 if (offset < size) {
                     System.out.println("Requested file $target with $size bytes, but got only $offset bytes.")

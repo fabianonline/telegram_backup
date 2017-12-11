@@ -34,8 +34,7 @@ object Utils {
 
     private val logger = LoggerFactory.getLogger(Utils::class.java) as Logger
 
-    internal val accounts: Vector<String>
-        get() {
+    fun getAccounts(): Vector<String> {
             val accounts = Vector<String>()
             val folder = File(Config.FILE_BASE)
             val files = folder.listFiles()
@@ -48,8 +47,7 @@ object Utils {
             return accounts
         }
 
-    internal val newestVersion: Version?
-        get() {
+    fun getNewestVersion(): Version? {
             try {
                 val data_url = "https://api.github.com/repos/fabianonline/telegram_backup/releases"
                 logger.debug("Requesting current release info from {}", data_url)
@@ -87,7 +85,7 @@ object Utils {
     @JvmOverloads internal fun obeyFloodWaitException(e: RpcErrorException?, silent: Boolean = false) {
         if (e == null || e!!.getCode() !== 420) return
 
-        val delay = e!!.getTagInteger()
+        val delay: Long = e!!.getTagInteger()!! as Long
         if (!silent) {
             System.out.println("")
             System.out.println(
@@ -112,13 +110,13 @@ object Utils {
         logger.debug("Comparing versions {} and {}.", v1, v2)
         if (v1.equals(v2)) return VERSIONS_EQUAL
 
-        val v1_p = v1.split("-", 2)
-        val v2_p = v2.split("-", 2)
+        val v1_p = v1.split("-", limit=2)
+        val v2_p = v2.split("-", limit=2)
 
         logger.trace("Parts to compare without suffixes: {} and {}.", v1_p[0], v2_p[0])
 
-        val v1_p2 = v1_p[0].split("\\.")
-        val v2_p2 = v2_p[0].split("\\.")
+        val v1_p2 = v1_p[0].split(".")
+        val v2_p2 = v2_p[0].split(".")
 
         logger.trace("Length of the parts without suffixes: {} and {}.", v1_p2.size, v2_p2.size)
 
@@ -179,6 +177,6 @@ object Utils {
     }
 
     fun anonymize(str: String): String {
-        return if (!CommandLineOptions.cmd_anonymize) str else str.replaceAll("[0-9]", "1").replaceAll("[A-Z]", "A").replaceAll("[a-z]", "a") + " (ANONYMIZED)"
+        return if (!CommandLineOptions.cmd_anonymize) str else str.replace("[0-9]".toRegex(), "1").replace("[A-Z]".toRegex(), "A").replace("[a-z]".toRegex(), "a") + " (ANONYMIZED)"
     }
 }

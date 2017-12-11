@@ -23,7 +23,7 @@ internal class CommandLineDownloadProgress : DownloadProgressInterface {
     private var mediaCount = 0
     private var i = 0
 
-    fun onMessageDownloadStart(count: Int, source: String?) {
+    override fun onMessageDownloadStart(count: Int, source: String?) {
         i = 0
         if (source == null) {
             System.out.println("Downloading $count messages.")
@@ -32,56 +32,56 @@ internal class CommandLineDownloadProgress : DownloadProgressInterface {
         }
     }
 
-    fun onMessageDownloaded(number: Int) {
+    override fun onMessageDownloaded(number: Int) {
         i += number
-        System.out.print("..." + i)
+        print("..." + i)
     }
 
-    fun onMessageDownloadFinished() {
-        System.out.println(" done.")
+    override fun onMessageDownloadFinished() {
+        println(" done.")
     }
 
-    fun onMediaDownloadStart(count: Int) {
+    override fun onMediaDownloadStart(count: Int) {
         i = 0
         mediaCount = count
-        System.out.println("Checking and downloading media.")
-        System.out.println("Legend:")
-        System.out.println("'V' - Video         'P' - Photo         'D' - Document")
-        System.out.println("'S' - Sticker       'A' - Audio         'G' - Geolocation")
-        System.out.println("'.' - Previously downloaded file        'e' - Empty file")
-        System.out.println("' ' - Ignored media type (weblinks or contacts, for example)")
-        System.out.println("'x' - File skipped because of timeout errors")
-        System.out.println("" + count + " Files to check / download")
+        println("Checking and downloading media.")
+        println("Legend:")
+        println("'V' - Video         'P' - Photo         'D' - Document")
+        println("'S' - Sticker       'A' - Audio         'G' - Geolocation")
+        println("'.' - Previously downloaded file        'e' - Empty file")
+        println("' ' - Ignored media type (weblinks or contacts, for example)")
+        println("'x' - File skipped because of timeout errors")
+        println("" + count + " Files to check / download")
     }
 
-    fun onMediaDownloaded(fm: AbstractMediaFileManager) {
-        show(fm.getLetter().toUpperCase())
+    override fun onMediaDownloaded(fm: AbstractMediaFileManager) {
+        show(fm.letter.toUpperCase())
     }
 
-    fun onMediaDownloadedEmpty() {
+    override fun onMediaDownloadedEmpty() {
         show("e")
     }
 
-    fun onMediaAlreadyPresent(fm: AbstractMediaFileManager) {
+    override fun onMediaAlreadyPresent(fm: AbstractMediaFileManager) {
         show(".")
     }
 
-    fun onMediaSkipped() {
+    override fun onMediaSkipped() {
         show("x")
     }
 
-    fun onMediaDownloadFinished() {
+    override fun onMediaDownloadFinished() {
         showNewLine()
-        System.out.println("Done.")
+        println("Done.")
     }
 
     private fun show(letter: String) {
-        System.out.print(letter)
+        print(letter)
         i++
         if (i % 100 == 0) showNewLine()
     }
 
     private fun showNewLine() {
-        System.out.println(" - $i/$mediaCount")
+        println(" - $i/$mediaCount")
     }
 }
