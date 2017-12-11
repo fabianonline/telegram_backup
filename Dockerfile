@@ -1,6 +1,6 @@
 FROM openjdk:8
 
-ENV JAR_VERSION 1.0.6
+ENV JAR_VERSION 1.1.0
 ENV JAR_DOWNLOAD_URL https://github.com/fabianonline/telegram_backup/releases/download/${JAR_VERSION}/telegram_backup.jar
 
 RUN apt-get update -y && apt-get install -y curl && \
