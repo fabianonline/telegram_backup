@@ -50,13 +50,7 @@ class DocumentFileManager(msg: TLMessage, user: UserManager, client: TelegramCli
         get() {
             var sticker: TLDocumentAttributeSticker? = null
             if (this.isEmpty || doc == null) return false
-            if (doc!!.getAttributes() != null)
-                for (attr in doc!!.getAttributes()) {
-                    if (attr is TLDocumentAttributeSticker) {
-                        sticker = attr as TLDocumentAttributeSticker
-                    }
-                }
-            return sticker != null
+            return doc!!.getAttributes()?.filter{it is TLDocumentAttributeSticker}.isNotEmpty()
         }
 
     val size: Int
