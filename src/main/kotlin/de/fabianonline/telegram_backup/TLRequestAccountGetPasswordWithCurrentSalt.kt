@@ -33,7 +33,7 @@ class TLRequestAccountGetPasswordWithCurrentSalt : TLMethod<TLPassword>() {
     @Throws(IOException::class)
     override fun deserializeResponse(stream: InputStream, context: TLContext): TLPassword {
         val response = (readTLObject(stream, context) ?: throw IOException("Unable to parse response")) as? TLPassword ?: throw IOException("Incorrect response type, expected getClass().getCanonicalName(), found response.getClass().getCanonicalName()")
-        return response as TLPassword
+        return response
     }
 
     override fun toString(): String {

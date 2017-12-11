@@ -21,12 +21,12 @@ internal object TestFeatures {
 
         val path = "jdbc:sqlite:cache4.db"
 
-        var conn: Connection? = null
+        var conn: Connection
         var stmt: Statement? = null
 
         try {
             conn = DriverManager.getConnection(path)
-            stmt = conn!!.createStatement()
+            stmt = conn.createStatement()
         } catch (e: SQLException) {
             CommandLineController.show_error("Could not connect to SQLITE database.")
         }
@@ -55,7 +55,7 @@ internal object TestFeatures {
         System.out.println("Unsupported constructor: " + unsupported_constructor)
     }
 
-    fun test2(user: UserManager, client: TelegramClient) {
+    fun test2() {
         // Prints system.encoding and default charset
         System.out.println("Default Charset:   " + Charset.defaultCharset())
         System.out.println("file.encoding:     " + System.getProperty("file.encoding"))

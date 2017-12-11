@@ -171,7 +171,7 @@ class HTMLExporter {
         return sb.toString()
     }
 
-    private fun mapToString(map: Map<String, Integer>): String {
+    private fun mapToString(map: Map<String, Int>): String {
         val sb = StringBuilder("[")
         for ((key, value) in map) {
             sb.append("['$key', $value],")

@@ -49,7 +49,7 @@ object Config {
     init {
         val p = Properties()
         try {
-            p.load(Config::class.java!!.getResourceAsStream("/build.properties"))
+            p.load(Config::class.java.getResourceAsStream("/build.properties"))
             APP_APPVER = p.getProperty("version")
         } catch (e: IOException) {
             throw RuntimeException(e)

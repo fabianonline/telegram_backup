@@ -87,8 +87,8 @@ internal class ApiStorage(prefix: String?) : TelegramApiStorage {
         return null
     }
 
-    override fun saveDc(dc: DataCenter) {
-        this.dc = dc
+    override fun saveDc(dataCenter: DataCenter) {
+        this.dc = dataCenter
         this._saveDc()
     }
 

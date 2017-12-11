@@ -44,7 +44,7 @@ import org.apache.commons.io.FileUtils
 object FileManagerFactory {
     fun getFileManager(m: TLMessage?, u: UserManager, c: TelegramClient): AbstractMediaFileManager? {
         if (m == null) return null
-        val media = m!!.getMedia() ?: return null
+        val media = m.getMedia() ?: return null
 
         if (media is TLMessageMediaPhoto) {
             return PhotoFileManager(m, u, c)

@@ -1,7 +1,7 @@
 apply plugin: 'java'
 apply plugin: 'application'
 
-mainClassName= 'de.fabianonline.telegram_backup.CommandLineRunner'
+mainClassName= 'de.fabianonline.telegram_backup.CommandLineRunnerKt'
 
 repositories {
 	mavenCentral()

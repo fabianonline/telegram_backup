@@ -66,13 +66,13 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
 
     @Throws(RpcErrorException::class, IOException::class)
     fun downloadMessages(limit: Int?) {
-        var completed = true
+        var completed: Boolean
         do {
             completed = true
             try {
                 _downloadMessages(limit)
             } catch (e: RpcErrorException) {
-                if (e.getCode() === 420) { // FLOOD_WAIT
+                if (e.getCode() == 420) { // FLOOD_WAIT
                     completed = false
                     Utils.obeyFloodWaitException(e)
                 } else {
@@ -118,8 +118,8 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
         var max_database_id = db!!.getTopMessageID()
         System.out.println("Top message ID in database is " + max_database_id)
         if (limit != null) {
-            System.out.println("Limit is set to " + limit!!)
-            max_database_id = Math.max(max_database_id, max_message_id - limit!!)
+            System.out.println("Limit is set to " + limit)
+            max_database_id = Math.max(max_database_id, max_message_id - limit)
             System.out.println("New top message id 'in database' is " + max_database_id)
         }
         if (max_message_id - max_database_id > 1000000) {
@@ -142,7 +142,6 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
         }
 
         logger.info("Searching for missing messages in the db")
-        val count_missing = 0
         System.out.println("Checking message database for completeness...")
         val db_count = db!!.getMessageCount()
         val db_max = db!!.getTopMessageID()
@@ -182,10 +181,9 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
             // TODO Add chat title (and other stuff?) to the database
             for (c in dialogs.getChats()) {
                 if (c is TLChannel) {
-                    val ch = c as TLChannel
-                    channel_access_hashes.put(c.getId(), ch.getAccessHash())
-                    channel_names.put(c.getId(), ch.getTitle())
-                    if (ch.getMegagroup()) {
+                    channel_access_hashes.put(c.getId(), c.getAccessHash())
+                    channel_names.put(c.getId(), c.getTitle())
+                    if (c.getMegagroup()) {
                         supergroups.add(c.getId())
                     } else {
                         channels.add(c.getId())
@@ -216,7 +214,7 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
                             channel_name = "?"
                         }
                         val channel = TLInputChannel(channel_id, access_hash)
-                        downloadMessages(ids, channel, "channel " + channel_name!!)
+                        downloadMessages(ids, channel, "channel $channel_name")
                     }
                 }
             }
@@ -234,7 +232,7 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
             val download_count = Config.GET_MESSAGES_BATCH_SIZE
             logger.trace("download_count: {}", download_count)
             for (i in 0 until download_count) {
-                if (ids.size === 0) break
+                if (ids.size == 0) break
                 vector.add(ids.removeAt(0))
             }
             logger.trace("vector.size(): {}", vector.size)
@@ -256,7 +254,7 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
                     }
                     break
                 } catch (e: RpcErrorException) {
-                    if (e.getCode() === 420) { // FLOOD_WAIT
+                    if (e.getCode() == 420) { // FLOOD_WAIT
                         Utils.obeyFloodWaitException(e, has_seen_flood_wait_message)
                         has_seen_flood_wait_message = true
                     } else {
@@ -266,7 +264,7 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
 
             }
             logger.trace("response.getMessages().size(): {}", response.getMessages().size)
-            if (response.getMessages().size !== vector.size) {
+            if (response.getMessages().size != vector.size) {
                 CommandLineController.show_error("Requested ${vector.size} messages, but got ${response.getMessages().size}. That is unexpected. Quitting.")
             }
 
@@ -289,7 +287,7 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
     @Throws(RpcErrorException::class, IOException::class)
     fun downloadMedia() {
         download_client = client!!.getDownloaderClient()
-        var completed = true
+        var completed: Boolean
         do {
             completed = true
             try {
@@ -367,19 +365,19 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
         internal val logger = LoggerFactory.getLogger(DownloadManager::class.java)
 
         @Throws(RpcErrorException::class, IOException::class, TimeoutException::class)
-        fun downloadFile(client: TelegramClient, targetFilename: String, size: Int, dcId: Int, volumeId: Long, localId: Int, secret: Long) {
+        fun downloadFile(targetFilename: String, size: Int, dcId: Int, volumeId: Long, localId: Int, secret: Long) {
             val loc = TLInputFileLocation(volumeId, localId, secret)
-            downloadFileFromDc(client, targetFilename, loc, dcId, size)
+            downloadFileFromDc(targetFilename, loc, dcId, size)
         }
 
         @Throws(RpcErrorException::class, IOException::class, TimeoutException::class)
-        fun downloadFile(client: TelegramClient, targetFilename: String, size: Int, dcId: Int, id: Long, accessHash: Long) {
+        fun downloadFile(targetFilename: String, size: Int, dcId: Int, id: Long, accessHash: Long) {
             val loc = TLInputDocumentFileLocation(id, accessHash)
-            downloadFileFromDc(client, targetFilename, loc, dcId, size)
+            downloadFileFromDc(targetFilename, loc, dcId, size)
         }
 
         @Throws(RpcErrorException::class, IOException::class, TimeoutException::class)
-        private fun downloadFileFromDc(client: TelegramClient, target: String, loc: TLAbsInputFileLocation, dcID: Int, size: Int): Boolean {
+        private fun downloadFileFromDc(target: String, loc: TLAbsInputFileLocation, dcID: Int, size: Int): Boolean {
             var fos: FileOutputStream? = null
             try {
                 val temp_filename = target + ".downloading"
@@ -389,7 +387,7 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
                 var offset = 0
                 if (File(temp_filename).isFile()) {
                     logger.info("Temporary filename already exists; continuing this file")
-                    offset = File(temp_filename).length() as Int
+                    offset = File(temp_filename).length().toInt()
                     if (offset >= size) {
                         logger.warn("Temporary file size is >= the target size. Assuming corrupt file & deleting it")
                         File(temp_filename).delete()
@@ -405,18 +403,13 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
                     logger.trace("offset: {} block_size: {} size: {}", offset, size, size)
                     val req = TLRequestUploadGetFile(loc, offset, size)
                     try {
-                        if (dcID == null) {
-                            response = download_client!!.executeRpcQuery(req) as TLFile
-                        } else {
-                            response = download_client!!.executeRpcQuery(req, dcID) as TLFile
-                        }
+                        response = download_client!!.executeRpcQuery(req, dcID) as TLFile
                     } catch (e: RpcErrorException) {
                         if (e.getTag().startsWith("420: FLOOD_WAIT_")) {
                             try_again = true
                             Utils.obeyFloodWaitException(e)
-                        } else if (e.getCode() === 400) {
+                        } else if (e.getCode() == 400) {
                             //Somehow this file is broken. No idea why. Let's skip it for now
-                            try_again = true
                             return false
                         } else {
                             throw e
@@ -424,17 +417,17 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
                     }
 
                     offset += response!!.getBytes().getData().size
-                    logger.trace("response: {} total size: {}", response!!.getBytes().getData().size, offset)
+                    logger.trace("response: {} total size: {}", response.getBytes().getData().size, offset)
 
-                    fos!!.write(response!!.getBytes().getData())
-                    fos!!.flush()
+                    fos.write(response.getBytes().getData())
+                    fos.flush()
                     try {
                         TimeUnit.MILLISECONDS.sleep(Config.DELAY_AFTER_GET_FILE)
                     } catch (e: InterruptedException) {
                     }
 
                 } while (offset < size && (response!!.getBytes().getData().size > 0 || try_again))
-                fos!!.close()
+                fos.close()
                 if (offset < size) {
                     System.out.println("Requested file $target with $size bytes, but got only $offset bytes.")
                     File(temp_filename).delete()
@@ -466,12 +459,12 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
                 last_download_succeeded = true
                 return true
             } catch (ex: java.io.IOException) {
-                if (fos != null) fos!!.close()
+                if (fos != null) fos.close()
                 System.out.println("IOException happened while downloading " + target)
                 throw ex
             } catch (ex: RpcErrorException) {
-                if (fos != null) fos!!.close()
-                if (ex.getCode() === 500) {
+                if (fos != null) fos.close()
+                if (ex.getCode() == 500) {
                     if (!last_download_succeeded) {
                         System.out.println("Got an Internal Server Error from Telegram. Since the file downloaded before also happened to get this error, we will stop downloading now. Please try again later.")
                         throw ex

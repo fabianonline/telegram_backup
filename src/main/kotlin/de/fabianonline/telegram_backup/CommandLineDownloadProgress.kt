@@ -54,15 +54,15 @@ internal class CommandLineDownloadProgress : DownloadProgressInterface {
         println("" + count + " Files to check / download")
     }
 
-    override fun onMediaDownloaded(fm: AbstractMediaFileManager) {
-        show(fm.letter.toUpperCase())
+    override fun onMediaDownloaded(file_manager: AbstractMediaFileManager) {
+        show(file_manager.letter.toUpperCase())
     }
 
     override fun onMediaDownloadedEmpty() {
         show("e")
     }
 
-    override fun onMediaAlreadyPresent(fm: AbstractMediaFileManager) {
+    override fun onMediaAlreadyPresent(file_manager: AbstractMediaFileManager) {
         show(".")
     }
 

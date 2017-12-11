@@ -24,9 +24,9 @@ interface DownloadProgressInterface {
     fun onMessageDownloadFinished()
 
     fun onMediaDownloadStart(count: Int)
-    fun onMediaDownloaded(a: AbstractMediaFileManager)
+    fun onMediaDownloaded(file_manager: AbstractMediaFileManager)
     fun onMediaDownloadedEmpty()
     fun onMediaSkipped()
-    fun onMediaAlreadyPresent(a: AbstractMediaFileManager)
+    fun onMediaAlreadyPresent(file_manager: AbstractMediaFileManager)
     fun onMediaDownloadFinished()
 }

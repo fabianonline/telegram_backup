@@ -28,9 +28,9 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 object Utils {
-    val VERSIONS_EQUAL = 0
-    val VERSION_1_NEWER = 1
-    val VERSION_2_NEWER = 2
+    @JvmField public val VERSIONS_EQUAL = 0
+    @JvmField public val VERSION_1_NEWER = 1
+    @JvmField public val VERSION_2_NEWER = 2
 
     private val logger = LoggerFactory.getLogger(Utils::class.java) as Logger
 
@@ -39,7 +39,7 @@ object Utils {
             val folder = File(Config.FILE_BASE)
             val files = folder.listFiles()
             if (files != null)
-                for (f in files!!) {
+                for (f in files) {
                     if (f.isDirectory() && f.getName().startsWith("+")) {
                         accounts.add(f.getName())
                     }
@@ -60,19 +60,19 @@ object Utils {
                     for (e in root)
                         if (e.isJsonObject()) {
                             val version = e.getAsJsonObject()
-                            if (version.getAsJsonPrimitive("prerelease").getAsBoolean() === false) {
+                            if (version.getAsJsonPrimitive("prerelease").getAsBoolean() == false) {
                                 newest_version = version
                                 break
                             }
                         }
                     if (newest_version == null) return null
-                    val new_v = newest_version!!.getAsJsonPrimitive("tag_name").getAsString()
+                    val new_v = newest_version.getAsJsonPrimitive("tag_name").getAsString()
                     logger.debug("Found current release version {}", new_v)
                     val cur_v = Config.APP_APPVER
 
                     val result = compareVersions(cur_v, new_v)
 
-                    return Version(new_v, newest_version!!.getAsJsonPrimitive("html_url").getAsString(), newest_version!!.getAsJsonPrimitive("body").getAsString(), result == VERSION_2_NEWER)
+                    return Version(new_v, newest_version.getAsJsonPrimitive("html_url").getAsString(), newest_version.getAsJsonPrimitive("body").getAsString(), result == VERSION_2_NEWER)
                 }
                 return null
             } catch (e: Exception) {
@@ -83,14 +83,14 @@ object Utils {
 
     @Throws(RpcErrorException::class)
     @JvmOverloads internal fun obeyFloodWaitException(e: RpcErrorException?, silent: Boolean = false) {
-        if (e == null || e!!.getCode() !== 420) return
+        if (e == null || e.getCode() != 420) return
 
-        val delay: Long = e!!.getTagInteger()!! as Long
+        val delay: Long = e.getTagInteger()!!.toLong()
         if (!silent) {
             System.out.println("")
             System.out.println(
                     "Telegram complained about us (okay, me) making too many requests in too short time by\n" +
-                            "sending us \"" + e!!.getTag() + "\" as an error. So we now have to wait a bit. Telegram\n" +
+                            "sending us \"" + e.getTag() + "\" as an error. So we now have to wait a bit. Telegram\n" +
                             "asked us to wait for " + delay + " seconds.\n" +
                             "\n" +
                             "So I'm going to do just that for now. If you don't want to wait, you can quit by pressing\n" +
@@ -106,6 +106,7 @@ object Utils {
 
     }
 
+    @JvmStatic
     fun compareVersions(v1: String, v2: String): Int {
         logger.debug("Comparing versions {} and {}.", v1, v2)
         if (v1.equals(v2)) return VERSIONS_EQUAL

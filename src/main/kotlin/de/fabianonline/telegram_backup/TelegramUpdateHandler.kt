@@ -37,64 +37,65 @@ internal class TelegramUpdateHandler : UpdateCallback {
         this.db = Database.getInstance()
     }
 
-    override fun onUpdates(c: TelegramClient, u: TLUpdates) {
+    override fun onUpdates(client: TelegramClient, updates: TLUpdates) {
         if (db == null) return
-        if (debug) System.out.println("onUpdates - " + u.getUpdates().size + " Updates, " + u.getUsers().size + " Users, " + u.getChats().size + " Chats")
-        for (update in u.getUpdates()) {
-            processUpdate(update, c)
+        if (debug) System.out.println("onUpdates - " + updates.getUpdates().size + " Updates, " + updates.getUsers().size + " Users, " + updates.getChats().size + " Chats")
+        for (update in updates.getUpdates()) {
+            processUpdate(update, client)
             if (debug) System.out.println("  " + update.javaClass.getName())
         }
-        db!!.saveUsers(u.getUsers())
-        db!!.saveChats(u.getChats())
+        db!!.saveUsers(updates.getUsers())
+        db!!.saveChats(updates.getChats())
     }
 
-    override fun onUpdatesCombined(c: TelegramClient, u: TLUpdatesCombined) {
+    override fun onUpdatesCombined(client: TelegramClient, updates: TLUpdatesCombined) {
         if (db == null) return
         if (debug) System.out.println("onUpdatesCombined")
-        for (update in u.getUpdates()) {
-            processUpdate(update, c)
+        for (update in updates.getUpdates()) {
+            processUpdate(update, client)
         }
-        db!!.saveUsers(u.getUsers())
-        db!!.saveChats(u.getChats())
+        db!!.saveUsers(updates.getUsers())
+        db!!.saveChats(updates.getChats())
     }
 
-    override fun onUpdateShort(c: TelegramClient, u: TLUpdateShort) {
+    override fun onUpdateShort(client: TelegramClient, update: TLUpdateShort) {
         if (db == null) return
         if (debug) System.out.println("onUpdateShort")
-        processUpdate(u.getUpdate(), c)
-        if (debug) System.out.println("  " + u.getUpdate().javaClass.getName())
+        processUpdate(update.getUpdate(), client)
+        if (debug) System.out.println("  " + update.getUpdate().javaClass.getName())
     }
 
-    override fun onShortChatMessage(c: TelegramClient, m: TLUpdateShortChatMessage) {
+    override fun onShortChatMessage(client: TelegramClient, message: TLUpdateShortChatMessage) {
         if (db == null) return
-        if (debug) System.out.println("onShortChatMessage - " + m.getMessage())
+        if (debug) System.out.println("onShortChatMessage - " + message.getMessage())
         val msg = TLMessage(
-                m.getOut(),
-                m.getMentioned(),
-                m.getMediaUnread(),
-                m.getSilent(),
+                message.getOut(),
+                message.getMentioned(),
+                message.getMediaUnread(),
+                message.getSilent(),
                 false,
-                m.getId(),
-                m.getFromId(),
-                TLPeerChat(m.getChatId()),
-                m.getFwdFrom(),
-                m.getViaBotId(),
-                m.getReplyToMsgId(),
-                m.getDate(),
-                m.getMessage(), null, null,
-                m.getEntities(), null, null)
+                message.getId(),
+                message.getFromId(),
+                TLPeerChat(message.getChatId()),
+                message.getFwdFrom(),
+                message.getViaBotId(),
+                message.getReplyToMsgId(),
+                message.getDate(),
+                message.getMessage(), null, null,
+                message.getEntities(), null, null)
         val vector = TLVector<TLAbsMessage>(TLAbsMessage::class.java)
         vector.add(msg)
         db!!.saveMessages(vector, Kotlogram.API_LAYER)
         System.out.print('.')
     }
 
-    override fun onShortMessage(c: TelegramClient, m: TLUpdateShortMessage) {
+    override fun onShortMessage(client: TelegramClient, message: TLUpdateShortMessage) {
+    	val m = message
         if (db == null) return
         if (debug) System.out.println("onShortMessage - " + m.getOut() + " - " + m.getUserId() + " - " + m.getMessage())
         val from_id: Int
         val to_id: Int
-        if (m.getOut() === true) {
+        if (m.getOut() == true) {
             from_id = user!!.user!!.getId()
             to_id = m.getUserId()
         } else {
@@ -122,28 +123,28 @@ internal class TelegramUpdateHandler : UpdateCallback {
         System.out.print('.')
     }
 
-    override fun onShortSentMessage(c: TelegramClient, m: TLUpdateShortSentMessage) {
+    override fun onShortSentMessage(client: TelegramClient, message: TLUpdateShortSentMessage) {
         if (db == null) return
         System.out.println("onShortSentMessage")
     }
 
-    override fun onUpdateTooLong(c: TelegramClient) {
+    override fun onUpdateTooLong(client: TelegramClient) {
         if (db == null) return
         System.out.println("onUpdateTooLong")
     }
 
     private fun processUpdate(update: TLAbsUpdate, client: TelegramClient) {
         if (update is TLUpdateNewMessage) {
-            val abs_msg = (update as TLUpdateNewMessage).getMessage()
+            val abs_msg = update.getMessage()
             val vector = TLVector<TLAbsMessage>(TLAbsMessage::class.java)
             vector.add(abs_msg)
             db!!.saveMessages(vector, Kotlogram.API_LAYER)
             System.out.print('.')
             if (abs_msg is TLMessage) {
-                val fm = FileManagerFactory.getFileManager(abs_msg as TLMessage, user!!, client)
-                if (fm != null && !fm!!.isEmpty && !fm!!.downloaded) {
+                val fm = FileManagerFactory.getFileManager(abs_msg, user!!, client)
+                if (fm != null && !fm.isEmpty && !fm.downloaded) {
                     try {
-                        fm!!.download()
+                        fm.download()
                     } catch (e: Exception) {
                         System.out.println("We got an exception while downloading media, but we're going to ignore it.")
                         System.out.println("Here it is anyway:")

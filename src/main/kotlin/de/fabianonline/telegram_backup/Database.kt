@@ -132,8 +132,7 @@ class Database private constructor(var client: TelegramClient) {
                 val rs = stmt!!.executeQuery("SELECT COUNT(id), api_layer FROM messages GROUP BY api_layer ORDER BY api_layer")
                 while (rs.next()) {
                     var layer = rs.getInt(2)
-                    if (layer == null) layer = 0
-                    map.put("count.messages.api_layer." + layer!!, rs.getInt(1))
+                    map.put("count.messages.api_layer.$layer", rs.getInt(1))
                 }
                 rs.close()
                 return map
@@ -286,15 +285,15 @@ class Database private constructor(var client: TelegramClient) {
 
             for (abs in all) {
                 if (abs is TLMessage) {
-                    val msg = abs as TLMessage
+                    val msg = abs
                     ps.setInt(1, msg.getId())
                     ps.setString(2, "message")
                     val peer = msg.getToId()
                     if (peer is TLPeerChat) {
                         ps.setString(3, "group")
-                        ps.setInt(4, (peer as TLPeerChat).getChatId())
+                        ps.setInt(4, peer.getChatId())
                     } else if (peer is TLPeerUser) {
-                        var id = (peer as TLPeerUser).getUserId()
+                        var id = peer.getUserId()
                         if (id == this.user_manager.user!!.getId()) {
                             id = msg.getFromId()
                         }
@@ -321,11 +320,12 @@ class Database private constructor(var client: TelegramClient) {
                     }
 
                     var text = msg.getMessage()
-                    if ((text == null || text!!.equals("")) && msg.getMedia() != null) {
-                        if (msg.getMedia() is TLMessageMediaDocument) {
-                            text = (msg.getMedia() as TLMessageMediaDocument).getCaption()
-                        } else if (msg.getMedia() is TLMessageMediaPhoto) {
-                            text = (msg.getMedia() as TLMessageMediaPhoto).getCaption()
+                    if ((text == null || text.equals("")) && msg.getMedia() != null) {
+                    	val media = msg.getMedia()
+                        if (media is TLMessageMediaDocument) {
+                        	text = media.getCaption()
+                        } else if (media is TLMessageMediaPhoto) {
+                            text = media.getCaption()
                         }
                     }
                     ps.setString(7, text)
@@ -419,19 +419,19 @@ class Database private constructor(var client: TelegramClient) {
                     ps_insert_or_ignore.setString(3, "empty_chat")
                     ps_insert_or_ignore.addBatch()
                 } else if (abs is TLChatForbidden) {
-                    ps_insert_or_replace.setString(2, (abs as TLChatForbidden).getTitle())
+                    ps_insert_or_replace.setString(2, abs.getTitle())
                     ps_insert_or_replace.setString(3, "chat")
                     ps_insert_or_replace.addBatch()
                 } else if (abs is TLChannelForbidden) {
-                    ps_insert_or_replace.setString(2, (abs as TLChannelForbidden).getTitle())
+                    ps_insert_or_replace.setString(2, abs.getTitle())
                     ps_insert_or_replace.setString(3, "channel")
                     ps_insert_or_replace.addBatch()
                 } else if (abs is TLChat) {
-                    ps_insert_or_replace.setString(2, (abs as TLChat).getTitle())
+                    ps_insert_or_replace.setString(2, abs.getTitle())
                     ps_insert_or_replace.setString(3, "chat")
                     ps_insert_or_replace.addBatch()
                 } else if (abs is TLChannel) {
-                    ps_insert_or_replace.setString(2, (abs as TLChannel).getTitle())
+                    ps_insert_or_replace.setString(2, abs.getTitle())
                     ps_insert_or_replace.setString(3, "channel")
                     ps_insert_or_replace.addBatch()
                 } else {
@@ -467,7 +467,7 @@ class Database private constructor(var client: TelegramClient) {
                             "(?,  ?,          ?,         ?,        ?,    ?)")
             for (abs in all) {
                 if (abs is TLUser) {
-                    val user = abs as TLUser
+                    val user = abs
                     ps_insert_or_replace.setInt(1, user.getId())
                     ps_insert_or_replace.setString(2, user.getFirstName())
                     ps_insert_or_replace.setString(3, user.getLastName())
@@ -542,7 +542,7 @@ class Database private constructor(var client: TelegramClient) {
                 } else {
                     count += rs.getInt(2)
                 }
-                map.put("count.messages.media_type." + s!!, rs.getInt(2))
+                map.put("count.messages.media_type.$s", rs.getInt(2))
             }
             map.put("count.messages.media_type.any", count)
             return map
@@ -567,9 +567,9 @@ class Database private constructor(var client: TelegramClient) {
             while (rs.next()) {
                 val u: User
                 if (rs.getString(2) != null || rs.getString(3) != null || rs.getString(4) != null) {
-                    u = User(rs.getInt(1), rs.getString(2), rs.getString(3), rs.getString(4))
+                    u = User(rs.getInt(1), rs.getString(2), rs.getString(3))
                 } else {
-                    u = User(rs.getInt(1), "Unknown", "", "")
+                    u = User(rs.getInt(1), "Unknown", "")
                 }
                 if (u.isMe) {
                     map.put("authors.count.me", rs.getInt(5))
@@ -595,7 +595,7 @@ class Database private constructor(var client: TelegramClient) {
                     "COUNT(id) FROM messages WHERE " + c.query + " GROUP BY hour, day " +
                     "ORDER BY hour, day")
             while (rs.next()) {
-                result[if (rs.getInt(1) === 0) 6 else rs.getInt(1) - 1][rs.getInt(2)] = rs.getInt(3)
+                result[if (rs.getInt(1) == 0) 6 else rs.getInt(1) - 1][rs.getInt(2)] = rs.getInt(3)
             }
             return result
         } catch (e: Exception) {
@@ -638,10 +638,10 @@ class Database private constructor(var client: TelegramClient) {
                 if (rs.getString("media_type") != null) {
                     h.put("media_" + rs.getString("media_type"), true)
                 }
-                h.put("from_me", rs.getInt("user_id") === user_manager.user!!.getId())
+                h.put("from_me", rs.getInt("user_id") == user_manager.user!!.getId())
                 h.put("is_new_date", !date.equals(old_date))
                 h.put("odd_even", if (count % 2 == 0) "even" else "odd")
-                h.put("same_user", old_user != null && rs.getInt("user_id") === old_user)
+                h.put("same_user", old_user != 0 && rs.getInt("user_id") == old_user)
                 old_user = rs.getInt("user_id")
                 old_date = date
 
@@ -674,7 +674,7 @@ class Database private constructor(var client: TelegramClient) {
             get() = "source_type IN('group', 'supergroup', 'channel') AND source_id=" + id
     }
 
-    inner class User(id: Int, first_name: String?, last_name: String?, username: String) {
+    inner class User(id: Int, first_name: String?, last_name: String?) {
         var name: String
         var isMe: Boolean = false
 

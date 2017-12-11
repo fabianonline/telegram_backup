@@ -48,7 +48,6 @@ open class DocumentFileManager(msg: TLMessage, user: UserManager, client: Telegr
 
     open val isSticker: Boolean
         get() {
-            var sticker: TLDocumentAttributeSticker? = null
             if (this.isEmpty || doc == null) return false
             return doc!!.getAttributes()?.filter{it is TLDocumentAttributeSticker}?.isNotEmpty() ?: false
         }
@@ -63,7 +62,7 @@ open class DocumentFileManager(msg: TLMessage, user: UserManager, client: Telegr
     init {
         val d = (msg.getMedia() as TLMessageMediaDocument).getDocument()
         if (d is TLDocument) {
-            this.doc = d as TLDocument
+            this.doc = d
         } else if (d is TLDocumentEmpty) {
             this.isEmpty = true
         } else {
@@ -73,14 +72,13 @@ open class DocumentFileManager(msg: TLMessage, user: UserManager, client: Telegr
     }
 
     private fun processExtension(): String {
-        if (extension != null) return extension
         if (doc == null) return "empty"
         var ext: String? = null
         var original_filename: String? = null
         if (doc!!.getAttributes() != null)
             for (attr in doc!!.getAttributes()) {
                 if (attr is TLDocumentAttributeFilename) {
-                    original_filename = (attr as TLDocumentAttributeFilename).getFileName()
+                    original_filename = attr.getFileName()
                 }
             }
         if (original_filename != null) {
@@ -93,7 +91,7 @@ open class DocumentFileManager(msg: TLMessage, user: UserManager, client: Telegr
         }
 
         // Sometimes, extensions contain a trailing double quote. Remove this. Fixes #12.
-        ext = ext!!.replace("\"", "")
+        ext = ext.replace("\"", "")
 
         return ext
     }
@@ -101,7 +99,7 @@ open class DocumentFileManager(msg: TLMessage, user: UserManager, client: Telegr
     @Throws(RpcErrorException::class, IOException::class, TimeoutException::class)
     override fun download() {
         if (doc != null) {
-            DownloadManager.downloadFile(client, targetPathAndFilename, size, doc!!.getDcId(), doc!!.getId(), doc!!.getAccessHash())
+            DownloadManager.downloadFile(targetPathAndFilename, size, doc!!.getDcId(), doc!!.getId(), doc!!.getAccessHash())
         }
     }
 }

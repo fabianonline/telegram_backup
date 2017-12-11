@@ -74,7 +74,7 @@ private constructor(c: TelegramClient) {
         this.client = c
         logger.debug("Calling getFullUser")
         try {
-            val full_user = this.client!!.usersGetFullUser(TLInputUserSelf())
+            val full_user = this.client.usersGetFullUser(TLInputUserSelf())
             this.user = full_user.getUser().getAsUser()
         } catch (e: RpcErrorException) {
             // This may happen. Ignoring it.
@@ -86,17 +86,17 @@ private constructor(c: TelegramClient) {
     @Throws(RpcErrorException::class, IOException::class)
     fun sendCodeToPhoneNumber(number: String) {
         this.phone = number
-        this.sent_code = this.client!!.authSendCode(false, number, true)
+        this.sent_code = this.client.authSendCode(false, number, true)
     }
 
     @Throws(RpcErrorException::class, IOException::class)
     fun verifyCode(code: String) {
         this.code = code
         try {
-            this.auth = client!!.authSignIn(phone, this.sent_code!!.getPhoneCodeHash(), this.code)
+            this.auth = client.authSignIn(phone, this.sent_code!!.getPhoneCodeHash(), this.code)
             this.user = auth!!.getUser().getAsUser()
         } catch (e: RpcErrorException) {
-            if (e.getCode() !== 401 || !e.getTag().equals("SESSION_PASSWORD_NEEDED")) throw e
+            if (e.getCode() != 401 || !e.getTag().equals("SESSION_PASSWORD_NEEDED")) throw e
             this.isPasswordNeeded = true
         }
 
@@ -105,8 +105,8 @@ private constructor(c: TelegramClient) {
     @Throws(RpcErrorException::class, IOException::class)
     fun verifyPassword(pw: String) {
         val password = pw.toByteArray(charset=Charsets.UTF_8)
-        val salt = (client!!.accountGetPassword() as TLPassword).getCurrentSalt().getData()
-        var md: MessageDigest? = null
+        val salt = (client.accountGetPassword() as TLPassword).getCurrentSalt().getData()
+        var md: MessageDigest
         try {
             md = MessageDigest.getInstance("SHA-256")
         } catch (e: NoSuchAlgorithmException) {
@@ -118,8 +118,8 @@ private constructor(c: TelegramClient) {
         System.arraycopy(salt, 0, salted, 0, salt.size)
         System.arraycopy(password, 0, salted, salt.size, password.size)
         System.arraycopy(salt, 0, salted, salt.size + password.size, salt.size)
-        val hash = md!!.digest(salted)
-        auth = client!!.authCheckPassword(TLBytes(hash))
+        val hash = md.digest(salted)
+        auth = client.authCheckPassword(TLBytes(hash))
         this.user = auth!!.getUser().getAsUser()
     }
 

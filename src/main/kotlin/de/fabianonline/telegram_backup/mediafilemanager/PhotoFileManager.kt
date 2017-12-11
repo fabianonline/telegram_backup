@@ -55,14 +55,13 @@ class PhotoFileManager(msg: TLMessage, user: UserManager, client: TelegramClient
     init {
         val p = (msg.getMedia() as TLMessageMediaPhoto).getPhoto()
         if (p is TLPhoto) {
-            this.photo = p as TLPhoto
+            this.photo = p
 
             var biggest: TLPhotoSize? = null
-            for (s in photo!!.getSizes())
+            for (s in photo.getSizes())
                 if (s is TLPhotoSize) {
-                    val size = s as TLPhotoSize
-                    if (biggest == null || size.getW() > biggest!!.getW() && size.getH() > biggest!!.getH()) {
-                        biggest = size
+                    if (biggest == null || s.getW() > biggest.getW() && s.getH() > biggest.getH()) {
+                        biggest = s
                     }
                 }
             if (biggest == null) {
@@ -81,6 +80,6 @@ class PhotoFileManager(msg: TLMessage, user: UserManager, client: TelegramClient
     override fun download() {
         if (isEmpty) return
         val loc = photo_size.getLocation() as TLFileLocation
-        DownloadManager.downloadFile(client, targetPathAndFilename, size, loc.getDcId(), loc.getVolumeId(), loc.getLocalId(), loc.getSecret())
+        DownloadManager.downloadFile(targetPathAndFilename, size, loc.getDcId(), loc.getVolumeId(), loc.getLocalId(), loc.getSecret())
     }
 }

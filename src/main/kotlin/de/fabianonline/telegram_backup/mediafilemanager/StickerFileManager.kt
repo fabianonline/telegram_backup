@@ -59,18 +59,19 @@ class StickerFileManager(msg: TLMessage, user: UserManager, client: TelegramClie
             var sticker: TLDocumentAttributeSticker? = null
             for (attr in doc!!.getAttributes()) {
                 if (attr is TLDocumentAttributeSticker) {
-                    sticker = attr as TLDocumentAttributeSticker
+                    sticker = attr
                 }
             }
 
             val file = StringBuilder()
-            if (sticker!!.getStickerset() is TLInputStickerSetShortName) {
-                file.append((sticker!!.getStickerset() as TLInputStickerSetShortName).getShortName())
-            } else if (sticker!!.getStickerset() is TLInputStickerSetID) {
-                file.append((sticker!!.getStickerset() as TLInputStickerSetID).getId())
+            val set = sticker!!.getStickerset()
+            if (set is TLInputStickerSetShortName) {
+                file.append(set.getShortName())
+            } else if (set is TLInputStickerSetID) {
+                file.append(set.getId())
             }
             file.append("_")
-            file.append(sticker!!.getAlt().hashCode())
+            file.append(sticker.getAlt().hashCode())
             return file.toString()
         }
 

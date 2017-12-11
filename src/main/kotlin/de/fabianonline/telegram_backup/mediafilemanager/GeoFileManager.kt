@@ -50,7 +50,7 @@ class GeoFileManager(msg: TLMessage, user: UserManager, client: TelegramClient) 
     override val size: Int
         get() {
             val f = File(targetPathAndFilename)
-            return if (f.isFile()) (f.length() as Int) else 100000
+            return if (f.isFile()) f.length().toInt() else 100000
         }
 
     override val extension: String
@@ -63,7 +63,7 @@ class GeoFileManager(msg: TLMessage, user: UserManager, client: TelegramClient) 
     init {
         val g = (msg.getMedia() as TLMessageMediaGeo).getGeo()
         if (g is TLGeoPoint) {
-            this.geo = g as TLGeoPoint
+            this.geo = g
         } else if (g is TLGeoPointEmpty) {
             this.isEmpty = true
         } else {

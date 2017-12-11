@@ -43,7 +43,7 @@ class DatabaseUpdates(protected var conn: Connection, protected var db: Database
             logger.debug("Checking if table database_versions exists")
             rs = stmt.executeQuery("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='database_versions'")
             rs.next()
-            if (rs.getInt(1) === 0) {
+            if (rs.getInt(1) == 0) {
                 logger.debug("Table does not exist")
                 version = 0
             } else {
@@ -286,10 +286,10 @@ internal class DB_Update_6(conn: Connection, db: Database) : DatabaseUpdate(conn
         while (rs.next()) {
             ps.setInt(5, rs.getInt(1))
             val msg = Database.bytesToTLMessage(rs.getBytes(2))
-            if (msg == null || msg!!.getFwdFrom() == null) {
+            if (msg == null || msg.getFwdFrom() == null) {
                 ps.setNull(1, Types.INTEGER)
             } else {
-                ps.setInt(1, msg!!.getFwdFrom().getFromId())
+                ps.setInt(1, msg.getFwdFrom().getFromId())
             }
             val f = FileManagerFactory.getFileManager(msg, db.user_manager, db.client)
             if (f == null) {
