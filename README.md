@@ -61,6 +61,11 @@ link](https://www.amazon.de/ref=as_li_ss_tl?ie=UTF8&linkCode=ll2&tag=telegrambac
 pay any more, but I will get a few percent of your purchase's worth from
 amazon.
 
+## Contact
+If you have questions or comments or need help, you can join the
+[telegram_backup Development group](https://t.me/joinchat/CXFirQenTSeGWhxnikd8tg)
+at Telegram.
+
 ## Frequently asked questions
 ### Why do I see error messages?
 The library I'm using to access Telegram has some small bugs. One of those
