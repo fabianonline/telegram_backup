@@ -27,67 +27,67 @@ import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.ConsoleAppender
 import ch.qos.logback.classic.Level
 
-    fun main(args: Array<String>) {
-        CommandLineOptions.parseOptions(args)
+fun main(args: Array<String>) {
+	CommandLineOptions.parseOptions(args)
 
-        CommandLineRunner.setupLogging()
-        CommandLineRunner.checkVersion()
+	CommandLineRunner.setupLogging()
+	CommandLineRunner.checkVersion()
 
 
 
-        if (true || CommandLineOptions.cmd_console) {
-            // Always use the console for now.
-            CommandLineController()
-        } else {
-            GUIController()
-        }
-    }
+	if (true || CommandLineOptions.cmd_console) {
+		// Always use the console for now.
+		CommandLineController()
+	} else {
+		GUIController()
+	}
+}
 
 object CommandLineRunner {
-    fun setupLogging() {
-        val logger = LoggerFactory.getLogger(CommandLineRunner::class.java) as Logger
-        logger.trace("Setting up Loggers...")
-        val rootLogger = LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME) as Logger
-        val rootContext = rootLogger.getLoggerContext()
-        rootContext.reset()
+	fun setupLogging() {
+		val logger = LoggerFactory.getLogger(CommandLineRunner::class.java) as Logger
+		logger.trace("Setting up Loggers...")
+		val rootLogger = LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME) as Logger
+		val rootContext = rootLogger.getLoggerContext()
+		rootContext.reset()
 
-        val encoder = PatternLayoutEncoder()
-        encoder.setContext(rootContext)
-        encoder.setPattern("%d{HH:mm:ss.SSS} %-5level %-35.-35(%logger{0}.%method): %message%n")
-        encoder.start()
+		val encoder = PatternLayoutEncoder()
+		encoder.setContext(rootContext)
+		encoder.setPattern("%d{HH:mm:ss.SSS} %-5level %-35.-35(%logger{0}.%method): %message%n")
+		encoder.start()
 
-        val appender = ConsoleAppender<ILoggingEvent>()
-        appender.setContext(rootContext)
-        appender.setEncoder(encoder)
-        appender.start()
+		val appender = ConsoleAppender<ILoggingEvent>()
+		appender.setContext(rootContext)
+		appender.setEncoder(encoder)
+		appender.start()
 
-        rootLogger.addAppender(appender)
-        rootLogger.setLevel(Level.OFF)
+		rootLogger.addAppender(appender)
+		rootLogger.setLevel(Level.OFF)
 
-        if (CommandLineOptions.cmd_trace) {
-            (LoggerFactory.getLogger("de.fabianonline.telegram_backup") as Logger).setLevel(Level.TRACE)
-        } else if (CommandLineOptions.cmd_debug) {
-            (LoggerFactory.getLogger("de.fabianonline.telegram_backup") as Logger).setLevel(Level.DEBUG)
-        }
+		if (CommandLineOptions.cmd_trace) {
+			(LoggerFactory.getLogger("de.fabianonline.telegram_backup") as Logger).setLevel(Level.TRACE)
+		} else if (CommandLineOptions.cmd_debug) {
+			(LoggerFactory.getLogger("de.fabianonline.telegram_backup") as Logger).setLevel(Level.DEBUG)
+		}
 
-        if (CommandLineOptions.cmd_trace_telegram) {
-            (LoggerFactory.getLogger("com.github.badoualy") as Logger).setLevel(Level.TRACE)
-        }
-    }
+		if (CommandLineOptions.cmd_trace_telegram) {
+			(LoggerFactory.getLogger("com.github.badoualy") as Logger).setLevel(Level.TRACE)
+		}
+	}
 
-    fun checkVersion(): Boolean {
-        val v = Utils.getNewestVersion()
-        if (v != null && v.isNewer) {
-            System.out.println("A newer version is vailable!")
-            System.out.println("You are using: " + Config.APP_APPVER)
-            System.out.println("Available:     " + v.version)
-            System.out.println("Get it here:   " + v.url)
-            System.out.println()
-            System.out.println("Changes in this version:")
-            System.out.println(v.body)
-            System.out.println()
-            return false
-        }
-        return true
-    }
+	fun checkVersion(): Boolean {
+		val v = Utils.getNewestVersion()
+		if (v != null && v.isNewer) {
+			System.out.println("A newer version is vailable!")
+			System.out.println("You are using: " + Config.APP_APPVER)
+			System.out.println("Available:     " + v.version)
+			System.out.println("Get it here:   " + v.url)
+			System.out.println()
+			System.out.println("Changes in this version:")
+			System.out.println(v.body)
+			System.out.println()
+			return false
+		}
+		return true
+	}
 }

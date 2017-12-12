@@ -21,32 +21,32 @@ import java.lang.StringBuilder
 import java.io.File
 
 object StickerConverter {
-    fun makeFilenameWithPath(attr: TLDocumentAttributeSticker): String {
-        val file = StringBuilder()
-        file.append(makePath())
-        file.append(makeFilename(attr))
-        return file.toString()
-    }
+	fun makeFilenameWithPath(attr: TLDocumentAttributeSticker): String {
+		val file = StringBuilder()
+		file.append(makePath())
+		file.append(makeFilename(attr))
+		return file.toString()
+	}
 
-    fun makeFilename(attr: TLDocumentAttributeSticker): String {
-        val file = StringBuilder()
-        if (attr.getStickerset() is TLInputStickerSetShortName) {
-            file.append((attr.getStickerset() as TLInputStickerSetShortName).getShortName())
-        } else if (attr.getStickerset() is TLInputStickerSetID) {
-            file.append((attr.getStickerset() as TLInputStickerSetID).getId())
-        }
-        file.append("_")
-        file.append(attr.getAlt().hashCode())
-        file.append(".webp")
-        return file.toString()
-    }
+	fun makeFilename(attr: TLDocumentAttributeSticker): String {
+		val file = StringBuilder()
+		if (attr.getStickerset() is TLInputStickerSetShortName) {
+			file.append((attr.getStickerset() as TLInputStickerSetShortName).getShortName())
+		} else if (attr.getStickerset() is TLInputStickerSetID) {
+			file.append((attr.getStickerset() as TLInputStickerSetID).getId())
+		}
+		file.append("_")
+		file.append(attr.getAlt().hashCode())
+		file.append(".webp")
+		return file.toString()
+	}
 
-    fun makePath(): String {
-        val path = Config.FILE_BASE +
-                File.separatorChar +
-                Config.FILE_STICKER_BASE +
-                File.separatorChar
-        File(path).mkdirs()
-        return path
-    }
+	fun makePath(): String {
+		val path = Config.FILE_BASE +
+			File.separatorChar +
+			Config.FILE_STICKER_BASE +
+			File.separatorChar
+		File(path).mkdirs()
+		return path
+	}
 }

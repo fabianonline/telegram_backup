@@ -44,25 +44,25 @@ import java.util.concurrent.TimeoutException
 import org.apache.commons.io.FileUtils
 
 abstract class AbstractMediaFileManager(protected var message: TLMessage, protected var user: UserManager, protected var client: TelegramClient) {
-    open var isEmpty = false
-    abstract val size: Int
-    abstract val extension: String
+	open var isEmpty = false
+	abstract val size: Int
+	abstract val extension: String
 
-    open val downloaded: Boolean
-    	get() = File(targetPathAndFilename).isFile()
-    
-    val downloading: Boolean
-    	get() = File("${targetPathAndFilename}.downloading").isFile()
-    
+	open val downloaded: Boolean
+		get() = File(targetPathAndFilename).isFile()
+
+	val downloading: Boolean
+		get() = File("${targetPathAndFilename}.downloading").isFile()
+
 	open val targetPath: String
 		get() {
-	        val path = user.fileBase + Config.FILE_FILES_BASE + File.separatorChar
-    	    File(path).mkdirs()
-    	    return path
+			val path = user.fileBase + Config.FILE_FILES_BASE + File.separatorChar
+			File(path).mkdirs()
+			return path
 		}
-    
-    open val targetFilename: String
-    	get() {
+
+	open val targetFilename: String
+		get() {
 			val message_id = message.getId()
 			var to = message.getToId()
 			if (to is TLPeerChannel) {
@@ -71,30 +71,30 @@ abstract class AbstractMediaFileManager(protected var message: TLMessage, protec
 			} else return "${message_id}.$extension"
 		}
 
-    open val targetPathAndFilename: String
-    	get() = targetPath + targetFilename
+	open val targetPathAndFilename: String
+		get() = targetPath + targetFilename
 
-    abstract val letter: String
-    abstract val name: String
-    abstract val description: String
-    @Throws(RpcErrorException::class, IOException::class, TimeoutException::class)
-    abstract fun download()
+	abstract val letter: String
+	abstract val name: String
+	abstract val description: String
+	@Throws(RpcErrorException::class, IOException::class, TimeoutException::class)
+	abstract fun download()
 
-    protected fun extensionFromMimetype(mime: String): String {
-        when (mime) {
-            "text/plain" -> return "txt"
-        }
+	protected fun extensionFromMimetype(mime: String): String {
+		when (mime) {
+			"text/plain" -> return "txt"
+		}
 
-        val i = mime.lastIndexOf('/')
-        val ext = mime.substring(i + 1).toLowerCase()
+		val i = mime.lastIndexOf('/')
+		val ext = mime.substring(i + 1).toLowerCase()
 
-        return if (ext === "unknown") "dat" else ext
+		return if (ext === "unknown") "dat" else ext
 
-    }
+	}
 
-    companion object {
-    fun throwUnexpectedObjectError(o: Any) {
-        throw RuntimeException("Unexpected " + o.javaClass.getName())
-    }
-    }
+	companion object {
+		fun throwUnexpectedObjectError(o: Any) {
+			throw RuntimeException("Unexpected " + o.javaClass.getName())
+		}
+	}
 }

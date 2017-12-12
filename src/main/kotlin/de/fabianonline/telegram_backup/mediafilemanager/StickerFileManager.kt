@@ -52,62 +52,62 @@ import org.apache.commons.io.FileUtils
 
 class StickerFileManager(msg: TLMessage, user: UserManager, client: TelegramClient) : DocumentFileManager(msg, user, client) {
 
-    override val isSticker = true
+	override val isSticker = true
 
-    private val filenameBase: String
-        get() {
-            var sticker: TLDocumentAttributeSticker? = null
-            for (attr in doc!!.getAttributes()) {
-                if (attr is TLDocumentAttributeSticker) {
-                    sticker = attr
-                }
-            }
+	private val filenameBase: String
+		get() {
+			var sticker: TLDocumentAttributeSticker? = null
+			for (attr in doc!!.getAttributes()) {
+				if (attr is TLDocumentAttributeSticker) {
+					sticker = attr
+				}
+			}
 
-            val file = StringBuilder()
-            val set = sticker!!.getStickerset()
-            if (set is TLInputStickerSetShortName) {
-                file.append(set.getShortName())
-            } else if (set is TLInputStickerSetID) {
-                file.append(set.getId())
-            }
-            file.append("_")
-            file.append(sticker.getAlt().hashCode())
-            return file.toString()
-        }
+			val file = StringBuilder()
+			val set = sticker!!.getStickerset()
+			if (set is TLInputStickerSetShortName) {
+				file.append(set.getShortName())
+			} else if (set is TLInputStickerSetID) {
+				file.append(set.getId())
+			}
+			file.append("_")
+			file.append(sticker.getAlt().hashCode())
+			return file.toString()
+		}
 
-    override val targetFilename: String
-        get() = filenameBase + "." + extension
+	override val targetFilename: String
+		get() = filenameBase + "." + extension
 
-    override val targetPath: String
-        get() {
-            val path = user.fileBase + Config.FILE_FILES_BASE + File.separatorChar + Config.FILE_STICKER_BASE + File.separatorChar
-            File(path).mkdirs()
-            return path
-        }
+	override val targetPath: String
+		get() {
+			val path = user.fileBase + Config.FILE_FILES_BASE + File.separatorChar + Config.FILE_STICKER_BASE + File.separatorChar
+			File(path).mkdirs()
+			return path
+		}
 
-    override var extension = "webp"
+	override var extension = "webp"
 
-    override val letter: String
-        get() = "s"
-    override val name: String
-        get() = "sticker"
-    override val description: String
-        get() = "Sticker"
+	override val letter: String
+		get() = "s"
+	override val name: String
+		get() = "sticker"
+	override val description: String
+		get() = "Sticker"
 
-    @Throws(RpcErrorException::class, IOException::class, TimeoutException::class)
-    override fun download() {
-        val old_file = Config.FILE_BASE + File.separatorChar + Config.FILE_STICKER_BASE + File.separatorChar + targetFilename
+	@Throws(RpcErrorException::class, IOException::class, TimeoutException::class)
+	override fun download() {
+		val old_file = Config.FILE_BASE + File.separatorChar + Config.FILE_STICKER_BASE + File.separatorChar + targetFilename
 
-        logger.trace("Old filename exists: {}", File(old_file).exists())
+		logger.trace("Old filename exists: {}", File(old_file).exists())
 
-        if (File(old_file).exists()) {
-            Files.copy(Paths.get(old_file), Paths.get(targetPathAndFilename), StandardCopyOption.REPLACE_EXISTING)
-            return
-        }
-        super.download()
-    }
+		if (File(old_file).exists()) {
+			Files.copy(Paths.get(old_file), Paths.get(targetPathAndFilename), StandardCopyOption.REPLACE_EXISTING)
+			return
+		}
+		super.download()
+	}
 
-    companion object {
-        private val logger = LoggerFactory.getLogger(StickerFileManager::class.java)
-    }
+	companion object {
+		private val logger = LoggerFactory.getLogger(StickerFileManager::class.java)
+	}
 }

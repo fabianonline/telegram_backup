@@ -36,105 +36,105 @@ import org.slf4j.Logger
 
 class UserManager @Throws(IOException::class)
 private constructor(c: TelegramClient) {
-    var user: TLUser? = null
-    var phone: String? = null
-    private var code: String? = null
-    private val client: TelegramClient
-    private var sent_code: TLSentCode? = null
-    private var auth: TLAuthorization? = null
-    var isPasswordNeeded = false
-        private set
+	var user: TLUser? = null
+	var phone: String? = null
+	private var code: String? = null
+	private val client: TelegramClient
+	private var sent_code: TLSentCode? = null
+	private var auth: TLAuthorization? = null
+	var isPasswordNeeded = false
+		private set
 
-    val loggedIn: Boolean
-        get() = user != null
+	val loggedIn: Boolean
+		get() = user != null
 
-    val userString: String
-        get() {
-            if (this.user == null) return "Not logged in"
-            val sb = StringBuilder()
-            if (this.user!!.getFirstName() != null) {
-                sb.append(this.user!!.getFirstName())
-            }
-            if (this.user!!.getLastName() != null) {
-                sb.append(" ")
-                sb.append(this.user!!.getLastName())
-            }
-            if (this.user!!.getUsername() != null) {
-                sb.append(" (@")
-                sb.append(this.user!!.getUsername())
-                sb.append(")")
-            }
-            return sb.toString()
-        }
+	val userString: String
+		get() {
+			if (this.user == null) return "Not logged in"
+			val sb = StringBuilder()
+			if (this.user!!.getFirstName() != null) {
+				sb.append(this.user!!.getFirstName())
+			}
+			if (this.user!!.getLastName() != null) {
+				sb.append(" ")
+				sb.append(this.user!!.getLastName())
+			}
+			if (this.user!!.getUsername() != null) {
+				sb.append(" (@")
+				sb.append(this.user!!.getUsername())
+				sb.append(")")
+			}
+			return sb.toString()
+		}
 
-    val fileBase: String
-        get() = Config.FILE_BASE + File.separatorChar + "+" + this.user!!.getPhone() + File.separatorChar
+	val fileBase: String
+		get() = Config.FILE_BASE + File.separatorChar + "+" + this.user!!.getPhone() + File.separatorChar
 
-    init {
-        this.client = c
-        logger.debug("Calling getFullUser")
-        try {
-            val full_user = this.client.usersGetFullUser(TLInputUserSelf())
-            this.user = full_user.getUser().getAsUser()
-        } catch (e: RpcErrorException) {
-            // This may happen. Ignoring it.
-            logger.debug("Ignoring exception:", e)
-        }
+	init {
+		this.client = c
+		logger.debug("Calling getFullUser")
+		try {
+			val full_user = this.client.usersGetFullUser(TLInputUserSelf())
+			this.user = full_user.getUser().getAsUser()
+		} catch (e: RpcErrorException) {
+			// This may happen. Ignoring it.
+			logger.debug("Ignoring exception:", e)
+		}
 
-    }
+	}
 
-    @Throws(RpcErrorException::class, IOException::class)
-    fun sendCodeToPhoneNumber(number: String) {
-        this.phone = number
-        this.sent_code = this.client.authSendCode(false, number, true)
-    }
+	@Throws(RpcErrorException::class, IOException::class)
+	fun sendCodeToPhoneNumber(number: String) {
+		this.phone = number
+		this.sent_code = this.client.authSendCode(false, number, true)
+	}
 
-    @Throws(RpcErrorException::class, IOException::class)
-    fun verifyCode(code: String) {
-        this.code = code
-        try {
-            this.auth = client.authSignIn(phone, this.sent_code!!.getPhoneCodeHash(), this.code)
-            this.user = auth!!.getUser().getAsUser()
-        } catch (e: RpcErrorException) {
-            if (e.getCode() != 401 || !e.getTag().equals("SESSION_PASSWORD_NEEDED")) throw e
-            this.isPasswordNeeded = true
-        }
+	@Throws(RpcErrorException::class, IOException::class)
+	fun verifyCode(code: String) {
+		this.code = code
+		try {
+			this.auth = client.authSignIn(phone, this.sent_code!!.getPhoneCodeHash(), this.code)
+			this.user = auth!!.getUser().getAsUser()
+		} catch (e: RpcErrorException) {
+			if (e.getCode() != 401 || !e.getTag().equals("SESSION_PASSWORD_NEEDED")) throw e
+			this.isPasswordNeeded = true
+		}
 
-    }
+	}
 
-    @Throws(RpcErrorException::class, IOException::class)
-    fun verifyPassword(pw: String) {
-        val password = pw.toByteArray(charset=Charsets.UTF_8)
-        val salt = (client.accountGetPassword() as TLPassword).getCurrentSalt().getData()
-        var md: MessageDigest
-        try {
-            md = MessageDigest.getInstance("SHA-256")
-        } catch (e: NoSuchAlgorithmException) {
-            e.printStackTrace()
-            return
-        }
+	@Throws(RpcErrorException::class, IOException::class)
+	fun verifyPassword(pw: String) {
+		val password = pw.toByteArray(charset = Charsets.UTF_8)
+		val salt = (client.accountGetPassword() as TLPassword).getCurrentSalt().getData()
+		var md: MessageDigest
+		try {
+			md = MessageDigest.getInstance("SHA-256")
+		} catch (e: NoSuchAlgorithmException) {
+			e.printStackTrace()
+			return
+		}
 
-        val salted = ByteArray(2 * salt.size + password.size)
-        System.arraycopy(salt, 0, salted, 0, salt.size)
-        System.arraycopy(password, 0, salted, salt.size, password.size)
-        System.arraycopy(salt, 0, salted, salt.size + password.size, salt.size)
-        val hash = md.digest(salted)
-        auth = client.authCheckPassword(TLBytes(hash))
-        this.user = auth!!.getUser().getAsUser()
-    }
+		val salted = ByteArray(2 * salt.size + password.size)
+		System.arraycopy(salt, 0, salted, 0, salt.size)
+		System.arraycopy(password, 0, salted, salt.size, password.size)
+		System.arraycopy(salt, 0, salted, salt.size + password.size, salt.size)
+		val hash = md.digest(salted)
+		auth = client.authCheckPassword(TLBytes(hash))
+		this.user = auth!!.getUser().getAsUser()
+	}
 
-    companion object {
-        private val logger = LoggerFactory.getLogger(UserManager::class.java)
-        internal var instance: UserManager? = null
+	companion object {
+		private val logger = LoggerFactory.getLogger(UserManager::class.java)
+		internal var instance: UserManager? = null
 
-        @Throws(IOException::class)
-        fun init(c: TelegramClient) {
-            instance = UserManager(c)
-        }
+		@Throws(IOException::class)
+		fun init(c: TelegramClient) {
+			instance = UserManager(c)
+		}
 
-        fun getInstance(): UserManager {
-            if (instance == null) throw RuntimeException("UserManager is not yet initialized.")
-            return instance!!
-        }
-    }
+		fun getInstance(): UserManager {
+			if (instance == null) throw RuntimeException("UserManager is not yet initialized.")
+			return instance!!
+		}
+	}
 }

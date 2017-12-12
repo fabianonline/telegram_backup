@@ -42,32 +42,32 @@ import java.util.concurrent.TimeoutException
 import org.apache.commons.io.FileUtils
 
 object FileManagerFactory {
-    fun getFileManager(m: TLMessage?, u: UserManager, c: TelegramClient): AbstractMediaFileManager? {
-        if (m == null) return null
-        val media = m.getMedia() ?: return null
+	fun getFileManager(m: TLMessage?, u: UserManager, c: TelegramClient): AbstractMediaFileManager? {
+		if (m == null) return null
+		val media = m.getMedia() ?: return null
 
-        if (media is TLMessageMediaPhoto) {
-            return PhotoFileManager(m, u, c)
-        } else if (media is TLMessageMediaDocument) {
-            val d = DocumentFileManager(m, u, c)
-            return if (d.isSticker) {
-                StickerFileManager(m, u, c)
-            } else d
-        } else if (media is TLMessageMediaGeo) {
-            return GeoFileManager(m, u, c)
-        } else if (media is TLMessageMediaEmpty) {
-            return UnsupportedFileManager(m, u, c, "empty")
-        } else if (media is TLMessageMediaUnsupported) {
-            return UnsupportedFileManager(m, u, c, "unsupported")
-        } else if (media is TLMessageMediaWebPage) {
-            return UnsupportedFileManager(m, u, c, "webpage")
-        } else if (media is TLMessageMediaContact) {
-            return UnsupportedFileManager(m, u, c, "contact")
-        } else if (media is TLMessageMediaVenue) {
-            return UnsupportedFileManager(m, u, c, "venue")
-        } else {
-            AbstractMediaFileManager.throwUnexpectedObjectError(media)
-        }
-        return null
-    }
+		if (media is TLMessageMediaPhoto) {
+			return PhotoFileManager(m, u, c)
+		} else if (media is TLMessageMediaDocument) {
+			val d = DocumentFileManager(m, u, c)
+			return if (d.isSticker) {
+				StickerFileManager(m, u, c)
+			} else d
+		} else if (media is TLMessageMediaGeo) {
+			return GeoFileManager(m, u, c)
+		} else if (media is TLMessageMediaEmpty) {
+			return UnsupportedFileManager(m, u, c, "empty")
+		} else if (media is TLMessageMediaUnsupported) {
+			return UnsupportedFileManager(m, u, c, "unsupported")
+		} else if (media is TLMessageMediaWebPage) {
+			return UnsupportedFileManager(m, u, c, "webpage")
+		} else if (media is TLMessageMediaContact) {
+			return UnsupportedFileManager(m, u, c, "contact")
+		} else if (media is TLMessageMediaVenue) {
+			return UnsupportedFileManager(m, u, c, "venue")
+		} else {
+			AbstractMediaFileManager.throwUnexpectedObjectError(media)
+		}
+		return null
+	}
 }

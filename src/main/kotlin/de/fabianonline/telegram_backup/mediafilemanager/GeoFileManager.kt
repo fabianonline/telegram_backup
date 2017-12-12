@@ -44,39 +44,39 @@ import java.util.concurrent.TimeoutException
 import org.apache.commons.io.FileUtils
 
 class GeoFileManager(msg: TLMessage, user: UserManager, client: TelegramClient) : AbstractMediaFileManager(msg, user, client) {
-    protected lateinit var geo: TLGeoPoint
+	protected lateinit var geo: TLGeoPoint
 
-    // We don't know the size, so we just guess.
-    override val size: Int
-        get() {
-            val f = File(targetPathAndFilename)
-            return if (f.isFile()) f.length().toInt() else 100000
-        }
+	// We don't know the size, so we just guess.
+	override val size: Int
+		get() {
+			val f = File(targetPathAndFilename)
+			return if (f.isFile()) f.length().toInt() else 100000
+		}
 
-    override val extension: String
-        get() = "png"
+	override val extension: String
+		get() = "png"
 
-    override val letter = "g"
-    override val name = "geo"
-    override val description = "Geolocation"
+	override val letter = "g"
+	override val name = "geo"
+	override val description = "Geolocation"
 
-    init {
-        val g = (msg.getMedia() as TLMessageMediaGeo).getGeo()
-        if (g is TLGeoPoint) {
-            this.geo = g
-        } else if (g is TLGeoPointEmpty) {
-            this.isEmpty = true
-        } else {
-            throwUnexpectedObjectError(g)
-        }
-    }
+	init {
+		val g = (msg.getMedia() as TLMessageMediaGeo).getGeo()
+		if (g is TLGeoPoint) {
+			this.geo = g
+		} else if (g is TLGeoPointEmpty) {
+			this.isEmpty = true
+		} else {
+			throwUnexpectedObjectError(g)
+		}
+	}
 
-    @Throws(IOException::class)
-    override fun download() {
-        val url = "https://maps.googleapis.com/maps/api/staticmap?" +
-                "center=" + geo.getLat() + "," + geo.getLong() + "&" +
-                "zoom=14&size=300x150&scale=2&format=png&" +
-                "key=" + Config.SECRET_GMAPS
-        DownloadManager.downloadExternalFile(targetPathAndFilename, url)
-    }
+	@Throws(IOException::class)
+	override fun download() {
+		val url = "https://maps.googleapis.com/maps/api/staticmap?" +
+			"center=" + geo.getLat() + "," + geo.getLong() + "&" +
+			"zoom=14&size=300x150&scale=2&format=png&" +
+			"key=" + Config.SECRET_GMAPS
+		DownloadManager.downloadExternalFile(targetPathAndFilename, url)
+	}
 }

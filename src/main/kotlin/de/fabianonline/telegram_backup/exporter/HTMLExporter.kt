@@ -42,145 +42,145 @@ import org.slf4j.LoggerFactory
 
 class HTMLExporter {
 
-    @Throws(IOException::class)
-    fun export() {
-        try {
-            val user = UserManager.getInstance()
-            val db = Database.getInstance()
+	@Throws(IOException::class)
+	fun export() {
+		try {
+			val user = UserManager.getInstance()
+			val db = Database.getInstance()
 
-            // Create base dir
-            logger.debug("Creating base dir")
-            val base = user.fileBase + "files" + File.separatorChar
-            File(base).mkdirs()
-            File(base + "dialogs").mkdirs()
+			// Create base dir
+			logger.debug("Creating base dir")
+			val base = user.fileBase + "files" + File.separatorChar
+			File(base).mkdirs()
+			File(base + "dialogs").mkdirs()
 
-            logger.debug("Fetching dialogs")
-            val dialogs = db.getListOfDialogsForExport()
-            logger.trace("Got {} dialogs", dialogs.size)
-            logger.debug("Fetching chats")
-            val chats = db.getListOfChatsForExport()
-            logger.trace("Got {} chats", chats.size)
+			logger.debug("Fetching dialogs")
+			val dialogs = db.getListOfDialogsForExport()
+			logger.trace("Got {} dialogs", dialogs.size)
+			logger.debug("Fetching chats")
+			val chats = db.getListOfChatsForExport()
+			logger.trace("Got {} chats", chats.size)
 
-            logger.debug("Generating index.html")
-            val scope = HashMap<String, Any>()
-            scope.put("user", user)
-            scope.put("dialogs", dialogs)
-            scope.put("chats", chats)
+			logger.debug("Generating index.html")
+			val scope = HashMap<String, Any>()
+			scope.put("user", user)
+			scope.put("dialogs", dialogs)
+			scope.put("chats", chats)
 
-            // Collect stats data
-            scope.put("count.chats", chats.size)
-            scope.put("count.dialogs", dialogs.size)
+			// Collect stats data
+			scope.put("count.chats", chats.size)
+			scope.put("count.dialogs", dialogs.size)
 
-            var count_messages_chats = 0
-            var count_messages_dialogs = 0
-            for (c in chats) count_messages_chats += c.count ?: 0
-            for (d in dialogs) count_messages_dialogs += d.count ?: 0
+			var count_messages_chats = 0
+			var count_messages_dialogs = 0
+			for (c in chats) count_messages_chats += c.count ?: 0
+			for (d in dialogs) count_messages_dialogs += d.count ?: 0
 
-            scope.put("count.messages", count_messages_chats + count_messages_dialogs)
-            scope.put("count.messages.chats", count_messages_chats)
-            scope.put("count.messages.dialogs", count_messages_dialogs)
+			scope.put("count.messages", count_messages_chats + count_messages_dialogs)
+			scope.put("count.messages.chats", count_messages_chats)
+			scope.put("count.messages.dialogs", count_messages_dialogs)
 
-            scope.put("count.messages.from_me", db.getMessagesFromUserCount())
+			scope.put("count.messages.from_me", db.getMessagesFromUserCount())
 
-            scope.put("heatmap_data", intArrayToString(db.getMessageTimesMatrix()))
+			scope.put("heatmap_data", intArrayToString(db.getMessageTimesMatrix()))
 
-            scope.putAll(db.getMessageAuthorsWithCount())
-            scope.putAll(db.getMessageTypesWithCount())
-            scope.putAll(db.getMessageMediaTypesWithCount())
+			scope.putAll(db.getMessageAuthorsWithCount())
+			scope.putAll(db.getMessageTypesWithCount())
+			scope.putAll(db.getMessageMediaTypesWithCount())
 
-            val mf = DefaultMustacheFactory()
-            var mustache = mf.compile("templates/html/index.mustache")
-            var w = getWriter(base + "index.html")
-            mustache.execute(w, scope)
-            w.close()
+			val mf = DefaultMustacheFactory()
+			var mustache = mf.compile("templates/html/index.mustache")
+			var w = getWriter(base + "index.html")
+			mustache.execute(w, scope)
+			w.close()
 
-            mustache = mf.compile("templates/html/chat.mustache")
+			mustache = mf.compile("templates/html/chat.mustache")
 
-            var i = 0
-            logger.debug("Generating {} dialog pages", dialogs.size)
-            for (d in dialogs) {
-                i++
-                logger.trace("Dialog {}/{}: {}", i, dialogs.size, Utils.anonymize("" + d.id))
-                val messages = db.getMessagesForExport(d)
-                scope.clear()
-                scope.put("user", user)
-                scope.put("dialog", d)
-                scope.put("messages", messages)
+			var i = 0
+			logger.debug("Generating {} dialog pages", dialogs.size)
+			for (d in dialogs) {
+				i++
+				logger.trace("Dialog {}/{}: {}", i, dialogs.size, Utils.anonymize("" + d.id))
+				val messages = db.getMessagesForExport(d)
+				scope.clear()
+				scope.put("user", user)
+				scope.put("dialog", d)
+				scope.put("messages", messages)
 
-                scope.putAll(db.getMessageAuthorsWithCount(d))
-                scope.put("heatmap_data", intArrayToString(db.getMessageTimesMatrix(d)))
-                scope.putAll(db.getMessageTypesWithCount(d))
-                scope.putAll(db.getMessageMediaTypesWithCount(d))
+				scope.putAll(db.getMessageAuthorsWithCount(d))
+				scope.put("heatmap_data", intArrayToString(db.getMessageTimesMatrix(d)))
+				scope.putAll(db.getMessageTypesWithCount(d))
+				scope.putAll(db.getMessageMediaTypesWithCount(d))
 
-                w = getWriter(base + "dialogs" + File.separatorChar + "user_" + d.id + ".html")
-                mustache.execute(w, scope)
-                w.close()
-            }
+				w = getWriter(base + "dialogs" + File.separatorChar + "user_" + d.id + ".html")
+				mustache.execute(w, scope)
+				w.close()
+			}
 
-            i = 0
-            logger.debug("Generating {} chat pages", chats.size)
-            for (c in chats) {
-                i++
-                logger.trace("Chat {}/{}: {}", i, chats.size, Utils.anonymize("" + c.id))
-                val messages = db.getMessagesForExport(c)
-                scope.clear()
-                scope.put("user", user)
-                scope.put("chat", c)
-                scope.put("messages", messages)
+			i = 0
+			logger.debug("Generating {} chat pages", chats.size)
+			for (c in chats) {
+				i++
+				logger.trace("Chat {}/{}: {}", i, chats.size, Utils.anonymize("" + c.id))
+				val messages = db.getMessagesForExport(c)
+				scope.clear()
+				scope.put("user", user)
+				scope.put("chat", c)
+				scope.put("messages", messages)
 
-                scope.putAll(db.getMessageAuthorsWithCount(c))
-                scope.put("heatmap_data", intArrayToString(db.getMessageTimesMatrix(c)))
-                scope.putAll(db.getMessageTypesWithCount(c))
-                scope.putAll(db.getMessageMediaTypesWithCount(c))
+				scope.putAll(db.getMessageAuthorsWithCount(c))
+				scope.put("heatmap_data", intArrayToString(db.getMessageTimesMatrix(c)))
+				scope.putAll(db.getMessageTypesWithCount(c))
+				scope.putAll(db.getMessageMediaTypesWithCount(c))
 
-                w = getWriter(base + "dialogs" + File.separatorChar + "chat_" + c.id + ".html")
-                mustache.execute(w, scope)
-                w.close()
-            }
+				w = getWriter(base + "dialogs" + File.separatorChar + "chat_" + c.id + ".html")
+				mustache.execute(w, scope)
+				w.close()
+			}
 
-            logger.debug("Generating additional files")
-            // Copy CSS
-            val cssFile = javaClass.getResource("/templates/html/style.css")
-            val dest = File(base + "style.css")
-            FileUtils.copyURLToFile(cssFile, dest)
-            logger.debug("Done exporting.")
-        } catch (e: IOException) {
-            e.printStackTrace()
-            logger.error("Caught an exception!", e)
-            throw e
-        }
+			logger.debug("Generating additional files")
+			// Copy CSS
+			val cssFile = javaClass.getResource("/templates/html/style.css")
+			val dest = File(base + "style.css")
+			FileUtils.copyURLToFile(cssFile, dest)
+			logger.debug("Done exporting.")
+		} catch (e: IOException) {
+			e.printStackTrace()
+			logger.error("Caught an exception!", e)
+			throw e
+		}
 
-    }
+	}
 
-    @Throws(FileNotFoundException::class)
-    private fun getWriter(filename: String): OutputStreamWriter {
-        logger.trace("Creating writer for file {}", Utils.anonymize(filename))
-        return OutputStreamWriter(FileOutputStream(filename), Charset.forName("UTF-8").newEncoder())
-    }
+	@Throws(FileNotFoundException::class)
+	private fun getWriter(filename: String): OutputStreamWriter {
+		logger.trace("Creating writer for file {}", Utils.anonymize(filename))
+		return OutputStreamWriter(FileOutputStream(filename), Charset.forName("UTF-8").newEncoder())
+	}
 
-    private fun intArrayToString(data: Array<IntArray>): String {
-        val sb = StringBuilder()
-        sb.append("[")
-        for (x in data.indices) {
-            for (y in 0 until data[x].size) {
-                if (x > 0 || y > 0) sb.append(",")
-                sb.append("[" + x + "," + y + "," + data[x][y] + "]")
-            }
-        }
-        sb.append("]")
-        return sb.toString()
-    }
+	private fun intArrayToString(data: Array<IntArray>): String {
+		val sb = StringBuilder()
+		sb.append("[")
+		for (x in data.indices) {
+			for (y in 0 until data[x].size) {
+				if (x > 0 || y > 0) sb.append(",")
+				sb.append("[" + x + "," + y + "," + data[x][y] + "]")
+			}
+		}
+		sb.append("]")
+		return sb.toString()
+	}
 
-    private fun mapToString(map: Map<String, Int>): String {
-        val sb = StringBuilder("[")
-        for ((key, value) in map) {
-            sb.append("['$key', $value],")
-        }
-        sb.append("]")
-        return sb.toString()
-    }
+	private fun mapToString(map: Map<String, Int>): String {
+		val sb = StringBuilder("[")
+		for ((key, value) in map) {
+			sb.append("['$key', $value],")
+		}
+		sb.append("]")
+		return sb.toString()
+	}
 
-    companion object {
-        private val logger = LoggerFactory.getLogger(HTMLExporter::class.java)
-    }
+	companion object {
+		private val logger = LoggerFactory.getLogger(HTMLExporter::class.java)
+	}
 }

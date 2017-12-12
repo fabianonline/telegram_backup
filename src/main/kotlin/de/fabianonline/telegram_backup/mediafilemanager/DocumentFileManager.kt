@@ -43,63 +43,63 @@ import java.util.concurrent.TimeoutException
 import org.apache.commons.io.FileUtils
 
 open class DocumentFileManager(msg: TLMessage, user: UserManager, client: TelegramClient) : AbstractMediaFileManager(msg, user, client) {
-    protected var doc: TLDocument? = null
-    override lateinit var extension: String
+	protected var doc: TLDocument? = null
+	override lateinit var extension: String
 
-    open val isSticker: Boolean
-        get() {
-            if (this.isEmpty || doc == null) return false
-            return doc!!.getAttributes()?.filter{it is TLDocumentAttributeSticker}?.isNotEmpty() ?: false
-        }
+	open val isSticker: Boolean
+		get() {
+			if (this.isEmpty || doc == null) return false
+			return doc!!.getAttributes()?.filter { it is TLDocumentAttributeSticker }?.isNotEmpty() ?: false
+		}
 
-    override val size: Int
-        get() = if (doc != null) doc!!.getSize() else 0
+	override val size: Int
+		get() = if (doc != null) doc!!.getSize() else 0
 
-    open override val letter: String = "d"
-    open override val name: String = "document"
-    open override val description: String = "Document"
+	open override val letter: String = "d"
+	open override val name: String = "document"
+	open override val description: String = "Document"
 
-    init {
-        val d = (msg.getMedia() as TLMessageMediaDocument).getDocument()
-        if (d is TLDocument) {
-            this.doc = d
-        } else if (d is TLDocumentEmpty) {
-            this.isEmpty = true
-        } else {
-            throwUnexpectedObjectError(d)
-        }
-        extension = processExtension()
-    }
+	init {
+		val d = (msg.getMedia() as TLMessageMediaDocument).getDocument()
+		if (d is TLDocument) {
+			this.doc = d
+		} else if (d is TLDocumentEmpty) {
+			this.isEmpty = true
+		} else {
+			throwUnexpectedObjectError(d)
+		}
+		extension = processExtension()
+	}
 
-    private fun processExtension(): String {
-        if (doc == null) return "empty"
-        var ext: String? = null
-        var original_filename: String? = null
-        if (doc!!.getAttributes() != null)
-            for (attr in doc!!.getAttributes()) {
-                if (attr is TLDocumentAttributeFilename) {
-                    original_filename = attr.getFileName()
-                }
-            }
-        if (original_filename != null) {
-            val i = original_filename.lastIndexOf('.')
-            if (i > 0) ext = original_filename.substring(i + 1)
+	private fun processExtension(): String {
+		if (doc == null) return "empty"
+		var ext: String? = null
+		var original_filename: String? = null
+		if (doc!!.getAttributes() != null)
+			for (attr in doc!!.getAttributes()) {
+				if (attr is TLDocumentAttributeFilename) {
+					original_filename = attr.getFileName()
+				}
+			}
+		if (original_filename != null) {
+			val i = original_filename.lastIndexOf('.')
+			if (i > 0) ext = original_filename.substring(i + 1)
 
-        }
-        if (ext == null) {
-            ext = extensionFromMimetype(doc!!.getMimeType())
-        }
+		}
+		if (ext == null) {
+			ext = extensionFromMimetype(doc!!.getMimeType())
+		}
 
-        // Sometimes, extensions contain a trailing double quote. Remove this. Fixes #12.
-        ext = ext.replace("\"", "")
+		// Sometimes, extensions contain a trailing double quote. Remove this. Fixes #12.
+		ext = ext.replace("\"", "")
 
-        return ext
-    }
+		return ext
+	}
 
-    @Throws(RpcErrorException::class, IOException::class, TimeoutException::class)
-    override fun download() {
-        if (doc != null) {
-            DownloadManager.downloadFile(targetPathAndFilename, size, doc!!.getDcId(), doc!!.getId(), doc!!.getAccessHash())
-        }
-    }
+	@Throws(RpcErrorException::class, IOException::class, TimeoutException::class)
+	override fun download() {
+		if (doc != null) {
+			DownloadManager.downloadFile(targetPathAndFilename, size, doc!!.getDcId(), doc!!.getId(), doc!!.getAccessHash())
+		}
+	}
 }

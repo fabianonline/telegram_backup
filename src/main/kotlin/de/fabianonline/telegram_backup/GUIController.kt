@@ -25,61 +25,61 @@ import java.awt.event.ActionListener
 import java.util.Vector
 
 class GUIController() {
-    init {
-        showAccountChooserDialog()
-    }
-
-    private fun showAccountChooserDialog() {
-        val accountChooser = JDialog()
-        accountChooser.setTitle("Choose account")
-        accountChooser.setSize(400, 200)
-        val vert = JPanel()
-        vert.setLayout(BorderLayout())
-        vert.add(JLabel("Please select the account to use or create a new one."), BorderLayout.NORTH)
-        val accounts = Utils.getAccounts()
-        val list = JList<String>(accounts)
-        list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION)
-        vert.add(list, BorderLayout.CENTER)
-        val bottom = JPanel(GridLayout(1, 2))
-        val btnAddAccount = JButton("Add account")
-        bottom.add(btnAddAccount)
-        val btnLogin = JButton("Login")
-        btnLogin.setEnabled(false)
-        bottom.add(btnLogin)
-        vert.add(bottom, BorderLayout.SOUTH)
-        accountChooser.add(vert)
-        accountChooser.setVisible(true)
-        accountChooser.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE)
+	init {
+		showAccountChooserDialog()
 	}
-	
-    private fun addAccountDialog() {
-        val loginDialog = JDialog()
-        loginDialog.setTitle("Add an account")
-        loginDialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE)
 
-        val sections = JPanel()
-        sections.setLayout(BoxLayout(sections, BoxLayout.Y_AXIS))
+	private fun showAccountChooserDialog() {
+		val accountChooser = JDialog()
+		accountChooser.setTitle("Choose account")
+		accountChooser.setSize(400, 200)
+		val vert = JPanel()
+		vert.setLayout(BorderLayout())
+		vert.add(JLabel("Please select the account to use or create a new one."), BorderLayout.NORTH)
+		val accounts = Utils.getAccounts()
+		val list = JList<String>(accounts)
+		list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION)
+		vert.add(list, BorderLayout.CENTER)
+		val bottom = JPanel(GridLayout(1, 2))
+		val btnAddAccount = JButton("Add account")
+		bottom.add(btnAddAccount)
+		val btnLogin = JButton("Login")
+		btnLogin.setEnabled(false)
+		bottom.add(btnLogin)
+		vert.add(bottom, BorderLayout.SOUTH)
+		accountChooser.add(vert)
+		accountChooser.setVisible(true)
+		accountChooser.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE)
+	}
 
-        val top = JPanel()
-        top.setLayout(BoxLayout(top, BoxLayout.Y_AXIS))
-        top.add(JLabel("Please enter your phone number in international format:"))
-        top.add(JTextField("+49123773212"))
+	private fun addAccountDialog() {
+		val loginDialog = JDialog()
+		loginDialog.setTitle("Add an account")
+		loginDialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE)
 
-        sections.add(top)
-        sections.add(Box.createVerticalStrut(5))
-        sections.add(JSeparator(SwingConstants.HORIZONTAL))
+		val sections = JPanel()
+		sections.setLayout(BoxLayout(sections, BoxLayout.Y_AXIS))
 
-        val middle = JPanel()
-        middle.setLayout(BoxLayout(middle, BoxLayout.Y_AXIS))
-        middle.add(JLabel("Telegram sent you a code. Enter it here:"))
-        middle.add(JTextField())
-        middle.setEnabled(false)
+		val top = JPanel()
+		top.setLayout(BoxLayout(top, BoxLayout.Y_AXIS))
+		top.add(JLabel("Please enter your phone number in international format:"))
+		top.add(JTextField("+49123773212"))
 
-        sections.add(middle)
-        sections.add(Box.createVerticalStrut(5))
-        sections.add(JSeparator(SwingConstants.HORIZONTAL))
+		sections.add(top)
+		sections.add(Box.createVerticalStrut(5))
+		sections.add(JSeparator(SwingConstants.HORIZONTAL))
 
-        loginDialog.add(sections)
-        loginDialog.setVisible(true)
-    }
+		val middle = JPanel()
+		middle.setLayout(BoxLayout(middle, BoxLayout.Y_AXIS))
+		middle.add(JLabel("Telegram sent you a code. Enter it here:"))
+		middle.add(JTextField())
+		middle.setEnabled(false)
+
+		sections.add(middle)
+		sections.add(Box.createVerticalStrut(5))
+		sections.add(JSeparator(SwingConstants.HORIZONTAL))
+
+		loginDialog.add(sections)
+		loginDialog.setVisible(true)
+	}
 }

@@ -43,43 +43,43 @@ import java.util.concurrent.TimeoutException
 import org.apache.commons.io.FileUtils
 
 class PhotoFileManager(msg: TLMessage, user: UserManager, client: TelegramClient) : AbstractMediaFileManager(msg, user, client) {
-    private lateinit var photo: TLPhoto
-    override var size = 0
-    private lateinit var photo_size: TLPhotoSize
+	private lateinit var photo: TLPhoto
+	override var size = 0
+	private lateinit var photo_size: TLPhotoSize
 
-    override val extension = "jpg"
-    override val letter = "p"
-    override val name = "photo"
-    override val description = "Photo"
+	override val extension = "jpg"
+	override val letter = "p"
+	override val name = "photo"
+	override val description = "Photo"
 
-    init {
-        val p = (msg.getMedia() as TLMessageMediaPhoto).getPhoto()
-        if (p is TLPhoto) {
-            this.photo = p
+	init {
+		val p = (msg.getMedia() as TLMessageMediaPhoto).getPhoto()
+		if (p is TLPhoto) {
+			this.photo = p
 
-            var biggest: TLPhotoSize? = null
-            for (s in photo.getSizes())
-                if (s is TLPhotoSize) {
-                    if (biggest == null || s.getW() > biggest.getW() && s.getH() > biggest.getH()) {
-                        biggest = s
-                    }
-                }
-            if (biggest == null) {
-                throw RuntimeException("Could not find a size for a photo.")
-            }
-            this.photo_size = biggest
-            this.size = biggest.getSize()
-        } else if (p is TLPhotoEmpty) {
-            this.isEmpty = true
-        } else {
-            throwUnexpectedObjectError(p)
-        }
-    }
+			var biggest: TLPhotoSize? = null
+			for (s in photo.getSizes())
+				if (s is TLPhotoSize) {
+					if (biggest == null || s.getW() > biggest.getW() && s.getH() > biggest.getH()) {
+						biggest = s
+					}
+				}
+			if (biggest == null) {
+				throw RuntimeException("Could not find a size for a photo.")
+			}
+			this.photo_size = biggest
+			this.size = biggest.getSize()
+		} else if (p is TLPhotoEmpty) {
+			this.isEmpty = true
+		} else {
+			throwUnexpectedObjectError(p)
+		}
+	}
 
-    @Throws(RpcErrorException::class, IOException::class, TimeoutException::class)
-    override fun download() {
-        if (isEmpty) return
-        val loc = photo_size.getLocation() as TLFileLocation
-        DownloadManager.downloadFile(targetPathAndFilename, size, loc.getDcId(), loc.getVolumeId(), loc.getLocalId(), loc.getSecret())
-    }
+	@Throws(RpcErrorException::class, IOException::class, TimeoutException::class)
+	override fun download() {
+		if (isEmpty) return
+		val loc = photo_size.getLocation() as TLFileLocation
+		DownloadManager.downloadFile(targetPathAndFilename, size, loc.getDcId(), loc.getVolumeId(), loc.getLocalId(), loc.getSecret())
+	}
 }
