@@ -1,5 +1,5 @@
 # Telegram_Backup
-Copyright 2016 Fabian Schlenz  
+Copyright 2017 Fabian Schlenz  
 Licensed under GPLv3
 
 ## Description
@@ -66,8 +66,6 @@ amazon.
 The library I'm using to access Telegram has some small bugs. One of those
 is the display of meaningless (because they are being acted accordingly upon)
 error messages. Those include:
-* `Exception in thread "pool-x-thread-y" java.lang.Error:
-java.nio.channels.ClosedChannelException`
 * Something containing `AUTH_ERROR`
 You can just ignore these messages.
 
