@@ -22,6 +22,7 @@ import com.github.badoualy.telegram.api.TelegramClient
 import org.slf4j.LoggerFactory
 import org.slf4j.Logger
 
+import javax.sql.rowset.serial.SerialBlob
 import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.Statement
@@ -31,6 +32,8 @@ import java.sql.ResultSetMetaData
 import java.sql.PreparedStatement
 import java.sql.Types
 import java.sql.Time
+import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.transactions.transaction
 import java.io.File
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -47,10 +50,32 @@ import java.text.SimpleDateFormat
 import de.fabianonline.telegram_backup.mediafilemanager.AbstractMediaFileManager
 import de.fabianonline.telegram_backup.mediafilemanager.FileManagerFactory
 
+object Messages : Table("messages") {
+	val id = integer("id").primaryKey().autoIncrement()
+    val message_id = integer("message_id")
+    val message_type = text("message_type")
+    val source_type = text("source_type")
+    val source_id = integer("source_id")
+    val sender_id = integer("sender_id").nullable()
+    val fwd_from_id = integer("fwd_from_id").nullable()
+    val text = text("text").nullable()
+    val time = integer("time").nullable()
+    val has_media = bool("has_media").nullable()
+    val media_type = text("media_type").nullable()
+    val media_file = text("media_file").nullable()
+    val media_size = integer("media_size").nullable()
+    val media_json = text("media_json").nullable()
+    val markup_json = text("markup_json").nullable()
+    val data = blob("data").nullable()
+    val api_layer = integer("api_layer").nullable()
+    //val unique = uniqueIndex(source_type, source_id, message_id)
+}
+
 class Database private constructor(var client: TelegramClient) {
     private var conn: Connection? = null
     private var stmt: Statement? = null
     var user_manager: UserManager
+    val db_path: String
 
     fun getTopMessageID(): Int {
             try {
@@ -116,7 +141,7 @@ class Database private constructor(var client: TelegramClient) {
                 val rs = stmt!!.executeQuery("SELECT COUNT(*) FROM messages WHERE sender_id=" + user_manager.user!!.getId())
                 rs.next()
                 return rs.getInt(1)
-            } catch (e: SQLException) {
+        } catch (e: SQLException) {
                 throw RuntimeException(e)
             }
 
@@ -206,6 +231,7 @@ class Database private constructor(var client: TelegramClient) {
         }
 
         val path = "jdbc:sqlite:${user_manager.fileBase}${Config.FILE_NAME_DB}"
+        db_path = path
 
         try {
             conn = DriverManager.getConnection(path)
@@ -217,7 +243,7 @@ class Database private constructor(var client: TelegramClient) {
         // Run updates
         val updates = DatabaseUpdates(conn!!, this)
         updates.doUpdates()
-
+        
         System.out.println("Database is ready.")
     }
 
@@ -271,7 +297,7 @@ class Database private constructor(var client: TelegramClient) {
     }
 
     @Synchronized
-    fun saveMessages(all: TLVector<TLAbsMessage>, api_layer: Int) {
+    fun saveMessages(all: TLVector<TLAbsMessage>, my_api_layer: Int) {
         try {
             //"(id, dialog_id, from_id, from_type, text, time, has_media, data, sticker, type) " +
             //"VALUES " +
@@ -279,117 +305,118 @@ class Database private constructor(var client: TelegramClient) {
             val columns = "(message_id, message_type, source_type, source_id, sender_id, fwd_from_id, text, time, has_media, media_type, media_file, media_size, data, api_layer) " +
                     "VALUES " +
                     "(?,          ?,            ?,           ?,         ?,         ?,           ?,    ?,    ?,         ?,          ?,          ?,          ?,    ?)"
-            //1           2             3            4          5          6            7     8     9          10          11          12          13    14
+                          //1           2             3            4          5          6            7     8     9          10          11          12          13    14
             val ps = conn!!.prepareStatement("INSERT OR REPLACE INTO messages " + columns)
             val ps_insert_or_ignore = conn!!.prepareStatement("INSERT OR IGNORE INTO messages " + columns)
-
-            for (abs in all) {
-                if (abs is TLMessage) {
-                    val msg = abs
-                    ps.setInt(1, msg.getId())
-                    ps.setString(2, "message")
-                    val peer = msg.getToId()
-                    if (peer is TLPeerChat) {
-                        ps.setString(3, "group")
-                        ps.setInt(4, peer.getChatId())
-                    } else if (peer is TLPeerUser) {
-                        var id = peer.getUserId()
-                        if (id == this.user_manager.user!!.getId()) {
-                            id = msg.getFromId()
-                        }
-                        ps.setString(3, "dialog")
-                        ps.setInt(4, id)
-                    } else if (peer is TLPeerChannel) {
-                        ps.setString(3, "channel")
-                        ps.setInt(4, peer.getChannelId())
-                    } else {
-                        throw RuntimeException("Unexpected Peer type: " + peer.javaClass)
-                    }
-
-                    if (peer is TLPeerChannel) {
-                        // Message in a channel don't have a sender -> insert a null
-                        ps.setNull(5, Types.INTEGER)
-                    } else {
-                        ps.setInt(5, msg.getFromId())
-                    }
-
-                    if (msg.getFwdFrom() != null && msg.getFwdFrom().getFromId() != null) {
-                        ps.setInt(6, msg.getFwdFrom().getFromId())
-                    } else {
-                        ps.setNull(6, Types.INTEGER)
-                    }
-
-                    var text = msg.getMessage()
-                    if ((text == null || text.equals("")) && msg.getMedia() != null) {
-                    	val media = msg.getMedia()
-                        if (media is TLMessageMediaDocument) {
-                        	text = media.getCaption()
-                        } else if (media is TLMessageMediaPhoto) {
-                            text = media.getCaption()
-                        }
-                    }
-                    ps.setString(7, text)
-                    ps.setString(8, "" + msg.getDate())
-                    val f = FileManagerFactory.getFileManager(msg, user_manager, client)
-                    if (f == null) {
-                        ps.setNull(9, Types.BOOLEAN)
-                        ps.setNull(10, Types.VARCHAR)
-                        ps.setNull(11, Types.VARCHAR)
-                        ps.setNull(12, Types.INTEGER)
-                    } else {
-                        ps.setBoolean(9, true)
-                        ps.setString(10, f.name)
-                        ps.setString(11, f.targetFilename)
-                        ps.setInt(12, f.size)
-                    }
-                    val stream = ByteArrayOutputStream()
-                    msg.serializeBody(stream)
-                    ps.setBytes(13, stream.toByteArray())
-                    ps.setInt(14, api_layer)
-                    ps.addBatch()
-                } else if (abs is TLMessageService) {
-                    ps_insert_or_ignore.setInt(1, abs.getId())
-                    ps_insert_or_ignore.setString(2, "service_message")
-                    ps_insert_or_ignore.setNull(3, Types.INTEGER)
-                    ps_insert_or_ignore.setNull(4, Types.INTEGER)
-                    ps_insert_or_ignore.setNull(5, Types.INTEGER)
-                    ps_insert_or_ignore.setNull(6, Types.INTEGER)
-                    ps_insert_or_ignore.setNull(7, Types.VARCHAR)
-                    ps_insert_or_ignore.setNull(8, Types.INTEGER)
-                    ps_insert_or_ignore.setNull(9, Types.BOOLEAN)
-                    ps_insert_or_ignore.setNull(10, Types.VARCHAR)
-                    ps_insert_or_ignore.setNull(11, Types.VARCHAR)
-                    ps_insert_or_ignore.setNull(12, Types.INTEGER)
-                    ps_insert_or_ignore.setNull(13, Types.BLOB)
-                    ps_insert_or_ignore.setInt(14, api_layer)
-                    ps_insert_or_ignore.addBatch()
-                } else if (abs is TLMessageEmpty) {
-                    ps_insert_or_ignore.setInt(1, abs.getId())
-                    ps_insert_or_ignore.setString(2, "empty_message")
-                    ps_insert_or_ignore.setNull(3, Types.INTEGER)
-                    ps_insert_or_ignore.setNull(4, Types.INTEGER)
-                    ps_insert_or_ignore.setNull(5, Types.INTEGER)
-                    ps_insert_or_ignore.setNull(6, Types.INTEGER)
-                    ps_insert_or_ignore.setNull(7, Types.VARCHAR)
-                    ps_insert_or_ignore.setNull(8, Types.INTEGER)
-                    ps_insert_or_ignore.setNull(9, Types.BOOLEAN)
-                    ps_insert_or_ignore.setNull(10, Types.VARCHAR)
-                    ps_insert_or_ignore.setNull(11, Types.VARCHAR)
-                    ps_insert_or_ignore.setNull(12, Types.INTEGER)
-                    ps_insert_or_ignore.setNull(13, Types.BLOB)
-                    ps_insert_or_ignore.setInt(14, api_layer)
-                    ps_insert_or_ignore.addBatch()
-                } else {
-                    throw RuntimeException("Unexpected Message type: " + abs.javaClass)
-                }
-            }
-            conn!!.setAutoCommit(false)
-            ps.executeBatch()
-            ps.clearBatch()
-            ps_insert_or_ignore.executeBatch()
-            ps_insert_or_ignore.clearBatch()
-            conn!!.commit()
-            conn!!.setAutoCommit(true)
+            
+            logger.debug("Saving messages...")
+            conn!!.close()
+            println(db_path)
+            val db = org.jetbrains.exposed.sql.Database.connect(db_path, driver="org.sqlite.JDBC")
+            
+            (exposedLogger as ch.qos.logback.classic.Logger).addAppender((logger as ch.qos.logback.classic.Logger).getLoggerContext().getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME).getAppender("root"))
+            (exposedLogger as ch.qos.logback.classic.Logger).level = ch.qos.logback.classic.Level.TRACE
+            transaction({
+            	logger.addLogger(StdOutSqlLogger)
+            	println(0)
+            	Messages.selectAll()//.limit(5,0).forEach({println("${it[Messages.text]}")})
+            	println("0a")
+			})
+				for (abs in all) {
+					print(1)
+					transaction {
+					debug = true
+					print(2)
+            	logger.addLogger(StdOutSqlLogger)
+            		print(3)
+					if (abs is TLMessage) {
+						print(4)
+						val msg = abs
+						println("4a")
+						try {
+						println("4b")
+						val a = Messages.insert {
+							println(5)
+							it[message_id] = msg.getId()
+							/*it[message_type] = "message"
+							
+							val peer = msg.getToId()
+							if (peer is TLPeerChat) {
+								it[source_type] = "group"
+								it[source_id] = peer.getChatId()
+							} else if (peer is TLPeerUser) {
+								var id = peer.getUserId()
+								if (id == user_manager.user!!.getId()) {
+									id = msg.getFromId()
+								}
+								it[source_type] = "dialog"
+								it[source_id] = id
+							} else if (peer is TLPeerChannel) {
+								it[source_type] = "channel"
+								it[source_id] = peer.getChannelId()
+							} else {
+								throw RuntimeException("Unexpected Peer type: " + peer.javaClass)
+							}
+							
+							// Messages in a channel don't have a sender -> insert a null
+							it[sender_id] = if (peer is TLPeerChannel) null else msg.getFromId()
+							print(6)
+							it[fwd_from_id] = msg.getFwdFrom()?.getFromId()
+							
+							var msg_text = msg.getMessage()
+							if ((msg_text == null || msg_text.equals("")) && msg.getMedia() != null) {
+								val media = msg.getMedia()
+								if (media is TLMessageMediaDocument) {
+									msg_text = media.getCaption()
+								} else if (media is TLMessageMediaPhoto) {
+									msg_text = media.getCaption()
+								}
+							}
+							it[text] = msg_text
+							it[time] = msg.getDate()
+							
+							val f = FileManagerFactory.getFileManager(msg, user_manager, client)
+							if (f == null) {
+								it[has_media] = null
+								it[media_type] = null
+								it[media_file] = null
+								it[media_size] = null
+							} else {
+								it[has_media] = true
+								it[media_type] = f.name
+								it[media_file] = f.targetFilename
+								it[media_size] = f.size
+							}
+							print(7)
+							val stream = ByteArrayOutputStream()
+							msg.serializeBody(stream)
+							it[data] = SerialBlob(stream.toByteArray())
+							it[api_layer] = my_api_layer
+							print(8)*/
+						}
+						} catch(e: Exception) {
+							println("e")
+						}
+					} else if (abs is TLMessageService) {
+						Messages.insert {
+							it[message_id] = abs.getId()
+							//it[message_type] = "service_message"
+							//it[api_layer] = my_api_layer
+						}
+					} else if (abs is TLMessageEmpty) {
+						Messages.insert {
+							it[message_id] = abs.getId()
+							//it[message_type] = "empty_message"
+							//it[api_layer] = my_api_layer
+						}
+					} else {
+						throw RuntimeException("Unexpected Message type: " + abs.javaClass)
+					}
+					print(9)
+				}
+				print("a")
+			} // transaction
+			logger.debug("Messages saved.")
         } catch (e: Exception) {
             e.printStackTrace()
             throw RuntimeException("Exception shown above happened.")

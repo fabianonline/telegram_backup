@@ -59,6 +59,7 @@ object CommandLineRunner {
         val appender = ConsoleAppender<ILoggingEvent>()
         appender.setContext(rootContext)
         appender.setEncoder(encoder)
+        appender.setName("root")
         appender.start()
 
         rootLogger.addAppender(appender)

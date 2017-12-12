@@ -5,18 +5,18 @@ mainClassName= 'de.fabianonline.telegram_backup.CommandLineRunnerKt'
 
 repositories {
 	mavenCentral()
-	maven { 
+	maven {
 		url "https://jitpack.io"
 	}
 }
 
 buildscript {
 	ext.kotlin_version = '1.2.0'
-	
+
 	repositories {
 		mavenCentral()
 	}
-	
+
 	dependencies {
 		classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
 	}
@@ -27,7 +27,12 @@ apply plugin: 'kotlin'
 compileKotlin {
 	kotlinOptions.apiVersion = "1.0"
 }
-		
+
+repositories {
+	maven {
+		url "https://dl.bintray.com/kotlin/exposed"
+	}
+}
 
 dependencies {
 	compile('com.github.badoualy:kotlogram:666a81ef9d6707f117a3fecc2d21c91d51c7d075') {
@@ -38,7 +43,8 @@ dependencies {
 	compile 'org.slf4j:slf4j-api:1.7.21'
 	compile 'ch.qos.logback:logback-classic:1.1.7'
 	compile 'com.google.code.gson:gson:2.5'
-	
+	compile 'org.jetbrains.exposed:exposed:0.9.1'
+
 	testCompile 'junit:junit:4.12'
 }
 
@@ -65,11 +71,11 @@ jar {
 	manifest {
 		attributes "Main-Class": "$mainClassName"
 	}
-	
+
 	from {
 		configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
 	}
-	
+
 	includes [
 		"*.mustache"
 	]
