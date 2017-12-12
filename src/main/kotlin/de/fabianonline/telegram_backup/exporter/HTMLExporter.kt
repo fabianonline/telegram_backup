@@ -73,8 +73,8 @@ class HTMLExporter {
 
             var count_messages_chats = 0
             var count_messages_dialogs = 0
-            for (c in chats) count_messages_chats += c.count
-            for (d in dialogs) count_messages_dialogs += d.count
+            for (c in chats) count_messages_chats += c.count ?: 0
+            for (d in dialogs) count_messages_dialogs += d.count ?: 0
 
             scope.put("count.messages", count_messages_chats + count_messages_dialogs)
             scope.put("count.messages.chats", count_messages_chats)

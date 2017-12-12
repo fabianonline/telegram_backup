@@ -662,13 +662,13 @@ class Database private constructor(var client: TelegramClient) {
         abstract val query: String
     }
 
-    inner class Dialog(var id: Int, var first_name: String, var last_name: String, var username: String, var count: Int) : AbstractChat() {
+    inner class Dialog(var id: Int, var first_name: String?, var last_name: String?, var username: String?, var count: Int?) : AbstractChat() {
 
         override val query: String
             get() = "source_type='dialog' AND source_id=" + id
     }
 
-    inner class Chat(var id: Int, var name: String, var count: Int) : AbstractChat() {
+    inner class Chat(var id: Int, var name: String?, var count: Int?) : AbstractChat() {
 
         override val query: String
             get() = "source_type IN('group', 'supergroup', 'channel') AND source_id=" + id
