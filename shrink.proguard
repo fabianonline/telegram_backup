@@ -1,0 +1,12 @@
+-injars build/libs/telegram_backup.jar
+-outjars build/libs/telegram_backup_shrunk.jar
+-libraryjars /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/rt.jar
+-dontobfuscate
+-dontoptimize
+-dontwarn
+-keep class de.fabianonline.** {
+public protected private *;
+}
+-keep class org.sqlite.** {
+public protected private *;
+}
