@@ -21,6 +21,8 @@ import com.github.badoualy.telegram.tl.core.TLVector
 import com.github.badoualy.telegram.api.TelegramClient
 import org.slf4j.LoggerFactory
 import org.slf4j.Logger
+import io.requery.*
+import org.sqlite.SQLiteDataSource
 
 import java.sql.Connection
 import java.sql.DriverManager
@@ -46,6 +48,39 @@ import java.text.SimpleDateFormat
 
 import de.fabianonline.telegram_backup.mediafilemanager.AbstractMediaFileManager
 import de.fabianonline.telegram_backup.mediafilemanager.FileManagerFactory
+
+@Table(name = "messages")
+@Entity
+interface Message: Persistable {
+	@get:Key
+	@get:Generated
+	var id: Int
+	
+	@get:Index("unique_messages")
+	@get:Column(unique = true)
+	var message_id: Int
+	
+	var message_type: String
+	
+	@get:Index("unique_messages")
+	@get:Column(unique = true)
+	var source_type: String
+	@get:Index("unique_messages")
+	@get:Column(unique = true)
+	var source_id: Int
+	var sender_id: Int
+	var fwd_from_id: Int
+	var text: String
+	var time: Int
+	var has_media: Boolean
+	var media_type: String
+	var media_file: String
+	var media_size: Int
+	var media_json: String
+	var markup_json: String
+	var data: Array<Byte>
+	var api_layer: Int
+}
 
 class Database private constructor(var client: TelegramClient) {
 	private var conn: Connection? = null
@@ -217,6 +252,12 @@ class Database private constructor(var client: TelegramClient) {
 		// Run updates
 		val updates = DatabaseUpdates(conn!!, this)
 		updates.doUpdates()
+		
+		logger.trace("Setting up requery")
+		val ds = SQLiteDataSource()
+		ds.setDatabaseName(path)
+		val config = KotlinConfiguration(dataSource=ds, model=Models.DEFAULT)
+		val foobarbaz
 
 		System.out.println("Database is ready.")
 	}

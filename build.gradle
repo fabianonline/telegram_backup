@@ -5,6 +5,7 @@ mainClassName= 'de.fabianonline.telegram_backup.CommandLineRunnerKt'
 
 repositories {
 	mavenCentral()
+	jcenter()
 	maven { 
 		url "https://jitpack.io"
 	}
@@ -23,11 +24,15 @@ buildscript {
 }
 
 apply plugin: 'kotlin'
+apply plugin: 'kotlin-kapt'
 
 compileKotlin {
-	kotlinOptions.apiVersion = "1.0"
+	kotlinOptions.apiVersion = "1.2"
 }
-		
+
+kapt {
+	generateStubs = true
+}		
 
 dependencies {
 	compile('com.github.badoualy:kotlogram:666a81ef9d6707f117a3fecc2d21c91d51c7d075') {
@@ -38,6 +43,10 @@ dependencies {
 	compile 'org.slf4j:slf4j-api:1.7.21'
 	compile 'ch.qos.logback:logback-classic:1.1.7'
 	compile 'com.google.code.gson:gson:2.5'
+	
+	compile 'io.requery:requery:1.4.1'
+	compile 'io.requery:requery-kotlin:1.4.1'
+	kapt 'io.requery:requery-processor:1.4.1'
 	
 	testCompile 'junit:junit:4.12'
 }
