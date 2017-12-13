@@ -88,7 +88,7 @@ class CommandLineController {
 			}
 			if (account != null && user.loggedIn) {
 				if (account != "+" + user.user!!.getPhone()) {
-					logger.error("Account: {}, user.user!!.getPhone(): +{}", Utils.anonymize(account), Utils.anonymize(user.user!!.getPhone()))
+					logger.error("Account: {}, user.user!!.getPhone(): +{}", account.anonymize(), user.user!!.getPhone().anonymize())
 					throw RuntimeException("Account / User mismatch")
 				}
 			}
@@ -123,7 +123,7 @@ class CommandLineController {
 				}
 			}
 			if (user.loggedIn) {
-				System.out.println("You are logged in as " + Utils.anonymize(user.userString))
+				System.out.println("You are logged in as ${user.userString.anonymize()}")
 			} else {
 				println("You are not logged in.")
 				System.exit(1)
@@ -164,12 +164,12 @@ class CommandLineController {
 	}
 
 	private fun setupFileBase() {
-		logger.debug("Target dir at startup: {}", Utils.anonymize(Config.FILE_BASE))
+		logger.debug("Target dir at startup: {}", Config.FILE_BASE.anonymize())
 		if (CommandLineOptions.val_target != null) {
 			Config.FILE_BASE = CommandLineOptions.val_target!!
 		}
-		logger.debug("Target dir after options: {}", Utils.anonymize(Config.FILE_BASE))
-		System.out.println("Base directory for files: " + Utils.anonymize(Config.FILE_BASE))
+		logger.debug("Target dir after options: {}", Config.FILE_BASE.anonymize())
+		System.out.println("Base directory for files: " + Config.FILE_BASE.anonymize())
 	}
 
 	private fun selectAccount(): String? {
@@ -179,11 +179,11 @@ class CommandLineController {
 			logger.debug("Login requested, doing nothing.")
 			// do nothing
 		} else if (CommandLineOptions.val_account != null) {
-			logger.debug("Account requested: {}", Utils.anonymize(CommandLineOptions.val_account!!))
+			logger.debug("Account requested: {}", CommandLineOptions.val_account!!.anonymize())
 			logger.trace("Checking accounts for match.")
 			var found = false
 			for (acc in accounts) {
-				logger.trace("Checking {}", Utils.anonymize(acc))
+				logger.trace("Checking {}", acc.anonymize())
 				if (acc == CommandLineOptions.val_account) {
 					found = true
 					logger.trace("Matches.")
@@ -191,7 +191,7 @@ class CommandLineController {
 				}
 			}
 			if (!found) {
-				show_error("Couldn't find account '" + Utils.anonymize(CommandLineOptions.val_account!!) + "'. Maybe you want to use '--login' first?")
+				show_error("Couldn't find account '" + CommandLineOptions.val_account!!.anonymize() + "'. Maybe you want to use '--login' first?")
 			}
 			account = CommandLineOptions.val_account!!
 		} else if (accounts.size == 0) {
@@ -200,7 +200,7 @@ class CommandLineController {
 			return null
 		} else if (accounts.size == 1) {
 			account = accounts.firstElement()
-			System.out.println("Using only available account: " + Utils.anonymize(account))
+			System.out.println("Using only available account: " + account.anonymize())
 		} else {
 			show_error(("You didn't specify which account to use.\n" +
 				"Use '--account <x>' to use account <x>.\n" +
@@ -208,7 +208,7 @@ class CommandLineController {
 			System.exit(1)
 		}
 		logger.debug("accounts.size: {}", accounts.size)
-		logger.debug("account: {}", Utils.anonymize(account))
+		logger.debug("account: {}", account.anonymize())
 		return account
 	}
 
@@ -254,7 +254,7 @@ class CommandLineController {
 			user.verifyPassword(pw)
 		}
 		storage.setPrefix("+" + user.user!!.getPhone())
-		System.out.println("Everything seems fine. Please run this tool again with '--account +" + Utils.anonymize(user.user!!.getPhone()) + " to use this account.")
+		System.out.println("Everything seems fine. Please run this tool again with '--account +" + user.user!!.getPhone().anonymize() + " to use this account.")
 	}
 
 	private fun show_help() {
@@ -284,7 +284,7 @@ class CommandLineController {
 		val accounts = Utils.getAccounts()
 		if (accounts.size > 0) {
 			for (str in accounts) {
-				System.out.println(" " + Utils.anonymize(str))
+				System.out.println(" " + str.anonymize())
 			}
 			println("Use '--account <x>' to use one of those accounts.")
 		} else {

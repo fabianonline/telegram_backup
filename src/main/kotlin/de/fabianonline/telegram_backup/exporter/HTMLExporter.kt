@@ -18,7 +18,7 @@ package de.fabianonline.telegram_backup.exporter
 
 import de.fabianonline.telegram_backup.UserManager
 import de.fabianonline.telegram_backup.Database
-import de.fabianonline.telegram_backup.Utils
+import de.fabianonline.telegram_backup.anonymize
 
 import java.io.File
 import java.io.PrintWriter
@@ -100,7 +100,7 @@ class HTMLExporter {
 			println("Generating ${dialogs.size} dialog pages...")
 			for (d in dialogs) {
 				i++
-				logger.trace("Dialog {}/{}: {}", i, dialogs.size, Utils.anonymize("" + d.id))
+				logger.trace("Dialog {}/{}: {}", i, dialogs.size, d.id.toString().anonymize())
 				val messages = db.getMessagesForExport(d)
 				scope.clear()
 				scope.put("user", user)
@@ -126,7 +126,7 @@ class HTMLExporter {
 			println("Generating ${chats.size} chat pages...")
 			for (c in chats) {
 				i++
-				logger.trace("Chat {}/{}: {}", i, chats.size, Utils.anonymize("" + c.id))
+				logger.trace("Chat {}/{}: {}", i, chats.size, c.id.toString().anonymize())
 				val messages = db.getMessagesForExport(c)
 				scope.clear()
 				scope.put("user", user)
@@ -164,7 +164,7 @@ class HTMLExporter {
 
 	@Throws(FileNotFoundException::class)
 	private fun getWriter(filename: String): OutputStreamWriter {
-		logger.trace("Creating writer for file {}", Utils.anonymize(filename))
+		logger.trace("Creating writer for file {}", filename.anonymize())
 		return OutputStreamWriter(FileOutputStream(filename), Charset.forName("UTF-8").newEncoder())
 	}
 

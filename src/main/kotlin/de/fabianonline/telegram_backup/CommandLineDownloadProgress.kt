@@ -18,6 +18,7 @@ package de.fabianonline.telegram_backup
 
 import de.fabianonline.telegram_backup.DownloadProgressInterface
 import de.fabianonline.telegram_backup.mediafilemanager.AbstractMediaFileManager
+import de.fabianonline.telegram_backup.Utils
 
 internal class CommandLineDownloadProgress : DownloadProgressInterface {
 	private var mediaCount = 0
@@ -28,7 +29,7 @@ internal class CommandLineDownloadProgress : DownloadProgressInterface {
 		if (source == null) {
 			System.out.println("Downloading $count messages.")
 		} else {
-			System.out.println("Downloading " + count + " messages from " + Utils.anonymize(source))
+			System.out.println("Downloading " + count + " messages from " + source.anonymize())
 		}
 	}
 

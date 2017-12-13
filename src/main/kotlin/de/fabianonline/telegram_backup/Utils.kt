@@ -176,8 +176,8 @@ object Utils {
 		logger.debug("We couldn't find a real difference, so we're assuming the versions are equal-ish.")
 		return VERSIONS_EQUAL
 	}
+}
 
-	fun anonymize(str: String): String {
-		return if (!CommandLineOptions.cmd_anonymize) str else str.replace("[0-9]".toRegex(), "1").replace("[A-Z]".toRegex(), "A").replace("[a-z]".toRegex(), "a") + " (ANONYMIZED)"
-	}
+fun String.anonymize(): String {
+	return if (!CommandLineOptions.cmd_anonymize) this else this.replace(Regex("[0-9]"), "1").replace(Regex("[A-Z]"), "A").replace(Regex("[a-z]"), "a") + " (ANONYMIZED)"
 }
