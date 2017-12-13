@@ -61,7 +61,7 @@ class HTMLExporter {
 			val chats = db.getListOfChatsForExport()
 			logger.trace("Got {} chats", chats.size)
 
-			logger.debug("Generating index.html")
+			println("Generating index.html...")
 			val scope = HashMap<String, Any>()
 			scope.put("user", user)
 			scope.put("dialogs", dialogs)
@@ -97,7 +97,7 @@ class HTMLExporter {
 			mustache = mf.compile("templates/html/chat.mustache")
 
 			var i = 0
-			logger.debug("Generating {} dialog pages", dialogs.size)
+			println("Generating ${dialogs.size} dialog pages...")
 			for (d in dialogs) {
 				i++
 				logger.trace("Dialog {}/{}: {}", i, dialogs.size, Utils.anonymize("" + d.id))
@@ -115,10 +115,15 @@ class HTMLExporter {
 				w = getWriter(base + "dialogs" + File.separatorChar + "user_" + d.id + ".html")
 				mustache.execute(w, scope)
 				w.close()
+				print(".")
+				if (i % 100 == 0) {
+					println(" - $i/${dialogs.size}")
+				}
 			}
+			println()
 
 			i = 0
-			logger.debug("Generating {} chat pages", chats.size)
+			println("Generating ${chats.size} chat pages...")
 			for (c in chats) {
 				i++
 				logger.trace("Chat {}/{}: {}", i, chats.size, Utils.anonymize("" + c.id))
@@ -136,14 +141,19 @@ class HTMLExporter {
 				w = getWriter(base + "dialogs" + File.separatorChar + "chat_" + c.id + ".html")
 				mustache.execute(w, scope)
 				w.close()
+				print(".")
+				if (i % 100 == 0) {
+					println(" - $i/${chats.size}")
+				}
 			}
+			println()
 
-			logger.debug("Generating additional files")
+			println("Generating additional files...")
 			// Copy CSS
 			val cssFile = javaClass.getResource("/templates/html/style.css")
 			val dest = File(base + "style.css")
 			FileUtils.copyURLToFile(cssFile, dest)
-			logger.debug("Done exporting.")
+			println("Finished.")
 		} catch (e: IOException) {
 			e.printStackTrace()
 			logger.error("Caught an exception!", e)
