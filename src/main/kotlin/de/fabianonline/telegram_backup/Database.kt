@@ -271,7 +271,7 @@ class Database private constructor(var client: TelegramClient) {
 	}
 
 	@Synchronized
-	fun saveMessages(all: TLVector<TLAbsMessage>, api_layer: Int) {
+	fun saveMessages(all: TLVector<TLAbsMessage>, api_layer: Int, source_type: MessageSource = MessageSource.NORMAL) {
 		try {
 			//"(id, dialog_id, from_id, from_type, text, time, has_media, data, sticker, type) " +
 			//"VALUES " +
@@ -283,9 +283,8 @@ class Database private constructor(var client: TelegramClient) {
 			val ps = conn!!.prepareStatement("INSERT OR REPLACE INTO messages " + columns)
 			val ps_insert_or_ignore = conn!!.prepareStatement("INSERT OR IGNORE INTO messages " + columns)
 
-			for (abs in all) {
-				if (abs is TLMessage) {
-					val msg = abs
+			for (msg in all) {
+				if (msg is TLMessage) {
 					ps.setInt(1, msg.getId())
 					ps.setString(2, "message")
 					val peer = msg.getToId()
@@ -300,14 +299,19 @@ class Database private constructor(var client: TelegramClient) {
 						ps.setString(3, "dialog")
 						ps.setInt(4, id)
 					} else if (peer is TLPeerChannel) {
-						ps.setString(3, "channel")
+						if (source_type == MessageSource.CHANNEL) {
+							ps.setString(3, "channel")
+						} else if (source_type == MessageSource.SUPERGROUP) {
+							ps.setString(3, "supergroup")
+						} else {
+							throw RuntimeException("Got a TLPeerChannel, but were expecting $source_type")
+						}
 						ps.setInt(4, peer.getChannelId())
 					} else {
 						throw RuntimeException("Unexpected Peer type: " + peer.javaClass)
 					}
 
-					if (peer is TLPeerChannel) {
-						// Message in a channel don't have a sender -> insert a null
+					if (peer is TLPeerChannel && msg.getFromId() == null) {
 						ps.setNull(5, Types.INTEGER)
 					} else {
 						ps.setInt(5, msg.getFromId())
@@ -347,11 +351,33 @@ class Database private constructor(var client: TelegramClient) {
 					ps.setBytes(13, stream.toByteArray())
 					ps.setInt(14, api_layer)
 					ps.addBatch()
-				} else if (abs is TLMessageService) {
-					ps_insert_or_ignore.setInt(1, abs.getId())
+				} else if (msg is TLMessageService) {
+					ps_insert_or_ignore.setInt(1, msg.getId())
 					ps_insert_or_ignore.setString(2, "service_message")
-					ps_insert_or_ignore.setNull(3, Types.INTEGER)
-					ps_insert_or_ignore.setNull(4, Types.INTEGER)
+					
+					val peer = msg.getToId()
+					if (peer is TLPeerChat) {
+						ps.setString(3, "group")
+						ps.setInt(4, peer.getChatId())
+					} else if (peer is TLPeerUser) {
+						var id = peer.getUserId()
+						if (id == this.user_manager.user!!.getId()) {
+							id = msg.getFromId()
+						}
+						ps.setString(3, "dialog")
+						ps.setInt(4, id)
+					} else if (peer is TLPeerChannel) {
+						// Messages in channels don't have a sender.
+						if (msg.getFromId() == null) {
+							ps.setString(3, "channel")
+						} else {
+							ps.setString(3, "supergroup")
+						}
+						ps.setInt(4, peer.getChannelId())
+					} else {
+						throw RuntimeException("Unexpected Peer type: " + peer.javaClass)
+					}
+					
 					ps_insert_or_ignore.setNull(5, Types.INTEGER)
 					ps_insert_or_ignore.setNull(6, Types.INTEGER)
 					ps_insert_or_ignore.setNull(7, Types.VARCHAR)
@@ -363,8 +389,8 @@ class Database private constructor(var client: TelegramClient) {
 					ps_insert_or_ignore.setNull(13, Types.BLOB)
 					ps_insert_or_ignore.setInt(14, api_layer)
 					ps_insert_or_ignore.addBatch()
-				} else if (abs is TLMessageEmpty) {
-					ps_insert_or_ignore.setInt(1, abs.getId())
+				} else if (msg is TLMessageEmpty) {
+					ps_insert_or_ignore.setInt(1, msg.getId())
 					ps_insert_or_ignore.setString(2, "empty_message")
 					ps_insert_or_ignore.setNull(3, Types.INTEGER)
 					ps_insert_or_ignore.setNull(4, Types.INTEGER)
@@ -380,7 +406,7 @@ class Database private constructor(var client: TelegramClient) {
 					ps_insert_or_ignore.setInt(14, api_layer)
 					ps_insert_or_ignore.addBatch()
 				} else {
-					throw RuntimeException("Unexpected Message type: " + abs.javaClass)
+					throw RuntimeException("Unexpected Message type: " + msg.javaClass)
 				}
 			}
 			conn!!.setAutoCommit(false)

@@ -52,6 +52,12 @@ import java.nio.file.StandardCopyOption
 
 import org.apache.commons.io.FileUtils
 
+enum class MessageSource(val descr: String) {
+	NORMAL(""),
+	CHANNEL("channel"),
+	SUPERGROUP("supergroup")
+}
+
 class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressInterface) {
 	internal var user: UserManager? = null
 	internal var db: Database? = null
@@ -138,7 +144,7 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
 			val end_id = max_message_id
 
 			val ids = makeIdList(start_id, end_id)
-			downloadMessages(ids, null, null)
+			downloadMessages(ids, null)
 		}
 
 		logger.info("Searching for missing messages in the db")
@@ -214,7 +220,14 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
 							channel_name = "?"
 						}
 						val channel = TLInputChannel(channel_id, access_hash)
-						downloadMessages(ids, channel, "channel $channel_name")
+						val source_type = if (supergroups.contains(channel_id)) {
+							MessageSource.SUPERGROUP
+						} else if (channels.contains(channel_id)) {
+							MessageSource.CHANNEL
+						} else {
+							throw RuntimeException("chat is neither in channels nor in supergroups...")
+						}
+						downloadMessages(ids, channel, source_type=source_type, source_name=channel_name)
 					}
 				}
 			}
@@ -222,7 +235,14 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
 	}
 
 	@Throws(RpcErrorException::class, IOException::class)
-	private fun downloadMessages(ids: MutableList<Int>, channel: TLInputChannel?, source_string: String?) {
+	private fun downloadMessages(ids: MutableList<Int>, channel: TLInputChannel?, source_type: MessageSource = MessageSource.NORMAL, source_name: String? = null) {
+		val source_string = if (source_type == MessageSource.NORMAL) {
+			null
+		} else if (source_name == null) {
+			"unknown ${source_type.descr}"
+		} else {
+			"${source_type.descr} $source_name"
+		}
 		prog!!.onMessageDownloadStart(ids.size, source_string)
 
 		logger.debug("Entering download loop")
@@ -269,7 +289,7 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
 			}
 
 			prog!!.onMessageDownloaded(response.getMessages().size)
-			db!!.saveMessages(response.getMessages(), Kotlogram.API_LAYER)
+			db!!.saveMessages(response.getMessages(), Kotlogram.API_LAYER, source_type=source_type)
 			db!!.saveChats(response.getChats())
 			db!!.saveUsers(response.getUsers())
 			logger.trace("Sleeping")
@@ -320,7 +340,7 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
 		if (ids.size > 0) {
 			System.out.println("You have ${ids.size} messages in your db that need an update. Doing that now.")
 			logger.debug("Found {} messages", ids.size)
-			downloadMessages(ids, null, null)
+			downloadMessages(ids, null, source_type=MessageSource.NORMAL)
 		}
 
 		val messages = this.db!!.getMessagesWithMedia()
