@@ -231,6 +231,11 @@ class CommandLineController {
 		for ((key, value) in Database.getInstance().getMessageApiLayerWithCount()) {
 			System.out.format(format, key, value)
 		}
+		println()
+		println("Message source types:")
+		for ((key, value) in Database.getInstance().getMessageSourceTypeWithCount()) {
+			System.out.format(format, key, value)
+		}
 	}
 
 	@Throws(RpcErrorException::class, IOException::class)

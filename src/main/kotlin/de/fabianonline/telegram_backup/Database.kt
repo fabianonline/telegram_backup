@@ -125,6 +125,21 @@ class Database private constructor(var client: TelegramClient) {
 	fun getMessageTypesWithCount(): HashMap<String, Int> = getMessageTypesWithCount(GlobalChat())
 
 	fun getMessageMediaTypesWithCount(): HashMap<String, Int> = getMessageMediaTypesWithCount(GlobalChat())
+	
+	fun getMessageSourceTypeWithCount(): HashMap<String, Int> {
+		val map = HashMap<String, Int>()
+		try {
+			val rs = stmt!!.executeQuery("SELECT COUNT(id), source_type FROM messages GROUP BY source_type ORDER BY source_type")
+			while (rs.next()) {
+				val source_type = rs.getString(2) ?: "null"
+				map.put("count.messages.source_type.${source_type}", rs.getInt(1))
+			}
+			rs.close()
+			return map
+		} catch (e:Exception) {
+			throw RuntimeException(e)
+		}
+	}
 
 	fun getMessageApiLayerWithCount(): HashMap<String, Int> {
 		val map = HashMap<String, Int>()
