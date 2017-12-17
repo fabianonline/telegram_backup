@@ -36,6 +36,9 @@ import com.github.badoualy.telegram.tl.api.request.TLRequestUploadGetFile
 import org.slf4j.LoggerFactory
 import org.slf4j.Logger
 import com.google.gson.Gson
+import com.github.kittinunf.fuel.Fuel
+import com.github.kittinunf.result.Result
+import com.github.kittinunf.result.getAs
 
 import java.io.IOException
 import java.io.File
@@ -502,8 +505,12 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
 
 		@Throws(IOException::class)
 		fun downloadExternalFile(target: String, url: String): Boolean {
-			FileUtils.copyURLToFile(URL(url), File(target), 5000, 5000)
-			return true
+			val (_, response, result) = Fuel.get(url).response()
+			if (result is Result.Success) {
+				File(target).writeBytes(response.data)
+				return true
+			}
+			return false
 		}
 	}
 }
