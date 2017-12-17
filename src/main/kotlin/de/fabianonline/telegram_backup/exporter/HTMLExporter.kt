@@ -154,6 +154,8 @@ class HTMLExporter {
 			val dest = File(base + "style.css")
 			FileUtils.copyURLToFile(cssFile, dest)
 			println("Finished.")
+			println("Open the following link in your browser to view the export:")
+			println("file://${base}index.html")
 		} catch (e: IOException) {
 			e.printStackTrace()
 			logger.error("Caught an exception!", e)
