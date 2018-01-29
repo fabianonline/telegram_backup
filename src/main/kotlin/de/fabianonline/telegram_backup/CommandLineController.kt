@@ -133,6 +133,7 @@ class CommandLineController {
 			val d = DownloadManager(client, CommandLineDownloadProgress())
 			logger.debug("Calling DownloadManager.downloadMessages with limit {}", CommandLineOptions.val_limit_messages)
 			d.downloadMessages(CommandLineOptions.val_limit_messages)
+			UpdatesManager.update(client)
 			logger.debug("CommandLineOptions.cmd_no_media: {}", CommandLineOptions.cmd_no_media)
 			if (!CommandLineOptions.cmd_no_media) {
 				logger.debug("Calling DownloadManager.downloadMedia")
