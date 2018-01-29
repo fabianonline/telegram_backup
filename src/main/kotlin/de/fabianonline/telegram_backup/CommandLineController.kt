@@ -52,6 +52,7 @@ class CommandLineController {
 
 	init {
 		logger.info("CommandLineController started. App version {}", Config.APP_APPVER)
+		
 		this.printHeader()
 		if (CommandLineOptions.cmd_version) {
 			System.exit(0)
