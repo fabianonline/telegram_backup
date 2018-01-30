@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Telegram Backup for {{user.getUserString}}</title>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../style.css" type="text/css" />
+</head>
+<body>
+
+<h1>Telegram Backup</h1>
+{{#dialog}}
+	<h2>Dialog with {{first_name}} {{last_name}} {{#username}}(@{{username}}){{/username}}</h2>
+{{/dialog}}
+{{#chat}}
+	<h2>Chat {{name}}</h2>
+{{/chat}}
+<h3>Page {{page}} of {{pages}}</h3>
+
+{{#previous_page}}
+	<a href="{{previous_page}}">Previous page</a>
+{{/previous_page}}
+{{#next_page}}
+	<a href="{{next_page}}">Next page</a>
+{{/next_page}}
+
+{{> _messages }}
+
+{{#previous_page}}
+	<a href="{{previous_page}}">Previous page</a>
+{{/previous_page}}
+{{#next_page}}
+	<a href="{{next_page}}">Next page</a>
+{{/next_page}}

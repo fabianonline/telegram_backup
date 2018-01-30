@@ -43,6 +43,8 @@ object Config {
 
 	var RENAMING_MAX_TRIES = 5
 	var RENAMING_DELAY: Long = 1000
+	
+	var DEFAULT_PAGINATION = 5_000
 
 	val SECRET_GMAPS = "AIzaSyBEtUDhCQKEH6i2Mn1GAiQ9M_tLN0vxHIs"
 

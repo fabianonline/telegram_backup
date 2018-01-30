@@ -595,7 +595,7 @@ class Database private constructor(var client: TelegramClient) {
 
 	fun getMessageAuthorsWithCount(c: AbstractChat): HashMap<String, Any> {
 		val map = HashMap<String, Any>()
-		val user_map = HashMap<User, Int>()
+		val all_data = LinkedList<HashMap<String, String>>()
 		var count_others = 0
 		// Set a default value for 'me' to fix the charts for channels - cause I
 		// possibly didn't send any messages there.
@@ -607,6 +607,7 @@ class Database private constructor(var client: TelegramClient) {
 				"WHERE " + c.query + " GROUP BY sender_id")
 			while (rs.next()) {
 				val u: User
+				val data = HashMap<String, String>()
 				if (rs.getString(2) != null || rs.getString(3) != null || rs.getString(4) != null) {
 					u = User(rs.getInt(1), rs.getString(2), rs.getString(3))
 				} else {
@@ -615,17 +616,25 @@ class Database private constructor(var client: TelegramClient) {
 				if (u.isMe) {
 					map.put("authors.count.me", rs.getInt(5))
 				} else {
-					user_map.put(u, rs.getInt(5))
 					count_others += rs.getInt(5)
+					data.put("name", u.name)
+					data.put("count", ""+rs.getInt(5))
+					all_data.add(data)
 				}
+				
 			}
 			map.put("authors.count.others", count_others)
-			map.put("authors.all", user_map)
+			map.put("authors.all", all_data)
 			return map
 		} catch (e: Exception) {
 			throw RuntimeException(e)
 		}
-
+	}
+	
+	fun getMessageCountForExport(c: AbstractChat): Int {
+		val rs = stmt!!.executeQuery("SELECT COUNT(*) FROM messages WHERE " + c.query);
+		rs.next()
+		return rs.getInt(1)
 	}
 
 	fun getMessageTimesMatrix(c: AbstractChat): Array<IntArray> {
@@ -645,10 +654,9 @@ class Database private constructor(var client: TelegramClient) {
 
 	}
 
-	fun getMessagesForExport(c: AbstractChat): LinkedList<HashMap<String, Any>> {
+	fun getMessagesForExport(c: AbstractChat, limit: Int=-1, offset: Int=0): LinkedList<HashMap<String, Any>> {
 		try {
-
-			val rs = stmt!!.executeQuery("SELECT messages.message_id as message_id, text, time*1000 as time, has_media, " +
+			var query = "SELECT messages.message_id as message_id, text, time*1000 as time, has_media, " +
 				"media_type, media_file, media_size, users.first_name as user_first_name, users.last_name as user_last_name, " +
 				"users.username as user_username, users.id as user_id, " +
 				"users_fwd.first_name as user_fwd_first_name, users_fwd.last_name as user_fwd_last_name, users_fwd.username as user_fwd_username " +
@@ -656,7 +664,14 @@ class Database private constructor(var client: TelegramClient) {
 				"LEFT JOIN users ON users.id=messages.sender_id " +
 				"LEFT JOIN users AS users_fwd ON users_fwd.id=fwd_from_id WHERE " +
 				c.query + " " +
-				"ORDER BY messages.message_id")
+				"ORDER BY messages.message_id"
+			
+			if ( limit != -1 ) {
+				query = query + " LIMIT ${limit} OFFSET ${offset}"
+			}	
+			
+			val rs = stmt!!.executeQuery(query)
+			
 			val format_time = SimpleDateFormat("HH:mm:ss")
 			val format_date = SimpleDateFormat("d MMM yy")
 			val meta = rs.getMetaData()
@@ -701,18 +716,25 @@ class Database private constructor(var client: TelegramClient) {
 
 	abstract inner class AbstractChat {
 		abstract val query: String
+		abstract val type: String
 	}
 
 	inner class Dialog(var id: Int, var first_name: String?, var last_name: String?, var username: String?, var count: Int?) : AbstractChat() {
 
 		override val query: String
 			get() = "source_type='dialog' AND source_id=" + id
+		
+		override val type: String
+			get() = "dialog"
 	}
 
 	inner class Chat(var id: Int, var name: String?, var count: Int?) : AbstractChat() {
 
 		override val query: String
 			get() = "source_type IN('group', 'supergroup', 'channel') AND source_id=" + id
+		
+		override val type: String
+			get() = "chat"
 	}
 
 	inner class User(id: Int, first_name: String?, last_name: String?) {
@@ -731,6 +753,9 @@ class Database private constructor(var client: TelegramClient) {
 	inner class GlobalChat : AbstractChat() {
 		override val query: String
 			get() = "1=1"
+		
+		override val type: String
+			get() = "GlobalChat"
 	}
 
 	companion object {

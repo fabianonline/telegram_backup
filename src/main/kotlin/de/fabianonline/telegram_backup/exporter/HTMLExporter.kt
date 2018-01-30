@@ -19,6 +19,8 @@ package de.fabianonline.telegram_backup.exporter
 import de.fabianonline.telegram_backup.UserManager
 import de.fabianonline.telegram_backup.Database
 import de.fabianonline.telegram_backup.anonymize
+import de.fabianonline.telegram_backup.toPrettyJson
+import de.fabianonline.telegram_backup.CommandLineOptions
 
 import java.io.File
 import java.io.PrintWriter
@@ -41,13 +43,14 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 class HTMLExporter {
+	val db = Database.getInstance()
+	val user = UserManager.getInstance()
 
 	@Throws(IOException::class)
 	fun export() {
 		try {
-			val user = UserManager.getInstance()
-			val db = Database.getInstance()
-
+			val pagination = if (CommandLineOptions.cmd_no_pagination) -1 else CommandLineOptions.val_pagination
+			
 			// Create base dir
 			logger.debug("Creating base dir")
 			val base = user.fileBase + "files" + File.separatorChar
@@ -95,26 +98,14 @@ class HTMLExporter {
 			w.close()
 
 			mustache = mf.compile("templates/html/chat.mustache")
+			val page_mustache = mf.compile("templates/html/page.mustache")
 
 			var i = 0
 			println("Generating ${dialogs.size} dialog pages...")
 			for (d in dialogs) {
 				i++
 				logger.trace("Dialog {}/{}: {}", i, dialogs.size, d.id.toString().anonymize())
-				val messages = db.getMessagesForExport(d)
-				scope.clear()
-				scope.put("user", user)
-				scope.put("dialog", d)
-				scope.put("messages", messages)
-
-				scope.putAll(db.getMessageAuthorsWithCount(d))
-				scope.put("heatmap_data", intArrayToString(db.getMessageTimesMatrix(d)))
-				scope.putAll(db.getMessageTypesWithCount(d))
-				scope.putAll(db.getMessageMediaTypesWithCount(d))
-
-				w = getWriter(base + "dialogs" + File.separatorChar + "user_" + d.id + ".html")
-				mustache.execute(w, scope)
-				w.close()
+				processChat(chat=d, pagination=pagination, index_mustache=mustache, base_dir=base, page_mustache=page_mustache);
 				print(".")
 				if (i % 100 == 0) {
 					println(" - $i/${dialogs.size}")
@@ -127,20 +118,7 @@ class HTMLExporter {
 			for (c in chats) {
 				i++
 				logger.trace("Chat {}/{}: {}", i, chats.size, c.id.toString().anonymize())
-				val messages = db.getMessagesForExport(c)
-				scope.clear()
-				scope.put("user", user)
-				scope.put("chat", c)
-				scope.put("messages", messages)
-
-				scope.putAll(db.getMessageAuthorsWithCount(c))
-				scope.put("heatmap_data", intArrayToString(db.getMessageTimesMatrix(c)))
-				scope.putAll(db.getMessageTypesWithCount(c))
-				scope.putAll(db.getMessageMediaTypesWithCount(c))
-
-				w = getWriter(base + "dialogs" + File.separatorChar + "chat_" + c.id + ".html")
-				mustache.execute(w, scope)
-				w.close()
+				processChat(chat=c, pagination=pagination, index_mustache=mustache, base_dir=base, page_mustache=page_mustache);
 				print(".")
 				if (i % 100 == 0) {
 					println(" - $i/${chats.size}")
@@ -162,6 +140,74 @@ class HTMLExporter {
 			throw e
 		}
 
+	}
+	
+	private fun processChat(chat: Database.AbstractChat, pagination: Int, index_mustache: Mustache, base_dir: String, page_mustache: Mustache) {
+		
+		val scope = HashMap<String, Any>()
+		
+		val count = db.getMessageCountForExport(chat)
+		
+		val prefix = if (chat.type == "dialog") "user_" else "chat_"
+		val id = if (chat is Database.Chat) chat.id else if (chat is Database.Dialog) chat.id else throw IllegalArgumentException("Unexpected unknown id")
+		
+		scope.put("user", user)
+		scope.put(chat.type, chat)
+		
+		if (pagination>0 && count>pagination) { // pagination is enabled and we have more messages than allowed on one page
+			scope.put("paginated", true)
+			val pages_data = LinkedList<HashMap<String, String>>()
+			
+			var offset = 0
+			var page = 1
+			val pages: Int = count / pagination + 1
+			val dir = "${base_dir}dialogs${File.separatorChar}"
+			val filename_base = "${prefix}${id}_p"
+			while (offset < count) {
+				val page_scope = HashMap<String, Any>()
+				val filename = "${filename_base}${page}.html"
+				
+				page_scope.put("page", page)
+				page_scope.put("pages", pages)
+				page_scope.put(chat.type, chat)
+				
+				if (page > 1) page_scope.put("previous_page", "${filename_base}${page-1}.html")
+				if (page < pages) page_scope.put("next_page", "${filename_base}${page+1}.html")
+				
+				val messages = db.getMessagesForExport(chat, limit=pagination, offset=offset)
+				page_scope.put("messages", messages)
+				
+				val w = getWriter(dir + filename)
+				page_mustache.execute(w, page_scope)
+				w.close()
+				
+				
+				val data = HashMap<String, String>()
+				data.put("page", ""+page)
+				data.put("filename", "${prefix}${id}_p${page}.html")
+				data.put("start_time", messages.getFirst().get("formatted_time") as String)
+				data.put("start_date", messages.getFirst().get("formatted_date") as String)
+				pages_data.add(data)
+				page += 1
+				offset += pagination
+			}
+			scope.put("pages_data", pages_data)
+			scope.put("pages", pages)
+		} else { // put all messages on one page
+			scope.put("paginated", false)
+			val messages = db.getMessagesForExport(chat)
+			scope.put("messages", messages)
+		}
+
+		scope.putAll(db.getMessageAuthorsWithCount(chat))
+		scope.put("heatmap_data", intArrayToString(db.getMessageTimesMatrix(chat)))
+		scope.putAll(db.getMessageTypesWithCount(chat))
+		scope.putAll(db.getMessageMediaTypesWithCount(chat))
+
+		
+		val w = getWriter(base_dir + "dialogs" + File.separatorChar + prefix + id + ".html")
+		index_mustache.execute(w, scope)
+		w.close()
 	}
 
 	@Throws(FileNotFoundException::class)

@@ -121,7 +121,7 @@
 		
 		var author_data = [
 			{{#authors.all}}
-				['{{key.name}}', {{value}}],
+				['{{name}}', {{count}}],
 			{{/authors.all}}
 		];
 		author_data.sort(function(a, b) { return b[1]-a[1]; });

@@ -17,24 +17,17 @@
 	
 	<a href="../index.html">Back to the overview</a>
 	
-	<ul class="messages">
-		{{#messages}}
-			{{#is_new_date}}
-			<li class="date">
-				{{formatted_date}}
-			</li>
-			{{/is_new_date}}
-			<li class="message {{#from_me}}from-me{{/from_me}} {{odd_even}} {{#same_user}}same-user{{/same_user}}" data-message-id="{{message_id}}" data-media="{{media_type}}">
-				<span class="time">{{formatted_time}}</span>
-				<span class="sender">{{user_first_name}}</span>
-				{{#text}}<span class="text">{{text}}</span>{{/text}}
-				{{#media_sticker}}<span class="sticker"><img src="../stickers/{{media_file}}" /></span>{{/media_sticker}}
-				{{#media_photo}}<span class="photo"><img src="../{{media_file}}" /></span>{{/media_photo}}
-				{{#media_document}}<span class="document"><a href="../{{media_file}}">{{media_file}}</a></span>{{/media_document}}
-			</li>
-		{{/messages}}
-	</ul>
-	
+	{{#paginated}}
+		<h3>{{pages}} Pages</h3>
+		<ul>
+		{{#pages_data}}
+			<li><a href="{{filename}}">Page {{page}}</a> (starting {{start_date}} {{start_time}})</li>
+		{{/pages_data}}
+		</ul>
+	{{/paginated}}
+	{{^paginated}}
+		{{> _messages }}
+	{{/paginated}}
 	<a href="../index.html">Back to the overview</a>
 	
 	{{> _stats }}
