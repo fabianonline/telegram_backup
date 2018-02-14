@@ -31,7 +31,7 @@ compileKotlin {
 		
 
 dependencies {
-	compile('com.github.badoualy:kotlogram:1.0.0-RC3') {
+	compile('com.github.badoualy:kotlogram:1.0.0-RC1') {
 		exclude module: 'slf4j-simple'
 	}
 	compile 'org.xerial:sqlite-jdbc:3.16.1'
