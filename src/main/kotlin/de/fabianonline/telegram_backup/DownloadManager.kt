@@ -434,6 +434,9 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
 							continue // response is null since we didn't actually receive any data. Skip the rest of this iteration and try again.
 						} else if (e.getCode() == 400) {
 							//Somehow this file is broken. No idea why. Let's skip it for now
+							System.out.println("400 error code")
+							e.printStackTrace()
+							System.out.println("400 error code")
 							return false
 						} else {
 							throw e
