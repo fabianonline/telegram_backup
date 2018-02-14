@@ -450,7 +450,7 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
 					} catch (e: InterruptedException) {
 					}
 
-				} while (offset < size && (response!!.getBytes().getData().size > 0 || try_again))
+				} while (offset < size && (try_again || response!!.getBytes().getData().size > 0))
 				fos.close()
 				if (offset < size) {
 					System.out.println("Requested file $target with $size bytes, but got only $offset bytes.")
