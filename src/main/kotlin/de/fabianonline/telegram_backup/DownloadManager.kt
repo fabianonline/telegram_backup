@@ -395,8 +395,8 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
 		}
 
 		@Throws(RpcErrorException::class, IOException::class, TimeoutException::class)
-		fun downloadFile(targetFilename: String, size: Int, dcId: Int, id: Long, accessHash: Long) {
-			val loc = TLInputDocumentFileLocation(id, accessHash)
+		fun downloadFile(targetFilename: String, size: Int, dcId: Int, id: Long, accessHash: Long, version: Int) {
+			val loc = TLInputDocumentFileLocation(id, accessHash, version)
 			downloadFileFromDc(targetFilename, loc, dcId, size)
 		}
 
