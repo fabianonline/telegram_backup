@@ -111,6 +111,7 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
 		System.out.println("Downloading most recent dialogs... ")
 		var max_message_id = 0
 		val dialogs = client!!.messagesGetDialogs(
+			true,
 			0,
 			0,
 			TLInputPeerEmpty(),
