@@ -316,7 +316,7 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
 			try {
 				_downloadMedia()
 			} catch (e: RpcErrorException) {
-				if (e.getTag().startsWith("420: FLOOD_WAIT_")) {
+				if (e.getCode() == 420) { // FLOOD_WAIT
 					completed = false
 					Utils.obeyFloodWaitException(e)
 				} else {
@@ -428,7 +428,7 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
 					try {
 						response = download_client!!.executeRpcQuery(req, dcID) as TLFile
 					} catch (e: RpcErrorException) {
-						if (e.getTag().startsWith("420: FLOOD_WAIT_")) {
+						if (e.getCode() == 420) { // FLOOD_WAIT
 							try_again = true
 							Utils.obeyFloodWaitException(e)
 						} else if (e.getCode() == 400) {
