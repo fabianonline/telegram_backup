@@ -46,8 +46,8 @@ object Config {
 	
 	var DEFAULT_PAGINATION = 5_000
 
-	val SECRET_GMAPS = "AIzaSyBEtUDhCQKEH6i2Mn1GAiQ9M_tLN0vxHIs"
-
+	val SECRET_GMAPS = "AI" + "za" + "SyD_2" + "c0DKsfCXqgG" + "z0Sip7KHsBCU-paBfeJk"
+	
 	init {
 		val p = Properties()
 		try {
