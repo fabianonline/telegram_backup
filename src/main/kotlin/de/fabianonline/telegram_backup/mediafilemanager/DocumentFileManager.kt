@@ -97,9 +97,10 @@ open class DocumentFileManager(msg: TLMessage, user: UserManager, client: Telegr
 	}
 
 	@Throws(RpcErrorException::class, IOException::class, TimeoutException::class)
-	override fun download() {
+	override fun download(): Boolean {
 		if (doc != null) {
 			DownloadManager.downloadFile(targetPathAndFilename, size, doc!!.getDcId(), doc!!.getId(), doc!!.getAccessHash())
 		}
+		return true
 	}
 }

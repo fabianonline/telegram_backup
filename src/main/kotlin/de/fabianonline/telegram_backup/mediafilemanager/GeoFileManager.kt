@@ -72,11 +72,11 @@ class GeoFileManager(msg: TLMessage, user: UserManager, client: TelegramClient) 
 	}
 
 	@Throws(IOException::class)
-	override fun download() {
+	override fun download(): Boolean {
 		val url = "https://maps.googleapis.com/maps/api/staticmap?" +
 			"center=" + geo.getLat() + "," + geo.getLong() + "&" +
 			"zoom=14&size=300x150&scale=2&format=png&" +
 			"key=" + Config.SECRET_GMAPS
-		DownloadManager.downloadExternalFile(targetPathAndFilename, url)
+		return DownloadManager.downloadExternalFile(targetPathAndFilename, url)
 	}
 }

@@ -364,8 +364,12 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
 				prog!!.onMediaAlreadyPresent(m)
 			} else {
 				try {
-					m.download()
-					prog!!.onMediaDownloaded(m)
+					val result = m.download()
+					if (result) {
+						prog!!.onMediaDownloaded(m)
+					} else {
+						prog!!.onMediaSkipped()
+					}
 				} catch (e: TimeoutException) {
 					// do nothing - skip this file
 					prog!!.onMediaSkipped()

@@ -77,9 +77,10 @@ class PhotoFileManager(msg: TLMessage, user: UserManager, client: TelegramClient
 	}
 
 	@Throws(RpcErrorException::class, IOException::class, TimeoutException::class)
-	override fun download() {
-		if (isEmpty) return
+	override fun download(): Boolean {
+		if (isEmpty) return true
 		val loc = photo_size.getLocation() as TLFileLocation
 		DownloadManager.downloadFile(targetPathAndFilename, size, loc.getDcId(), loc.getVolumeId(), loc.getLocalId(), loc.getSecret())
+		return true
 	}
 }

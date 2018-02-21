@@ -78,7 +78,7 @@ abstract class AbstractMediaFileManager(protected var message: TLMessage, protec
 	abstract val name: String
 	abstract val description: String
 	@Throws(RpcErrorException::class, IOException::class, TimeoutException::class)
-	abstract fun download()
+	abstract fun download(): Boolean
 
 	protected fun extensionFromMimetype(mime: String): String {
 		when (mime) {

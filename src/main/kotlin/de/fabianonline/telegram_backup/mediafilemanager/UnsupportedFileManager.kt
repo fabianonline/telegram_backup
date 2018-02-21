@@ -54,5 +54,5 @@ class UnsupportedFileManager(msg: TLMessage, user: UserManager, client: Telegram
 	override val letter = " "
 	override val description = "Unsupported / non-downloadable Media"
 
-	override fun download() {}
+	override fun download(): Boolean = true
 }

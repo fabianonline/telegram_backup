@@ -95,16 +95,16 @@ class StickerFileManager(msg: TLMessage, user: UserManager, client: TelegramClie
 		get() = "Sticker"
 
 	@Throws(RpcErrorException::class, IOException::class, TimeoutException::class)
-	override fun download() {
+	override fun download(): Boolean {
 		val old_file = Config.FILE_BASE + File.separatorChar + Config.FILE_STICKER_BASE + File.separatorChar + targetFilename
 
 		logger.trace("Old filename exists: {}", File(old_file).exists())
 
 		if (File(old_file).exists()) {
 			Files.copy(Paths.get(old_file), Paths.get(targetPathAndFilename), StandardCopyOption.REPLACE_EXISTING)
-			return
+			return true
 		}
-		super.download()
+		return super.download()
 	}
 
 	companion object {

@@ -51,7 +51,7 @@ internal class CommandLineDownloadProgress : DownloadProgressInterface {
 		println("'S' - Sticker       'A' - Audio         'G' - Geolocation")
 		println("'.' - Previously downloaded file        'e' - Empty file")
 		println("' ' - Ignored media type (weblinks or contacts, for example)")
-		println("'x' - File skipped because of timeout errors")
+		println("'x' - File skipped because of errors - will be tried again at next run")
 		println("" + count + " Files to check / download")
 	}
 
