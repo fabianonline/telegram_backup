@@ -21,5 +21,7 @@ object UpdatesManager {
 		
 		println("diff type: ${diff.javaClass}")
 		println(diff.toPrettyJson())
+		
+		System.exit(1)
 	}
 }
