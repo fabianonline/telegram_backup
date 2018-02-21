@@ -10,6 +10,7 @@ import java.sql.Types
 import java.sql.ResultSet
 import java.sql.PreparedStatement
 import com.github.badoualy.telegram.tl.api.*
+import com.github.badoualy.telegram.tl.core.TLVector
 import org.slf4j.LoggerFactory
 import org.slf4j.Logger
 import de.fabianonline.telegram_backup.mediafilemanager.FileManagerFactory
@@ -30,6 +31,7 @@ class DatabaseUpdates(protected var conn: Connection, protected var db: Database
 		register(DB_Update_6(conn, db))
 		register(DB_Update_7(conn, db))
 		register(DB_Update_8(conn, db))
+		register(DB_Update_9(conn, db))
 	}
 
 	fun doUpdates() {
@@ -367,5 +369,32 @@ internal class DB_Update_8(conn: Connection, db: Database) : DatabaseUpdate(conn
 		execute("DROP TABLE messages")
 		execute("ALTER TABLE messages_new RENAME TO 'messages'")
 		execute("CREATE UNIQUE INDEX unique_messages ON messages (source_type, source_id, message_id)")
+	}
+}
+
+internal class DB_Update_9(conn: Connection, db: Database) : DatabaseUpdate(conn, db) {
+	override val version: Int
+		get() = 9
+	override val needsBackup = true
+	
+	@Throws(SQLException::class)
+	override fun _doUpdate() {
+		val logger = LoggerFactory.getLogger(DB_Update_9::class.java)
+		println("    Updating supergroup channel message data (this might take some time)...")
+		val rs = stmt.executeQuery("SELECT id, data, source_id FROM messages WHERE source_type='channel' and sender_id IS NULL and api_layer=53")
+		val messages = TLVector<TLAbsMessage>()
+		val messages_to_delete = mutableListOf<Int>()
+		var i = 0
+		while (rs.next()) {
+			i++
+			val msg = Database.bytesToTLMessage(rs.getBytes(2))
+			if (msg!!.getFromId() != null) {
+				messages.add(msg)
+				messages_to_delete.add(rs.getInt(1))
+			}
+		}
+		logger.info("Converted ${messages.size} of ${i} messages.")
+		db.saveMessages(messages, api_layer=53, source_type=MessageSource.SUPERGROUP)
+		execute("DELETE FROM messages WHERE id IN (" + messages_to_delete.joinToString() + ")")
 	}
 }
