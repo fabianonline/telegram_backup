@@ -396,5 +396,7 @@ internal class DB_Update_9(conn: Connection, db: Database) : DatabaseUpdate(conn
 		logger.info("Converted ${messages.size} of ${i} messages.")
 		db.saveMessages(messages, api_layer=53, source_type=MessageSource.SUPERGROUP)
 		execute("DELETE FROM messages WHERE id IN (" + messages_to_delete.joinToString() + ")")
+		println("    Cleaning up the database (this might also take some time, sorry)...")
+		execute("VACUUM")
 	}
 }
