@@ -32,6 +32,7 @@ class DatabaseUpdates(protected var conn: Connection, protected var db: Database
 		register(DB_Update_7(conn, db))
 		register(DB_Update_8(conn, db))
 		register(DB_Update_9(conn, db))
+		register(DB_Update_10(conn, db))
 	}
 
 	fun doUpdates() {
@@ -396,5 +397,16 @@ internal class DB_Update_9(conn: Connection, db: Database) : DatabaseUpdate(conn
 		logger.info("Converted ${messages.size} of ${i} messages.")
 		db.saveMessages(messages, api_layer=53, source_type=MessageSource.SUPERGROUP)
 		execute("DELETE FROM messages WHERE id IN (" + messages_to_delete.joinToString() + ")")
+	}
+}
+
+internal class DB_Update_10(conn: Connection, db: Database) : DatabaseUpdate(conn, db) {
+	override val version: Int
+		get() = 10
+	
+	@Throws(SQLException::class)
+	override fun _doUpdate() {
+		val logger = LoggerFactory.getLogger(DB_Update_10::class.java)
+		execute("CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT)")
 	}
 }
