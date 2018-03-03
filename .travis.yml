@@ -8,3 +8,13 @@ cache:
   directories:
     - $HOME/.gradle/caches/
     - $HOME/.gradle/wrapper/
+
+deploy:
+  provider: pages
+  skip-cleanup: true
+  github-token: $github_token
+  keep-history: true
+  on:
+    branch: master
+  local-dir: build/libs
+  target-branch: gh-pages
