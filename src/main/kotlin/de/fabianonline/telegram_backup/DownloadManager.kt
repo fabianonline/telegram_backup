@@ -316,7 +316,7 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
 			try {
 				_downloadMedia()
 			} catch (e: RpcErrorException) {
-				if (e.getTag().startsWith("420: FLOOD_WAIT_")) {
+				if (e.getCode() == 420) { // FLOOD_WAIT
 					completed = false
 					Utils.obeyFloodWaitException(e)
 				} else {
@@ -432,9 +432,10 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
 					try {
 						response = download_client!!.executeRpcQuery(req, dcID) as TLFile
 					} catch (e: RpcErrorException) {
-						if (e.getTag().startsWith("420: FLOOD_WAIT_")) {
+						if (e.getCode() == 420) { // FLOOD_WAIT
 							try_again = true
 							Utils.obeyFloodWaitException(e)
+							continue // response is null since we didn't actually receive any data. Skip the rest of this iteration and try again.
 						} else if (e.getCode() == 400) {
 							//Somehow this file is broken. No idea why. Let's skip it for now
 							return false
@@ -453,7 +454,7 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
 					} catch (e: InterruptedException) {
 					}
 
-				} while (offset < size && (response!!.getBytes().getData().size > 0 || try_again))
+				} while (offset < size && (try_again || response!!.getBytes().getData().size > 0))
 				fos.close()
 				if (offset < size) {
 					System.out.println("Requested file $target with $size bytes, but got only $offset bytes.")
