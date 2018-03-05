@@ -541,7 +541,13 @@ class Database private constructor(var client: TelegramClient) {
 		}
 	}
 	
-	fun settingsSetValue(key: String, value: String?) {
+	fun fetchSetting(key: String): String? {
+		val rs = stmt!!.executeQuery("SELECT value FROM settings WHERE key='${key}'")
+		rs.next()
+		return rs.getString(1)
+	}
+	
+	fun saveSetting(key: String, value: String?) {
 		val ps = conn!!.prepareStatement("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)")
 		ps.setString(1, key)
 		if (value==null) {
@@ -552,16 +558,6 @@ class Database private constructor(var client: TelegramClient) {
 		ps.execute()
 	}
 	
-	fun settingsGetSettings(): Map<String, String?> {
-		val rs = stmt!!.executeQuery("SELECT key, value FROM settings")
-		val result = mutableMapOf<String, String?>()
-		while (rs.next()) {
-			result.set(rs.getString(1), rs.getString(2))
-		}
-		rs.close()
-		return result
-	}
-
 	fun getIdsFromQuery(query: String): LinkedList<Int> {
 		try {
 			val list = LinkedList<Int>()
