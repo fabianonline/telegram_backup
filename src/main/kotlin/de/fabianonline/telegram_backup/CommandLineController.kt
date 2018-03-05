@@ -143,6 +143,8 @@ class CommandLineController {
 		} catch (e: Exception) {
 			e.printStackTrace()
 			logger.error("Exception caught!", e)
+			// If we encountered an exception, we definitely don't want to start the daemon mode now.
+			CommandLineOptions.cmd_daemon = false
 		} finally {
 			if (CommandLineOptions.cmd_daemon) {
 				handler.activate()
