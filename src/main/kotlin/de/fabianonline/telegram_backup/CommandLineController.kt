@@ -140,7 +140,8 @@ class CommandLineController {
 			} else {
 				println("Skipping media download because --no-media is set.")
 			}
-		} catch (e: Exception) {
+		} catch (e: Throwable) {
+			println("An error occured!")
 			e.printStackTrace()
 			logger.error("Exception caught!", e)
 			// If we encountered an exception, we definitely don't want to start the daemon mode now.
