@@ -381,14 +381,15 @@ internal class DB_Update_9(conn: Connection, db: Database) : DatabaseUpdate(conn
 	override fun _doUpdate() {
 		val logger = LoggerFactory.getLogger(DB_Update_9::class.java)
 		println("    Updating supergroup channel message data (this might take some time)...")
+		print("    ")
 		val count = db.queryInt("SELECT COUNT(*) FROM messages WHERE source_type='channel' and sender_id IS NULL and api_layer=53")
 		logger.debug("Found $count candidates for conversion")
 		val limit = 5000
 		var offset = 0
 		var i = 0
-		while (offset + 1 < count) {
+		while (offset < count) {
 			logger.debug("Querying with limit $limit and offset $offset")
-			val rs = stmt.executeQuery("SELECT id, data, source_id FROM messages WHERE source_type='channel' and sender_id IS NULL and api_layer=53 LIMIT ${limit} OFFSET ${offset}")
+			val rs = stmt.executeQuery("SELECT id, data, source_id FROM messages WHERE source_type='channel' and sender_id IS NULL and api_layer=53 ORDER BY id LIMIT ${limit} OFFSET ${offset}")
 			val messages = TLVector<TLAbsMessage>()
 			val messages_to_delete = mutableListOf<Int>()
 			while (rs.next()) {
@@ -399,11 +400,14 @@ internal class DB_Update_9(conn: Connection, db: Database) : DatabaseUpdate(conn
 					messages_to_delete.add(rs.getInt(1))
 				}
 			}
+			rs.close()
 			db.saveMessages(messages, api_layer=53, source_type=MessageSource.SUPERGROUP)
 			execute("DELETE FROM messages WHERE id IN (" + messages_to_delete.joinToString() + ")")
+			print(".")
 			
 			offset += limit
 		}
+		println()
 		logger.info("Converted ${i} of ${count} messages.")
 		println("    Cleaning up the database (this might also take some time, sorry)...")
 		execute("VACUUM")
