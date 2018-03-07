@@ -51,5 +51,10 @@ object IniSettings {
 	
 	fun println() = println(settings)
 	
+	fun get(key: String, default: String? = null): String? = settings.get(key)?.last() ?: default
+	fun getInt(key: String, default: Int? = null): Int? = try { settings.get(key)?.last()?.toInt() } catch (e: NumberFormatException) { null } ?: default
+	fun getArray(key: String): List<String> = settings.get(key) ?: listOf<String>()
 	
+	val gmaps_key: String
+		get() = get("gmaps_key", default=Config.SECRET_GMAPS)!!
 }
