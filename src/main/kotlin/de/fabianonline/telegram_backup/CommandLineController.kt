@@ -95,7 +95,7 @@ class CommandLineController {
 			}
 			logger.debug("CommandLineOptions.cmd_login: {}", CommandLineOptions.cmd_login)
 			if (CommandLineOptions.cmd_login) {
-				cmd_login(account)
+				cmd_login(CommandLineOptions.val_account)
 				System.exit(0)
 			}
 			// If we reach this point, we can assume that there is an account and a database can be loaded / created.
