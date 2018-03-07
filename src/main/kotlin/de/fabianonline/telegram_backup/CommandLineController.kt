@@ -93,6 +93,10 @@ class CommandLineController {
 					throw RuntimeException("Account / User mismatch")
 				}
 			}
+			
+			// Load the ini file.
+			IniSettings.load()
+			
 			logger.debug("CommandLineOptions.cmd_login: {}", CommandLineOptions.cmd_login)
 			if (CommandLineOptions.cmd_login) {
 				cmd_login(account)

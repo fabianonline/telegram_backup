@@ -13,7 +13,10 @@ object IniSettings {
 		copySampleIni(UserManager.getInstance().fileBase + "config.sample.ini")
 	}
 	
-	fun loadIni(filename: String) {
+	// Dummy function that can be called to force this object to run its init-code.
+	fun load() { }
+	
+	private fun loadIni(filename: String) {
 		val file = File(filename)
 		logger.trace("Checking ini file {}", filename.anonymize())
 		if (!file.exists()) return
@@ -21,7 +24,7 @@ object IniSettings {
 		file.forEachLine { parseLine(it) }
 	}
 	
-	fun parseLine(original_line: String) {
+	private fun parseLine(original_line: String) {
 		logger.trace("Parsing line: {}", original_line)
 		var line = original_line.trim().replaceAfter("#", "").removeSuffix("#")
 		logger.trace("After cleaning: {}", line)
@@ -43,7 +46,7 @@ object IniSettings {
 		}
 	}
 	
-	fun copySampleIni(filename: String) {
+	private fun copySampleIni(filename: String) {
 		val stream = Config::class.java.getResourceAsStream("/config.sample.ini")
 		File(filename).outputStream().use { stream.copyTo(it) }
 		stream.close()
