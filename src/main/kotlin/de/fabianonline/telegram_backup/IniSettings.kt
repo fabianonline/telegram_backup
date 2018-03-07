@@ -10,7 +10,7 @@ object IniSettings {
 	
 	init {
 		loadIni(UserManager.getInstance().fileBase + "config.ini")
-		copySampleIni(UserManager.getInstance().fileBase + "config.ini.sample")
+		copySampleIni(UserManager.getInstance().fileBase + "config.sample.ini")
 	}
 	
 	fun loadIni(filename: String) {
@@ -44,7 +44,9 @@ object IniSettings {
 	}
 	
 	fun copySampleIni(filename: String) {
-		
+		val stream = Config::class.java.getResourceAsStream("/config.sample.ini")
+		File(filename).outputStream().use { stream.copyTo(it) }
+		stream.close()
 	}
 	
 	fun println() = println(settings)
