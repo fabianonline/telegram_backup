@@ -111,6 +111,7 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
 		System.out.println("Downloading most recent dialogs... ")
 		var max_message_id = 0
 		val dialogs = client!!.messagesGetDialogs(
+			true,
 			0,
 			0,
 			TLInputPeerEmpty(),
@@ -398,8 +399,8 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
 		}
 
 		@Throws(RpcErrorException::class, IOException::class, TimeoutException::class)
-		fun downloadFile(targetFilename: String, size: Int, dcId: Int, id: Long, accessHash: Long) {
-			val loc = TLInputDocumentFileLocation(id, accessHash)
+		fun downloadFile(targetFilename: String, size: Int, dcId: Int, id: Long, accessHash: Long, version: Int) {
+			val loc = TLInputDocumentFileLocation(id, accessHash, version)
 			downloadFileFromDc(targetFilename, loc, dcId, size)
 		}
 
@@ -438,6 +439,9 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
 							continue // response is null since we didn't actually receive any data. Skip the rest of this iteration and try again.
 						} else if (e.getCode() == 400) {
 							//Somehow this file is broken. No idea why. Let's skip it for now
+							System.out.println("400 error code")
+							e.printStackTrace()
+							System.out.println("400 error code")
 							return false
 						} else {
 							throw e
