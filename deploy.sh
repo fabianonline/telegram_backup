@@ -73,10 +73,10 @@ echo "Pushing the docker image..."
 docker push fabianonline/telegram_backup
 
 echo "Notifying the Telegram group..."
-release_notes=$(sed 's/\* /• /' <<< "$release_notes")
-message="Version $VERSION released"$'\n'$'\n'"$release_notes"$'\n'$'\n'"$release_url"
+release_notes=$(sed 's/\* /• /' | sed 's/&/&amp;/g' | sed 's/</\&lt;/g' | sed 's/>/\&gt;/g' <<< "$release_notes")
+message="<b>Version $VERSION was just released</b>"$'\n'$'\n'"$release_notes"$'\n'$'\n'"$release_url"
 
-curl https://api.telegram.org/bot${BOT_TOKEN}/sendMessage -XPOST --form "text=<-" --form-string "chat_id=${CHAT_ID}" <<< "$message"
+curl https://api.telegram.org/bot${BOT_TOKEN}/sendMessage -XPOST --form "text=<-" --form-string "chat_id=${CHAT_ID}" --form-string "parse_mode=HTML" --form-string "disable_web_page_preview=true" <<< "$message"
 
 echo "Cleaning release_notes.txt..."
 > release_notes.txt
