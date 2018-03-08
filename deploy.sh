@@ -63,7 +63,7 @@ json=$(curl $CURL_OPTS https://api.github.com/repos/fabianonline/telegram_backup
 echo "Uploading telegram_backup.jar to Github..."
 upload_url=$(jq -r ".upload_url" <<< "$json") || error "Could not parse JSON from Github"
 upload_url=$(sed 's/{.*}//' <<< "$upload_url")
-release_url=$(jq -r ".url" <<< "$json") || error "Could not parse JSON from Github"
+release_url=$(jq -r ".html_url" <<< "$json") || error "Could not parse JSON from Github"
 curl $CURL_OPTS --header "Content-Type: application/zip" "${upload_url}?name=telegram_backup.jar" --upload-file build/libs/telegram_backup.jar || error "Asset upload to github failed"
 
 echo "Building the docker image..."
