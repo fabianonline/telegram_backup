@@ -11,4 +11,5 @@ cache4.*
 src/test/test.iml
 dev/
 todo
-deploy.sh
+deploy.secret.sh
+release_notes.txt
