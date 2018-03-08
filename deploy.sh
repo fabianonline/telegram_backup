@@ -81,4 +81,7 @@ curl https://api.telegram.org/bot${BOT_TOKEN}/sendMessage -XPOST --form "text=<-
 echo "Cleaning release_notes.txt..."
 > release_notes.txt
 
+echo "Checking out master..."
+git checkout master
+
 echo "Done."
