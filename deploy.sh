@@ -35,7 +35,7 @@ echo "Updating the Dockerfile..."
 sed -i "s/ENV JAR_VERSION .\+/ENV JAR_VERSION $VERSION/g" Dockerfile || error "Couldn't modify Dockerfile."
 
 echo "Committing the new Dockerfile..."
-git commit -m "Bumping the version to $VERSION" Dockerfile || error "Couldn't commit the new Dockerfile."
+git commit -m "Bumping the version to $VERSION" Dockerfile
 
 echo "Tagging the new version..."
 git tag -a "$VERSION" -m "Version $VERSION" || error
