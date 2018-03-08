@@ -21,7 +21,7 @@ You can find the whole app packed into one fat jar file under
 
 ## Limitations
 This tool relies on Telegram's API. They started rate limiting the calls
-made by this tool some time ago. As of february 2017, downloading messages
+made by this tool some time ago. As of February 2017, downloading messages
 is limited to 400 messages every 30 seconds, resulting in 48,000 messages
 per hour. Media download is not throttled right now, so it should be a lot
 quicker.

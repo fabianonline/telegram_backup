@@ -19,6 +19,7 @@ package de.fabianonline.telegram_backup
 import de.fabianonline.telegram_backup.CommandLineController
 import de.fabianonline.telegram_backup.Utils
 import de.fabianonline.telegram_backup.Version
+import java.util.concurrent.TimeUnit
 import org.slf4j.LoggerFactory
 import ch.qos.logback.classic.Logger
 import ch.qos.logback.classic.LoggerContext
@@ -78,14 +79,21 @@ object CommandLineRunner {
 	fun checkVersion(): Boolean {
 		val v = Utils.getNewestVersion()
 		if (v != null && v.isNewer) {
-			System.out.println("A newer version is vailable!")
-			System.out.println("You are using: " + Config.APP_APPVER)
-			System.out.println("Available:     " + v.version)
-			System.out.println("Get it here:   " + v.url)
-			System.out.println()
-			System.out.println("Changes in this version:")
-			System.out.println(v.body)
-			System.out.println()
+			println()
+			println()
+			println()
+			println("A newer version is vailable!")
+			println("You are using: " + Config.APP_APPVER)
+			println("Available:     " + v.version)
+			println("Get it here:   " + v.url)
+			println()
+			println()
+			println("Changes in this version:")
+			println(v.body)
+			println()
+			println()
+			println()
+			TimeUnit.SECONDS.sleep(5)
 			return false
 		}
 		return true

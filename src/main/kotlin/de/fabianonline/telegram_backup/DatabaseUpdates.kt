@@ -41,7 +41,7 @@ class DatabaseUpdates(protected var conn: Connection, protected var db: Database
 			logger.debug("DatabaseUpdate.doUpdates running")
 
 			logger.debug("Getting current database version")
-			val version: Int
+			var version: Int
 			logger.debug("Checking if table database_versions exists")
 			rs = stmt.executeQuery("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='database_versions'")
 			rs.next()
@@ -59,6 +59,26 @@ class DatabaseUpdates(protected var conn: Connection, protected var db: Database
 			logger.debug("version: {}", version)
 			System.out.println("Database version: " + version)
 			logger.debug("Max available database version is {}", maxPossibleVersion)
+
+			if (version == 0) {
+				logger.debug("Looking for DatabaseUpdate with create_query...")
+				// This is a fresh database - so we search for the latest available version with a create_query
+				// and use this as a shortcut.
+				var update: DatabaseUpdate? = null
+				for (i in maxPossibleVersion downTo 1) {
+					update = getUpdateToVersion(i)
+					logger.trace("Looking at DatabaseUpdate version {}", update.version)
+					if (update.create_query != null) break
+					update = null
+				}
+
+				if (update != null) {
+					logger.debug("Found DatabaseUpdate version {} with create_query.", update.version)
+					for (query in update.create_query!!) stmt.execute(query)
+					stmt.execute("INSERT INTO database_versions (version) VALUES (${update.version})")
+					version = update.version
+				}
+			}
 
 			if (version < maxPossibleVersion) {
 				logger.debug("Update is necessary. {} => {}.", version, maxPossibleVersion)
@@ -151,6 +171,8 @@ internal abstract class DatabaseUpdate(protected var conn: Connection, protected
 	companion object {
 		protected val logger = LoggerFactory.getLogger(DatabaseUpdate::class.java)
 	}
+
+	open val create_query: List<String>? = null
 }
 
 internal class DB_Update_1(conn: Connection, db: Database) : DatabaseUpdate(conn, db) {
@@ -308,6 +330,7 @@ internal class DB_Update_6(conn: Connection, db: Database) : DatabaseUpdate(conn
 		rs.close()
 		conn.setAutoCommit(false)
 		ps.executeBatch()
+		ps.close()
 		conn.commit()
 		conn.setAutoCommit(true)
 		stmt.executeUpdate("DROP TABLE messages")
@@ -376,19 +399,29 @@ internal class DB_Update_9(conn: Connection, db: Database) : DatabaseUpdate(conn
 	override val version: Int
 		get() = 9
 	override val needsBackup = true
+
+	override val create_query = listOf(
+		"CREATE TABLE \"chats\" (id INTEGER PRIMARY KEY ASC, name TEXT, type TEXT);",
+		"CREATE TABLE \"users\" (id INTEGER PRIMARY KEY ASC, first_name TEXT, last_name TEXT, username TEXT, type TEXT, phone TEXT);",
+		"CREATE TABLE database_versions (version INTEGER);",
+		"CREATE TABLE runs (id INTEGER PRIMARY KEY ASC, time INTEGER, start_id INTEGER, end_id INTEGER, count_missing INTEGER);",
+		"CREATE TABLE \"messages\" (id INTEGER PRIMARY KEY AUTOINCREMENT,message_id INTEGER,message_type TEXT,source_type TEXT,source_id INTEGER,sender_id INTEGER,fwd_from_id INTEGER,text TEXT,time INTEGER,has_media BOOLEAN,media_type TEXT,media_file TEXT,media_size INTEGER,media_json TEXT,markup_json TEXT,data BLOB,api_layer INTEGER);",
+		"CREATE UNIQUE INDEX unique_messages ON messages (source_type, source_id, message_id);"
+	)
 	
 	@Throws(SQLException::class)
 	override fun _doUpdate() {
 		val logger = LoggerFactory.getLogger(DB_Update_9::class.java)
 		println("    Updating supergroup channel message data (this might take some time)...")
+		print("    ")
 		val count = db.queryInt("SELECT COUNT(*) FROM messages WHERE source_type='channel' and sender_id IS NULL and api_layer=53")
 		logger.debug("Found $count candidates for conversion")
 		val limit = 5000
 		var offset = 0
 		var i = 0
-		while (offset + 1 < count) {
+		while (offset < count) {
 			logger.debug("Querying with limit $limit and offset $offset")
-			val rs = stmt.executeQuery("SELECT id, data, source_id FROM messages WHERE source_type='channel' and sender_id IS NULL and api_layer=53 LIMIT ${limit} OFFSET ${offset}")
+			val rs = stmt.executeQuery("SELECT id, data, source_id FROM messages WHERE source_type='channel' and sender_id IS NULL and api_layer=53 ORDER BY id LIMIT ${limit} OFFSET ${offset}")
 			val messages = TLVector<TLAbsMessage>()
 			val messages_to_delete = mutableListOf<Int>()
 			while (rs.next()) {
@@ -399,11 +432,14 @@ internal class DB_Update_9(conn: Connection, db: Database) : DatabaseUpdate(conn
 					messages_to_delete.add(rs.getInt(1))
 				}
 			}
+			rs.close()
 			db.saveMessages(messages, api_layer=53, source_type=MessageSource.SUPERGROUP)
 			execute("DELETE FROM messages WHERE id IN (" + messages_to_delete.joinToString() + ")")
+			print(".")
 			
 			offset += limit
 		}
+		println()
 		logger.info("Converted ${i} of ${count} messages.")
 		println("    Cleaning up the database (this might also take some time, sorry)...")
 		execute("VACUUM")

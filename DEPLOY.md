@@ -2,6 +2,7 @@
 
 * Update the version in the Dockerfile to the coming version.
 * Commit the new Dockerfile.
+* Merge into stable: `git checkout stable && git merge --no-ff master`
 * Create a new tag for the new version: `git tag -a <version>`.
 * Push everything to github: `git push --all && git push --tags`.
 * Build it: `gradle build`.

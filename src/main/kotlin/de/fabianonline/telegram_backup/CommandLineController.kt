@@ -95,7 +95,7 @@ class CommandLineController {
 			}
 			logger.debug("CommandLineOptions.cmd_login: {}", CommandLineOptions.cmd_login)
 			if (CommandLineOptions.cmd_login) {
-				cmd_login(account)
+				cmd_login(CommandLineOptions.val_account)
 				System.exit(0)
 			}
 			// If we reach this point, we can assume that there is an account and a database can be loaded / created.
@@ -140,7 +140,8 @@ class CommandLineController {
 			} else {
 				println("Skipping media download because --no-media is set.")
 			}
-		} catch (e: Exception) {
+		} catch (e: Throwable) {
+			println("An error occured!")
 			e.printStackTrace()
 			logger.error("Exception caught!", e)
 			// If we encountered an exception, we definitely don't want to start the daemon mode now.
@@ -282,6 +283,7 @@ class CommandLineController {
 		println(" --pagination <x>      Splits the HTML export into multiple HTML pages with <x> messages per page. Default is 5000.")
 		println(" --no-pagination       Disables pagination.")
 		println(" --license             Displays the license of this program.")
+		println(" -d, --daemon          Keep running after the backup and automatically save new messages.")
 		println(" --anonymize           (Try to) Remove all sensitive information from output. Useful for requesting support.")
 		println(" --stats               Print some usage statistics.")
 		println(" --with-channels       Backup channels as well.")
