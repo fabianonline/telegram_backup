@@ -22,7 +22,6 @@ source "deploy.secret.sh"
 [ -z "$TOKEN" ] && error "TOKEN is not set or empty."
 
 CURL_OPTS="-u fabianonline:$TOKEN"
-set -x
 
 git diff-files --quiet --ignore-submodules -- || error "You have changes in your working tree."
 
@@ -31,8 +30,6 @@ git diff-index --cached --quiet HEAD --ignore-submodules -- || error "You have u
 branch_name=$(git symbolic-ref HEAD 2>/dev/null)
 branch_name=${branch_name##refs/heads/}
 [ "$branch_name" == "master" ] || error "Current branch is $branch_name, not master."
-
-exit 2
 
 echo "Updating the Dockerfile..."
 sed -i "s/ENV JAR_VERSION .\+/ENV JAR_VERSION $VERSION/g" Dockerfile || error "Couldn't modify Dockerfile."
