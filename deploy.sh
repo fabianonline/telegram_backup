@@ -40,14 +40,14 @@ sed -i "s/ENV JAR_VERSION .\+/ENV JAR_VERSION $VERSION/g" Dockerfile || error "C
 echo "Committing the new Dockerfile..."
 git commit -m "Bumping the version to $VERSION" Dockerfile || error "Couldn't commit the new Dockerfile."
 
+echo "Tagging the new version..."
+git tag -a "$VERSION" -m "Version $VERSION" || error
+
 echo "Checking out stable..."
 git checkout stable || error
 
 echo "Merging master into stable..."
 git merge --no-ff -m "Merging master into stable for version $VERSION" master || error
-
-echo "Tagging the new version..."
-git tag -a "$VERSION" -m "Version $VERSION" || error
 
 echo "Pushing all to Github..."
 git push --all || error
