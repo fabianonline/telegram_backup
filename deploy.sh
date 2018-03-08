@@ -56,7 +56,7 @@ echo "Building it..."
 gradle build || error "Build failed. What did you do?!"
 
 echo "Generating a release on Github..."
-json=$(ruby -e "require 'json'; puts({tag_name: '$VERSION', name: '$VERSION', draft: true, body: \$stdin.read}.to_json)" <<< "$release_notes") || error "Couldn't generate JSON for Github"
+json=$(ruby -e "require 'json'; puts({tag_name: '$VERSION', name: '$VERSION', body: \$stdin.read}.to_json)" <<< "$release_notes") || error "Couldn't generate JSON for Github"
 
 json=$(curl $CURL_OPTS https://api.github.com/repos/fabianonline/telegram_backup/releases -XPOST -d "$json") || error "Github failure"
 
