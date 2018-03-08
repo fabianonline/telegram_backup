@@ -330,6 +330,7 @@ internal class DB_Update_6(conn: Connection, db: Database) : DatabaseUpdate(conn
 		rs.close()
 		conn.setAutoCommit(false)
 		ps.executeBatch()
+		ps.close()
 		conn.commit()
 		conn.setAutoCommit(true)
 		stmt.executeUpdate("DROP TABLE messages")
