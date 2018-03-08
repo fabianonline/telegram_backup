@@ -40,6 +40,9 @@ git commit -m "Bumping the version to $VERSION" Dockerfile
 echo "Tagging the new version..."
 git tag -a "$VERSION" -m "Version $VERSION" || error
 
+echo "Building it..."
+gradle build || error "Build failed. What did you do?!"
+
 echo "Checking out stable..."
 git checkout stable || error
 
@@ -51,9 +54,6 @@ git push --all || error
 
 echo "Pushing tags to Github..."
 git push --tags || error
-
-echo "Building it..."
-gradle build || error "Build failed. What did you do?!"
 
 echo "Generating a release on Github..."
 json=$(ruby -e "require 'json'; puts({tag_name: '$VERSION', name: '$VERSION', body: \$stdin.read}.to_json)" <<< "$release_notes") || error "Couldn't generate JSON for Github"
