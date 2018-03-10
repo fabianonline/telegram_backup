@@ -16,12 +16,6 @@
 
 package de.fabianonline.telegram_backup.exporter
 
-import de.fabianonline.telegram_backup.UserManager
-import de.fabianonline.telegram_backup.Database
-import de.fabianonline.telegram_backup.anonymize
-import de.fabianonline.telegram_backup.toPrettyJson
-import de.fabianonline.telegram_backup.CommandLineOptions
-
 import java.io.File
 import java.io.PrintWriter
 import java.io.OutputStreamWriter
@@ -38,6 +32,7 @@ import java.util.HashMap
 import com.github.mustachejava.DefaultMustacheFactory
 import com.github.mustachejava.Mustache
 import com.github.mustachejava.MustacheFactory
+import de.fabianonline.telegram_backup.*
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -49,7 +44,7 @@ class HTMLExporter {
 	@Throws(IOException::class)
 	fun export() {
 		try {
-			val pagination = if (CommandLineOptions.cmd_no_pagination) -1 else CommandLineOptions.val_pagination
+			val pagination = if (IniSettings.pagination) IniSettings.pagination_size else -1
 			
 			// Create base dir
 			logger.debug("Creating base dir")

@@ -56,8 +56,19 @@ object IniSettings {
 	
 	fun get(key: String, default: String? = null): String? = settings.get(key)?.last() ?: default
 	fun getInt(key: String, default: Int? = null): Int? = try { settings.get(key)?.last()?.toInt() } catch (e: NumberFormatException) { null } ?: default
+	fun getBoolean(key: String, default: Boolean = false): Boolean = settings.get(key)?.last() == "true"
 	fun getArray(key: String): List<String> = settings.get(key) ?: listOf<String>()
 	
 	val gmaps_key: String
 		get() = get("gmaps_key", default=Config.SECRET_GMAPS)!!
+	val pagination: Boolean
+		get() = getBoolean("pagination", default=true)
+	val pagination_size: Int
+		get() = getInt("pagination_size", default=Config.DEFAULT_PAGINATION)!!
+	val download_media: Boolean
+		get() = getBoolean("download_media", default=true)
+	val download_channels: Boolean
+		get() = getBoolean("download_channels", default=false)
+	val download_supergroups: Boolean
+		get() = getBoolean("download_supergroups", default=false)
 }

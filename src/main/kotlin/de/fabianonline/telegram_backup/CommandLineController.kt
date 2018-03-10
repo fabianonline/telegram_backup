@@ -137,12 +137,12 @@ class CommandLineController {
 			val d = DownloadManager(client, CommandLineDownloadProgress())
 			logger.debug("Calling DownloadManager.downloadMessages with limit {}", CommandLineOptions.val_limit_messages)
 			d.downloadMessages(CommandLineOptions.val_limit_messages)
-			logger.debug("CommandLineOptions.cmd_no_media: {}", CommandLineOptions.cmd_no_media)
-			if (!CommandLineOptions.cmd_no_media) {
+			logger.debug("IniSettings.download_media: {}", IniSettings.download_media)
+			if (IniSettings.download_media) {
 				logger.debug("Calling DownloadManager.downloadMedia")
 				d.downloadMedia()
 			} else {
-				println("Skipping media download because --no-media is set.")
+				println("Skipping media download because download_media is set to false.")
 			}
 		} catch (e: Exception) {
 			e.printStackTrace()
@@ -277,17 +277,12 @@ class CommandLineController {
 		println(" --trace-telegram      Shows lots of debug messages from the library used to access Telegram.")
 		println(" -A, --list-accounts   List all existing accounts ")
 		println(" --limit-messages <x>  Downloads at most the most recent <x> messages.")
-		println(" --no-media            Do not download media files.")
 		println(" -t, --target <x>      Target directory for the files.")
 		println(" -e, --export <format> Export the database. Valid formats are:")
 		println("                html - Creates HTML files.")
-		println(" --pagination <x>      Splits the HTML export into multiple HTML pages with <x> messages per page. Default is 5000.")
-		println(" --no-pagination       Disables pagination.")
 		println(" --license             Displays the license of this program.")
 		println(" --anonymize           (Try to) Remove all sensitive information from output. Useful for requesting support.")
 		println(" --stats               Print some usage statistics.")
-		println(" --with-channels       Backup channels as well.")
-		println(" --with-supergroups    Backup supergroups as well.")
 	}
 
 	private fun list_accounts() {

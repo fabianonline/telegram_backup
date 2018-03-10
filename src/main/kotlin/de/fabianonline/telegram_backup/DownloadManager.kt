@@ -178,7 +178,7 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
 		}
 		*/
 
-		if (CommandLineOptions.cmd_channels || CommandLineOptions.cmd_supergroups) {
+		if (IniSettings.download_channels || IniSettings.download_supergroups) {
 			System.out.println("Processing channels and/or supergroups...")
 			System.out.println("Please note that only channels/supergroups in the last 100 active chats are processed.")
 
@@ -210,7 +210,7 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
 
 					// If this is a channel and we don't want to download channels OR
 					// it is a supergroups and we don't want to download supergroups, then
-					if (channels.contains(channel_id) && !CommandLineOptions.cmd_channels || supergroups.contains(channel_id) && !CommandLineOptions.cmd_supergroups) {
+					if (channels.contains(channel_id) && !IniSettings.download_channels || supergroups.contains(channel_id) && !IniSettings.download_supergroups) {
 						// Skip this chat.
 						continue
 					}
