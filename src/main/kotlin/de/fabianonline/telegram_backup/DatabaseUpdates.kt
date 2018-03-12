@@ -37,25 +37,19 @@ class DatabaseUpdates(protected var conn: Connection, protected var db: Database
 	fun doUpdates() {
 		try {
 			val stmt = conn.createStatement()
-			var rs: ResultSet
 			logger.debug("DatabaseUpdate.doUpdates running")
 
 			logger.debug("Getting current database version")
 			var version: Int
 			logger.debug("Checking if table database_versions exists")
-			rs = stmt.executeQuery("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='database_versions'")
-			rs.next()
-			if (rs.getInt(1) == 0) {
+			val table_count = db.queryInt("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='database_versions'")
+			if (table_count == 0) {
 				logger.debug("Table does not exist")
 				version = 0
 			} else {
 				logger.debug("Table exists. Checking max version")
-				rs.close()
-				rs = stmt.executeQuery("SELECT MAX(version) FROM database_versions")
-				rs.next()
-				version = rs.getInt(1)
+				version = db.queryInt("SELECT MAX(version) FROM database_versions")
 			}
-			rs.close()
 			logger.debug("version: {}", version)
 			System.out.println("Database version: " + version)
 			logger.debug("Max available database version is {}", maxPossibleVersion)
@@ -106,6 +100,9 @@ class DatabaseUpdates(protected var conn: Connection, protected var db: Database
 				} catch (e: SQLException) {
 					throw RuntimeException(e)
 				}
+				
+				println("Cleaning up the database (this might take some time)...")
+				try { stmt.executeUpdate("VACUUM") } catch (t: Throwable) { logger.debug("Exception during VACUUMing: {}", t) }
 
 			} else {
 				logger.debug("No update necessary.")
@@ -441,7 +438,5 @@ internal class DB_Update_9(conn: Connection, db: Database) : DatabaseUpdate(conn
 		}
 		println()
 		logger.info("Converted ${i} of ${count} messages.")
-		println("    Cleaning up the database (this might also take some time, sorry)...")
-		execute("VACUUM")
 	}
 }
