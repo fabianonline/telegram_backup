@@ -55,8 +55,13 @@ object IniSettings {
 	fun println() = println(settings)
 	
 	fun get(key: String, default: String? = null): String? = settings.get(key)?.last() ?: default
+	fun getStringList(key: String): List<String>? = settings.get(key)
 	fun getInt(key: String, default: Int? = null): Int? = try { settings.get(key)?.last()?.toInt() } catch (e: NumberFormatException) { null } ?: default
-	fun getBoolean(key: String, default: Boolean = false): Boolean = settings.get(key)?.last() == "true"
+	fun getBoolean(key: String, default: Boolean = false): Boolean {
+		val value = settings.get(key)?.last()
+		if (value==null) return default
+		return value=="true"
+	}
 	fun getArray(key: String): List<String> = settings.get(key) ?: listOf<String>()
 	
 	val gmaps_key: String
@@ -71,4 +76,8 @@ object IniSettings {
 		get() = getBoolean("download_channels", default=false)
 	val download_supergroups: Boolean
 		get() = getBoolean("download_supergroups", default=false)
+	val whitelist_channels: List<String>?
+		get() = getStringList("whitelist_channels")
+	val blacklist_channels: List<String>?
+		get() = getStringList("blacklist_channels")
 }

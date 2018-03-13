@@ -106,19 +106,14 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
 	@Throws(RpcErrorException::class, IOException::class, TimeoutException::class)
 	fun _downloadMessages(limit: Int?) {
 		logger.info("This is _downloadMessages with limit {}", limit)
-		val dialog_limit = 100
-		logger.info("Downloading the last {} dialogs", dialog_limit)
+		logger.info("Downloading the last dialogs")
 		System.out.println("Downloading most recent dialogs... ")
 		var max_message_id = 0
-		val dialogs = client!!.messagesGetDialogs(
-			0,
-			0,
-			TLInputPeerEmpty(),
-			dialog_limit)
-		logger.debug("Got {} dialogs", dialogs.getDialogs().size)
+		val chats = getChats()
+		logger.debug("Got {} dialogs, {} supergoups, {} channels", chats.dialogs.size, chats.supergroups.size, chats.channels.size)
 
-		for (d in dialogs.getDialogs()) {
-			if (d.getTopMessage() > max_message_id && d.getPeer() !is TLPeerChannel) {
+		for (d in chats.dialogs) {
+			if (d.getTopMessage() > max_message_id) {
 				logger.trace("Updating top message id: {} => {}. Dialog type: {}", max_message_id, d.getTopMessage(), d.getPeer().javaClass)
 				max_message_id = d.getTopMessage()
 			}
@@ -179,61 +174,30 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
 		*/
 
 		if (IniSettings.download_channels || IniSettings.download_supergroups) {
-			System.out.println("Processing channels and/or supergroups...")
-			System.out.println("Please note that only channels/supergroups in the last 100 active chats are processed.")
-
-			val channel_access_hashes = HashMap<Int, Long>()
-			val channel_names = HashMap<Int, String>()
-			val channels = LinkedList<Int>()
-			val supergroups = LinkedList<Int>()
-
 			// TODO Add chat title (and other stuff?) to the database
-			for (c in dialogs.getChats()) {
-				if (c is TLChannel) {
-					channel_access_hashes.put(c.getId(), c.getAccessHash())
-					channel_names.put(c.getId(), c.getTitle())
-					if (c.getMegagroup()) {
-						supergroups.add(c.getId())
-					} else {
-						channels.add(c.getId())
-					}
-					// Channel: TLChannel
-					// Supergroup: getMegagroup()==true
-				}
+			
+			if (IniSettings.download_channels) {
+				println("Checking channels...")
+				for (channel in chats.channels) { if (channel.download) downloadMessagesFromChannel(channel) }
 			}
-
-
-
-			for (d in dialogs.getDialogs()) {
-				if (d.getPeer() is TLPeerChannel) {
-					val channel_id = (d.getPeer() as TLPeerChannel).getChannelId()
-
-					// If this is a channel and we don't want to download channels OR
-					// it is a supergroups and we don't want to download supergroups, then
-					if (channels.contains(channel_id) && !IniSettings.download_channels || supergroups.contains(channel_id) && !IniSettings.download_supergroups) {
-						// Skip this chat.
-						continue
-					}
-					val max_known_id = db!!.getTopMessageIDForChannel(channel_id)
-					if (d.getTopMessage() > max_known_id) {
-						val ids = makeIdList(max_known_id + 1, d.getTopMessage())
-						val access_hash = channel_access_hashes.get(channel_id) ?: throw RuntimeException("AccessHash for Channel missing.")
-						var channel_name = channel_names.get(channel_id)
-						if (channel_name == null) {
-							channel_name = "?"
-						}
-						val channel = TLInputChannel(channel_id, access_hash)
-						val source_type = if (supergroups.contains(channel_id)) {
-							MessageSource.SUPERGROUP
-						} else if (channels.contains(channel_id)) {
-							MessageSource.CHANNEL
-						} else {
-							throw RuntimeException("chat is neither in channels nor in supergroups...")
-						}
-						downloadMessages(ids, channel, source_type=source_type, source_name=channel_name)
-					}
-				}
+			
+			if (IniSettings.download_supergroups) {
+				println("Checking supergroups...")
+				for (supergroup in chats.supergroups) { if (supergroup.download) downloadMessagesFromChannel(supergroup) }
 			}
+		}
+	}
+	
+	private fun downloadMessagesFromChannel(channel: Channel) {
+		val obj = channel.obj
+		val max_known_id = db!!.getTopMessageIDForChannel(channel.id)
+		if (obj.getTopMessage() > max_known_id) {
+			val ids = makeIdList(max_known_id + 1, obj.getTopMessage())
+			var channel_name = channel.title
+
+			val input_channel = TLInputChannel(channel.id, channel.access_hash)
+			val source_type = channel.message_source
+			downloadMessages(ids, input_channel, source_type=source_type, source_name=channel_name)
 		}
 	}
 
@@ -384,6 +348,49 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
 		val a = LinkedList<Int>()
 		for (i in start..end) a.add(i)
 		return a
+	}
+	
+	fun getChats(): ChatList {
+		val cl = ChatList()
+		logger.trace("Calling messagesGetDialogs")
+		val dialogs = client!!.messagesGetDialogs(0, 0, TLInputPeerEmpty(), 100)
+		logger.trace("Got {} dialogs back", dialogs.getDialogs().size)
+		
+		// Add dialogs
+		cl.dialogs.addAll(dialogs.getDialogs().filter{it.getPeer() !is TLPeerChannel})
+		
+		// Add supergoups and channels
+		for (tl_channel in dialogs.getChats().filter{it is TLChannel}.map{it as TLChannel}) {
+			val tl_peer_channel = dialogs.getDialogs().find{var p = it.getPeer() ; p is TLPeerChannel && p.getChannelId()==tl_channel.getId()}
+			
+			if (tl_peer_channel == null) continue
+			
+			var download = true
+			if (IniSettings.whitelist_channels != null) {
+				download = IniSettings.whitelist_channels!!.contains(tl_channel.getId().toString())
+			} else if (IniSettings.blacklist_channels != null) {
+				download = !IniSettings.blacklist_channels!!.contains(tl_channel.getId().toString())
+			}
+			val channel = Channel(id=tl_channel.getId(), access_hash=tl_channel.getAccessHash(), title=tl_channel.getTitle(), obj=tl_peer_channel, download=download)
+			if (tl_channel.getMegagroup()) {
+				channel.message_source = MessageSource.SUPERGROUP
+				cl.supergroups.add(channel)
+			} else {
+				channel.message_source = MessageSource.CHANNEL
+				cl.channels.add(channel)
+			}
+		}
+		return cl
+	}
+	
+	class ChatList {
+		val dialogs = mutableListOf<TLDialog>()
+		val supergroups = mutableListOf<Channel>()
+		val channels = mutableListOf<Channel>()
+	}
+	
+	class Channel(val id: Int, val access_hash: Long, val title: String, val obj: TLDialog, val download: Boolean) {
+		lateinit var message_source: MessageSource
 	}
 
 	companion object {
