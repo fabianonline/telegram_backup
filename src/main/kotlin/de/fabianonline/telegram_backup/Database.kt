@@ -545,9 +545,25 @@ class Database private constructor(var client: TelegramClient) {
 			e.printStackTrace()
 			throw RuntimeException("Exception shown above happened.")
 		}
-
 	}
-
+	
+	fun fetchSetting(key: String): String? {
+		val rs = stmt!!.executeQuery("SELECT value FROM settings WHERE key='${key}'")
+		rs.next()
+		return rs.getString(1)
+	}
+	
+	fun saveSetting(key: String, value: String?) {
+		val ps = conn!!.prepareStatement("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)")
+		ps.setString(1, key)
+		if (value==null) {
+			ps.setNull(2, Types.VARCHAR)
+		} else {
+			ps.setString(2, value)
+		}
+		ps.execute()
+	}
+	
 	fun getIdsFromQuery(query: String): LinkedList<Int> {
 		try {
 			val list = LinkedList<Int>()

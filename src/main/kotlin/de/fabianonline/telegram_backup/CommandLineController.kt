@@ -93,6 +93,10 @@ class CommandLineController {
 					throw RuntimeException("Account / User mismatch")
 				}
 			}
+			
+			// Load the ini file.
+			IniSettings.load()
+			
 			logger.debug("CommandLineOptions.cmd_login: {}", CommandLineOptions.cmd_login)
 			if (CommandLineOptions.cmd_login) {
 				cmd_login(CommandLineOptions.val_account)
@@ -131,14 +135,39 @@ class CommandLineController {
 			}
 			logger.info("Initializing Download Manager")
 			val d = DownloadManager(client, CommandLineDownloadProgress())
+			
+			if (CommandLineOptions.cmd_list_channels) {
+				val chats = d.getChats()
+				val print_header = {download: Boolean -> println("%-15s %-40s %s".format("ID", "Title", if (download) "Download" else "")); println("-".repeat(65)) }
+				val format = {c: DownloadManager.Channel, download: Boolean -> "%-15s %-40s %s".format(c.id.toString().anonymize(), c.title.anonymize(), if (download) (if(c.download) "YES" else "no") else "")}
+				var download: Boolean
+
+				println("Channels:")
+				download = IniSettings.download_channels
+				if (!download) println("Download of channels is disabled - see download_channels in config.ini")
+				print_header(download)
+				for (c in chats.channels) {
+					println(format(c, download))
+				}
+				println()
+				println("Supergroups:")
+				download = IniSettings.download_supergroups
+				if (!download) println("Download of supergroups is disabled - see download_supergroups in config.ini")
+				print_header(download)
+				for (c in chats.supergroups) {
+					println(format(c, download))
+				}
+				System.exit(0)
+			}
+			
 			logger.debug("Calling DownloadManager.downloadMessages with limit {}", CommandLineOptions.val_limit_messages)
 			d.downloadMessages(CommandLineOptions.val_limit_messages)
-			logger.debug("CommandLineOptions.cmd_no_media: {}", CommandLineOptions.cmd_no_media)
-			if (!CommandLineOptions.cmd_no_media) {
+			logger.debug("IniSettings.download_media: {}", IniSettings.download_media)
+			if (IniSettings.download_media) {
 				logger.debug("Calling DownloadManager.downloadMedia")
 				d.downloadMedia()
 			} else {
-				println("Skipping media download because --no-media is set.")
+				println("Skipping media download because download_media is set to false.")
 			}
 		} catch (e: Throwable) {
 			println("An error occured!")
@@ -276,18 +305,14 @@ class CommandLineController {
 		println(" --trace-telegram      Shows lots of debug messages from the library used to access Telegram.")
 		println(" -A, --list-accounts   List all existing accounts ")
 		println(" --limit-messages <x>  Downloads at most the most recent <x> messages.")
-		println(" --no-media            Do not download media files.")
 		println(" -t, --target <x>      Target directory for the files.")
 		println(" -e, --export <format> Export the database. Valid formats are:")
 		println("                html - Creates HTML files.")
-		println(" --pagination <x>      Splits the HTML export into multiple HTML pages with <x> messages per page. Default is 5000.")
-		println(" --no-pagination       Disables pagination.")
 		println(" --license             Displays the license of this program.")
 		println(" -d, --daemon          Keep running after the backup and automatically save new messages.")
 		println(" --anonymize           (Try to) Remove all sensitive information from output. Useful for requesting support.")
 		println(" --stats               Print some usage statistics.")
-		println(" --with-channels       Backup channels as well.")
-		println(" --with-supergroups    Backup supergroups as well.")
+		println(" --list-channels       Lists all channels together with their ID")
 	}
 
 	private fun list_accounts() {

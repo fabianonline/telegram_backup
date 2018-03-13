@@ -26,18 +26,14 @@ internal object CommandLineOptions {
 	var cmd_version = false
 	var cmd_license = false
 	var cmd_daemon = false
-	var cmd_no_media = false
 	var cmd_anonymize = false
 	var cmd_stats = false
-	var cmd_channels = false
-	var cmd_supergroups = false
-	var cmd_no_pagination = false
+	var cmd_list_channels = false
 	var val_account: String? = null
 	var val_limit_messages: Int? = null
 	var val_target: String? = null
 	var val_export: String? = null
 	var val_test: Int? = null
-	var val_pagination: Int = Config.DEFAULT_PAGINATION
 	@JvmStatic
 	fun parseOptions(args: Array<String>) {
 		var last_cmd: String? = null
@@ -49,7 +45,6 @@ internal object CommandLineOptions {
 					"--target" -> val_target = arg
 					"--export" -> val_export = arg
 					"--test" -> val_test = Integer.parseInt(arg)
-					"--pagination" -> val_pagination = Integer.parseInt(arg)
 				}
 				last_cmd = null
 				continue
@@ -83,18 +78,15 @@ internal object CommandLineOptions {
 					last_cmd = "--pagination"
 					continue@loop
 				}
-				"--no-pagination" -> cmd_no_pagination = true
 				"--license" -> cmd_license = true
 				"-d", "--daemon" -> cmd_daemon = true
-				"--no-media" -> cmd_no_media = true
 				"--test" -> {
 					last_cmd = "--test"
 					continue@loop
 				}
 				"--anonymize" -> cmd_anonymize = true
 				"--stats" -> cmd_stats = true
-				"--with-channels" -> cmd_channels = true
-				"--with-supergroups" -> cmd_supergroups = true
+				"--list-channels" -> cmd_list_channels = true
 				else -> throw RuntimeException("Unknown command " + arg)
 			}
 		}
