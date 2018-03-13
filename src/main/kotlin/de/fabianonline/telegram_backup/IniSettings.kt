@@ -9,8 +9,10 @@ object IniSettings {
 	var settings = mutableMapOf<String, MutableList<String>>()
 	
 	init {
-		loadIni(UserManager.getInstance().fileBase + "config.ini")
-		copySampleIni(UserManager.getInstance().fileBase + "config.sample.ini")
+		if (UserManager.getInstance().user != null) {
+			loadIni(UserManager.getInstance().fileBase + "config.ini")
+			copySampleIni(UserManager.getInstance().fileBase + "config.sample.ini")
+		}
 	}
 	
 	// Dummy function that can be called to force this object to run its init-code.
