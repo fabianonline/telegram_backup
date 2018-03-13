@@ -135,6 +135,31 @@ class CommandLineController {
 			}
 			logger.info("Initializing Download Manager")
 			val d = DownloadManager(client, CommandLineDownloadProgress())
+			
+			if (CommandLineOptions.cmd_list_channels) {
+				val chats = d.getChats()
+				val print_header = {download: Boolean -> println("%-15s %-40s %s".format("ID", "Title", if (download) "Download" else "")); println("-".repeat(65)) }
+				val format = {c: DownloadManager.Channel, download: Boolean -> "%-15s %-40s %s".format(c.id.toString().anonymize(), c.title.anonymize(), if (download) (if(c.download) "YES" else "no") else "")}
+				var download: Boolean
+
+				println("Channels:")
+				download = IniSettings.download_channels
+				if (!download) println("Download of channels is disabled - see download_channels in config.ini")
+				print_header(download)
+				for (c in chats.channels) {
+					println(format(c, download))
+				}
+				println()
+				println("Supergroups:")
+				download = IniSettings.download_supergroups
+				if (!download) println("Download of supergroups is disabled - see download_supergroups in config.ini")
+				print_header(download)
+				for (c in chats.supergroups) {
+					println(format(c, download))
+				}
+				System.exit(0)
+			}
+			
 			logger.debug("Calling DownloadManager.downloadMessages with limit {}", CommandLineOptions.val_limit_messages)
 			d.downloadMessages(CommandLineOptions.val_limit_messages)
 			logger.debug("IniSettings.download_media: {}", IniSettings.download_media)
@@ -283,6 +308,7 @@ class CommandLineController {
 		println(" --license             Displays the license of this program.")
 		println(" --anonymize           (Try to) Remove all sensitive information from output. Useful for requesting support.")
 		println(" --stats               Print some usage statistics.")
+		println(" --list-channels       Lists all channels together with their ID")
 	}
 
 	private fun list_accounts() {

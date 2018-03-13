@@ -28,6 +28,7 @@ internal object CommandLineOptions {
 	var cmd_daemon = false
 	var cmd_anonymize = false
 	var cmd_stats = false
+	var cmd_list_channels = false
 	var val_account: String? = null
 	var val_limit_messages: Int? = null
 	var val_target: String? = null
@@ -85,6 +86,7 @@ internal object CommandLineOptions {
 				}
 				"--anonymize" -> cmd_anonymize = true
 				"--stats" -> cmd_stats = true
+				"--list-channels" -> cmd_list_channels = true
 				else -> throw RuntimeException("Unknown command " + arg)
 			}
 		}
