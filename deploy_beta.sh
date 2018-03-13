@@ -23,8 +23,13 @@ filename="telegram_backup.beta_${version}.jar"
 cp --no-preserve "mode,ownership,timestamps" build/libs/telegram_backup.jar /data/containers/nginx/www/files/${filename}
 
 echo "Notifying the Telegram group..."
-release_notes=$(sed 's/\* /• /' | sed 's/&/&amp;/g' | sed 's/</\&lt;/g' | sed 's/>/\&gt;/g' <<< "$release_notes")
-message="<b>New beta release $version</b>"$'\n'$'\n'"This is a beta release. There may be bugs included that might destroy your data. Only use this beta release if you know what you're doing. AND MAKE A BACKUP BEFORE USING IT!"$'\n'$'\n'"$additional_notes"$'\n'"$release_notes"$'\n'$'\n'"https://files.fabianonline.de/${filename}"
+release_notes=$(echo "$release_notes" | sed 's/\* /• /' | sed 's/&/&amp;/g' | sed 's/</\&lt;/g' | sed 's/>/\&gt;/g')
+message="<b>New beta release $version</b>"$'\n\n'
+message="${message}${additional_notes}"$'\n\n'
+message="${message}${release_notes}"$'\n\n'
+message="${message}<b>This is a release for testing purposes only. There may be bugs included that might destroy your data. Only use this beta release if you know what you're doing. AND MAKE A BACKUP OF YOUR BACKUP BEFORE USING IT!</b>"$'\n\n'
+message="${message}Please report back if you used this release and encountered a bug. Also report back, if you used it and IT WORKED, please. Thank you."$'\n\n'
+message="${message}https://files.fabianonline.de/${filename}"
 
 result=$(curl https://api.telegram.org/bot${BOT_TOKEN}/sendMessage -XPOST --form "text=<-" --form-string "chat_id=${CHAT_ID}" --form-string "parse_mode=HTML" --form-string "disable_web_page_preview=true" <<< "$message")
 message_id=$(jq -r '.result.message_id' <<< "$result")
