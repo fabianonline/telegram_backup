@@ -238,7 +238,7 @@ class Database private constructor(var client: TelegramClient) {
 		try {
 			val src = user_manager.fileBase + Config.FILE_NAME_DB
 			val dst = user_manager.fileBase + filename
-			logger.debug("Copying {} to {}", src, dst)
+			logger.debug("Copying {} to {}", src.anonymize(), dst.anonymize())
 			Files.copy(
 				File(src).toPath(),
 				File(dst).toPath())
