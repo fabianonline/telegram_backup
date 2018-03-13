@@ -56,7 +56,7 @@ object IniSettings {
 	
 	fun println() = println(settings)
 	
-	fun get(key: String, default: String? = null): String? = settings.get(key)?.last() ?: default
+	fun getString(key: String, default: String? = null): String? = settings.get(key)?.last() ?: default
 	fun getStringList(key: String): List<String>? = settings.get(key)
 	fun getInt(key: String, default: Int? = null): Int? = try { settings.get(key)?.last()?.toInt() } catch (e: NumberFormatException) { null } ?: default
 	fun getBoolean(key: String, default: Boolean = false): Boolean {
@@ -67,7 +67,7 @@ object IniSettings {
 	fun getArray(key: String): List<String> = settings.get(key) ?: listOf<String>()
 	
 	val gmaps_key: String
-		get() = get("gmaps_key", default=Config.SECRET_GMAPS)!!
+		get() = getString("gmaps_key", default=Config.SECRET_GMAPS)!!
 	val pagination: Boolean
 		get() = getBoolean("pagination", default=true)
 	val pagination_size: Int
