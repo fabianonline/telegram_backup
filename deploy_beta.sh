@@ -26,7 +26,7 @@ echo "Notifying the Telegram group..."
 release_notes=$(echo "$release_notes" | sed 's/\* /• /' | sed 's/&/&amp;/g' | sed 's/</\&lt;/g' | sed 's/>/\&gt;/g')
 message="<b>New beta release $version</b>"$'\n\n'
 message="${message}${additional_notes}"$'\n\n'
-message="${message}${release_notes}"$'\n\n'
+message="${message}Changes since the last <i>real</i> release:"$'\n'"${release_notes}"$'\n\n'
 message="${message}<b>This is a release for testing purposes only. There may be bugs included that might destroy your data. Only use this beta release if you know what you're doing. AND MAKE A BACKUP OF YOUR BACKUP BEFORE USING IT!</b>"$'\n\n'
 message="${message}Please report back if you used this release and encountered a bug. Also report back, if you used it and IT WORKED, please. Thank you."$'\n\n'
 message="${message}https://files.fabianonline.de/${filename}"
