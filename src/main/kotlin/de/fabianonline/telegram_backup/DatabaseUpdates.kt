@@ -111,10 +111,10 @@ class DatabaseUpdates(protected var conn: Connection, protected var db: Database
 				logger.debug("No update necessary.")
 			}
 
+			stmt.close()
 		} catch (e: SQLException) {
 			throw RuntimeException(e)
 		}
-
 	}
 
 	private fun getUpdateToVersion(i: Int): DatabaseUpdate {
@@ -145,7 +145,6 @@ internal abstract class DatabaseUpdate(protected var conn: Connection, protected
 		} catch (e: SQLException) {
 			throw RuntimeException(e)
 		}
-
 	}
 
 	@Throws(SQLException::class)
@@ -155,6 +154,8 @@ internal abstract class DatabaseUpdate(protected var conn: Connection, protected
 		_doUpdate()
 		logger.debug("Saving current database version to the db")
 		stmt.executeUpdate("INSERT INTO database_versions (version) VALUES ($version)")
+
+		stmt.close()
 	}
 
 	@Throws(SQLException::class)

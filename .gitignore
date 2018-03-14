@@ -13,3 +13,4 @@ dev/
 todo
 deploy.secret.sh
 release_notes.txt
+out/

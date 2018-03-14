@@ -278,11 +278,14 @@ class Database private constructor(var client: TelegramClient) {
 		try {
 			val rs = stmt!!.executeQuery(query)
 			rs.next()
-			return rs.getInt(1)
+
+			val result = rs.getInt(1)
+
+			rs.close()
+			return result
 		} catch (e: SQLException) {
 			throw RuntimeException("Could not get count of messages.")
 		}
-
 	}
 
 	@Synchronized
