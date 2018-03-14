@@ -34,9 +34,23 @@ object Utils {
 
 	private val logger = LoggerFactory.getLogger(Utils::class.java) as Logger
 
-	fun getAccounts(): Vector<String> {
+	fun print_accounts(file_base: String) {
+		println("List of available accounts:")
+		val accounts = getAccounts(file_base)
+		if (accounts.size > 0) {
+			for (str in accounts) {
+				println(" " + str.anonymize())
+			}
+			println("Use '--account <x>' to use one of those accounts.")
+		} else {
+			println("NO ACCOUNTS FOUND")
+			println("Use '--login' to login to a telegram account.")
+		}
+	}
+
+	fun getAccounts(file_base: String): Vector<String> {
 		val accounts = Vector<String>()
-		val folder = File(Config.FILE_BASE)
+		val folder = File(file_base)
 		val files = folder.listFiles()
 		if (files != null)
 			for (f in files) {

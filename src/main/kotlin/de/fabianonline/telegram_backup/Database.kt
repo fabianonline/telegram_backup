@@ -51,6 +51,33 @@ class Database private constructor(var client: TelegramClient) {
 	private var conn: Connection? = null
 	private var stmt: Statement? = null
 	var user_manager: UserManager
+	
+	init {
+		private val logger = LoggerFactory.getLogger(Database::class.java)
+		
+		this.user_manager = UserManager.getInstance()
+		System.out.println("Opening database...")
+		try {
+			Class.forName("org.sqlite.JDBC")
+		} catch (e: ClassNotFoundException) {
+			CommandLineController.show_error("Could not load jdbc-sqlite class.")
+		}
+
+		val path = "jdbc:sqlite:${user_manager.fileBase}${Config.FILE_NAME_DB}"
+
+		try {
+			conn = DriverManager.getConnection(path)
+			stmt = conn!!.createStatement()
+		} catch (e: SQLException) {
+			CommandLineController.show_error("Could not connect to SQLITE database.")
+		}
+
+		// Run updates
+		val updates = DatabaseUpdates(conn!!, this)
+		updates.doUpdates()
+
+		System.out.println("Database is ready.")
+	}
 
 	fun getTopMessageID(): Int {
 		try {
@@ -69,34 +96,32 @@ class Database private constructor(var client: TelegramClient) {
 	fun getChatCount(): Int = queryInt("SELECT COUNT(*) FROM chats")
 	fun getUserCount(): Int = queryInt("SELECT COUNT(*) FROM users")
 
-	val missingIDs: LinkedList<Int>
-		get() {
-			try {
-				val missing = LinkedList<Int>()
-				val max = getTopMessageID()
-				val rs = stmt!!.executeQuery("SELECT message_id FROM messages WHERE source_type IN ('group', 'dialog') ORDER BY id")
-				rs.next()
-				var id = rs.getInt(1)
-				for (i in 1..max) {
-					if (i == id) {
-						rs.next()
-						if (rs.isClosed()) {
-							id = Integer.MAX_VALUE
-						} else {
-							id = rs.getInt(1)
-						}
-					} else if (i < id) {
-						missing.add(i)
+	fun getMissingIDs: LinkedList<Int>()
+		try {
+			val missing = LinkedList<Int>()
+			val max = getTopMessageID()
+			val rs = stmt!!.executeQuery("SELECT message_id FROM messages WHERE source_type IN ('group', 'dialog') ORDER BY id")
+			rs.next()
+			var id = rs.getInt(1)
+			for (i in 1..max) {
+				if (i == id) {
+					rs.next()
+					if (rs.isClosed()) {
+						id = Integer.MAX_VALUE
+					} else {
+						id = rs.getInt(1)
 					}
+				} else if (i < id) {
+					missing.add(i)
 				}
-				rs.close()
-				return missing
-			} catch (e: SQLException) {
-				e.printStackTrace()
-				throw RuntimeException("Could not get list of ids.")
 			}
-
+			rs.close()
+			return missing
+		} catch (e: SQLException) {
+			e.printStackTrace()
+			throw RuntimeException("Could not get list of ids.")
 		}
+	}
 
 	fun getMessagesWithMedia(): LinkedList<TLMessage?> {
 		try {
@@ -207,30 +232,7 @@ class Database private constructor(var client: TelegramClient) {
 
 	}
 
-	init {
-		this.user_manager = UserManager.getInstance()
-		System.out.println("Opening database...")
-		try {
-			Class.forName("org.sqlite.JDBC")
-		} catch (e: ClassNotFoundException) {
-			CommandLineController.show_error("Could not load jdbc-sqlite class.")
-		}
-
-		val path = "jdbc:sqlite:${user_manager.fileBase}${Config.FILE_NAME_DB}"
-
-		try {
-			conn = DriverManager.getConnection(path)
-			stmt = conn!!.createStatement()
-		} catch (e: SQLException) {
-			CommandLineController.show_error("Could not connect to SQLITE database.")
-		}
-
-		// Run updates
-		val updates = DatabaseUpdates(conn!!, this)
-		updates.doUpdates()
-
-		System.out.println("Database is ready.")
-	}
+	
 
 	fun backupDatabase(currentVersion: Int) {
 		val filename = String.format(Config.FILE_NAME_DB_BACKUP, currentVersion)
@@ -550,7 +552,9 @@ class Database private constructor(var client: TelegramClient) {
 	fun fetchSetting(key: String): String? {
 		val rs = stmt!!.executeQuery("SELECT value FROM settings WHERE key='${key}'")
 		rs.next()
-		return rs.getString(1)
+		val result = rs.getString(1)
+		rs.close()
+		return result
 	}
 	
 	fun saveSetting(key: String, value: String?) {
@@ -562,6 +566,7 @@ class Database private constructor(var client: TelegramClient) {
 			ps.setString(2, value)
 		}
 		ps.execute()
+		ps.close()
 	}
 	
 	fun getIdsFromQuery(query: String): LinkedList<Int> {
@@ -787,18 +792,6 @@ class Database private constructor(var client: TelegramClient) {
 	}
 
 	companion object {
-		private val logger = LoggerFactory.getLogger(Database::class.java)
-		internal var instance: Database? = null
-
-		fun init(c: TelegramClient) {
-			instance = Database(c)
-		}
-
-		fun getInstance(): Database {
-			if (instance == null) throw RuntimeException("Database is not initialized but getInstance() was called.")
-			return instance!!
-		}
-
 		fun bytesToTLMessage(b: ByteArray?): TLMessage? {
 			try {
 				if (b == null) return null

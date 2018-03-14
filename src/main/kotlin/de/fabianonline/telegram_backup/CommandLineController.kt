@@ -31,7 +31,11 @@ import org.slf4j.Logger
 
 class CommandLineController {
 	private val storage: ApiStorage
-	var app: TelegramApp
+	val app: TelegramApp
+	val target_dir: String
+	val file_base: String
+	val phone_number: String
+	val account_file_base: String
 
 	private fun getLine(): String {
 		if (System.console() != null) {
@@ -53,25 +57,45 @@ class CommandLineController {
 	init {
 		logger.info("CommandLineController started. App version {}", Config.APP_APPVER)
 		
-		this.printHeader()
+		printHeader()
 		if (CommandLineOptions.cmd_version) {
 			System.exit(0)
 		} else if (CommandLineOptions.cmd_help) {
-			this.show_help()
+			show_help()
 			System.exit(0)
 		} else if (CommandLineOptions.cmd_license) {
-			CommandLineController.show_license()
+			show_license()
 			System.exit(0)
 		}
-		this.setupFileBase()
+
+		// Setup file_base
+		logger.debug("Target dir from Config: {}", Config.TARGET_DIR.anonymize())
+		target_dir = CommandLineOptions.val_target ?: Config.TARGET_DIR
+		logger.debug("Target dir after options: {}", target_dir)
+		println("Base directory for files: ${target_dir.anonymize()}")
+
 		if (CommandLineOptions.cmd_list_accounts) {
-			this.list_accounts()
+			Utils.print_accounts(target_dir)
 			System.exit(0)
 		}
+
+		logger.trace("Checking accounts")
+		try {
+			phone_number = selectAccount(target_dir, CommandLineOptions.val_account)
+		} catch(e: AccountNotFoundException) {
+			show_error("The specified account could not be found.")
+		} catch(e: NoAccountsException) {
+			println("No accounts found. Starting login process...")
+			CommandLineOptions.cmd_login = true
+		}
+
+		file_base = target_dir + File.separatorChar + account_to_use
+
+		account = Account(file_base, account_to_use)
+
 		logger.debug("Initializing TelegramApp")
 		app = TelegramApp(Config.APP_ID, Config.APP_HASH, Config.APP_MODEL, Config.APP_SYSVER, Config.APP_APPVER, Config.APP_LANG)
-		logger.trace("Checking accounts")
-		val account = this.selectAccount()
+
 		logger.debug("CommandLineOptions.cmd_login: {}", CommandLineOptions.cmd_login)
 		logger.info("Initializing ApiStorage")
 		storage = ApiStorage(account)
@@ -196,44 +220,22 @@ class CommandLineController {
 		println()
 	}
 
-	private fun setupFileBase() {
-		logger.debug("Target dir at startup: {}", Config.FILE_BASE.anonymize())
-		if (CommandLineOptions.val_target != null) {
-			Config.FILE_BASE = CommandLineOptions.val_target!!
-		}
-		logger.debug("Target dir after options: {}", Config.FILE_BASE.anonymize())
-		System.out.println("Base directory for files: " + Config.FILE_BASE.anonymize())
-	}
-
-	private fun selectAccount(): String? {
-		var account = "none"
-		val accounts = Utils.getAccounts()
-		if (CommandLineOptions.cmd_login) {
-			logger.debug("Login requested, doing nothing.")
-			// do nothing
-		} else if (CommandLineOptions.val_account != null) {
-			logger.debug("Account requested: {}", CommandLineOptions.val_account!!.anonymize())
+	private fun selectAccount(file_base: String, requested_account: String?): String {
+		val found_account: String?
+		val accounts = Utils.getAccounts(file_base)
+		if (requested_account != null) {
+			logger.debug("Account requested: {}", requested_account.anonymize())
 			logger.trace("Checking accounts for match.")
-			var found = false
-			for (acc in accounts) {
-				logger.trace("Checking {}", acc.anonymize())
-				if (acc == CommandLineOptions.val_account) {
-					found = true
-					logger.trace("Matches.")
-					break
-				}
+			found_account = accounts.find{it == requested_account}
+
+			if (found_account == null) {
+				throw AccountNotFoundException()
 			}
-			if (!found) {
-				show_error("Couldn't find account '" + CommandLineOptions.val_account!!.anonymize() + "'. Maybe you want to use '--login' first?")
-			}
-			account = CommandLineOptions.val_account!!
 		} else if (accounts.size == 0) {
-			println("No accounts found. Starting login process...")
-			CommandLineOptions.cmd_login = true
-			return null
+			throw NoAccountsException()
 		} else if (accounts.size == 1) {
-			account = accounts.firstElement()
-			System.out.println("Using only available account: " + account.anonymize())
+			found_account = accounts.firstElement()
+			println("Using only available account: " + account.anonymize())
 		} else {
 			show_error(("You didn't specify which account to use.\n" +
 				"Use '--account <x>' to use account <x>.\n" +
@@ -241,8 +243,8 @@ class CommandLineController {
 			System.exit(1)
 		}
 		logger.debug("accounts.size: {}", accounts.size)
-		logger.debug("account: {}", account.anonymize())
-		return account
+		logger.debug("account: {}", found_account.anonymize())
+		return found_account!!
 	}
 
 	private fun cmd_stats() {
@@ -315,20 +317,6 @@ class CommandLineController {
 		println(" --list-channels       Lists all channels together with their ID")
 	}
 
-	private fun list_accounts() {
-		println("List of available accounts:")
-		val accounts = Utils.getAccounts()
-		if (accounts.size > 0) {
-			for (str in accounts) {
-				System.out.println(" " + str.anonymize())
-			}
-			println("Use '--account <x>' to use one of those accounts.")
-		} else {
-			println("NO ACCOUNTS FOUND")
-			println("Use '--login' to login to a telegram account.")
-		}
-	}
-
 	companion object {
 		private val logger = LoggerFactory.getLogger(CommandLineController::class.java)
 
@@ -342,4 +330,7 @@ class CommandLineController {
 			println("TODO: Print the GPL.")
 		}
 	}
+
+	class AccountNotFoundException() : Exception("Account not found") {}
+	class NoAccountsException() : Exception("No accounts found") {}
 }
