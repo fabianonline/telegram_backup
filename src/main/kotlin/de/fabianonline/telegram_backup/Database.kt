@@ -56,7 +56,9 @@ class Database private constructor(var client: TelegramClient) {
 		try {
 			val rs = stmt!!.executeQuery("SELECT MAX(message_id) FROM messages WHERE source_type IN ('group', 'dialog')")
 			rs.next()
-			return rs.getInt(1)
+			val result = rs.getInt(1)
+			rs.close()
+			return result
 		} catch (e: SQLException) {
 			return 0
 		}
@@ -87,6 +89,7 @@ class Database private constructor(var client: TelegramClient) {
 						missing.add(i)
 					}
 				}
+				rs.close()
 				return missing
 			} catch (e: SQLException) {
 				e.printStackTrace()
@@ -111,16 +114,7 @@ class Database private constructor(var client: TelegramClient) {
 
 	}
 
-	fun getMessagesFromUserCount(): Int {
-		try {
-			val rs = stmt!!.executeQuery("SELECT COUNT(*) FROM messages WHERE sender_id=" + user_manager.user!!.getId())
-			rs.next()
-			return rs.getInt(1)
-		} catch (e: SQLException) {
-			throw RuntimeException(e)
-		}
-
-	}
+	fun getMessagesFromUserCount() = queryInt("SELECT COUNT(*) FROM messages WHERE sender_id=" + user_manager.user!!.getId())
 
 	fun getMessageTypesWithCount(): HashMap<String, Int> = getMessageTypesWithCount(GlobalChat())
 
@@ -164,7 +158,9 @@ class Database private constructor(var client: TelegramClient) {
 		try {
 			val rs = stmt!!.executeQuery("PRAGMA encoding")
 			rs.next()
-			return rs.getString(1)
+			val result = rs.getString(1)
+			rs.close()
+			return result
 		} catch (e: SQLException) {
 			logger.debug("SQLException: {}", e)
 			return "unknown"
@@ -242,7 +238,7 @@ class Database private constructor(var client: TelegramClient) {
 		try {
 			val src = user_manager.fileBase + Config.FILE_NAME_DB
 			val dst = user_manager.fileBase + filename
-			logger.debug("Copying {} to {}", src, dst)
+			logger.debug("Copying {} to {}", src.anonymize(), dst.anonymize())
 			Files.copy(
 				File(src).toPath(),
 				File(dst).toPath())
@@ -255,9 +251,7 @@ class Database private constructor(var client: TelegramClient) {
 
 	}
 
-	fun getTopMessageIDForChannel(id: Int): Int {
-		return queryInt("SELECT MAX(message_id) FROM messages WHERE source_id=$id AND source_type IN('channel', 'supergroup')")
-	}
+	fun getTopMessageIDForChannel(id: Int): Int = queryInt("SELECT MAX(message_id) FROM messages WHERE source_id=$id AND source_type IN('channel', 'supergroup')")
 
 	fun logRun(start_id: Int, end_id: Int, count: Int) {
 		try {
@@ -269,6 +263,7 @@ class Database private constructor(var client: TelegramClient) {
 			ps.setInt(2, end_id)
 			ps.setInt(3, count)
 			ps.execute()
+			ps.close()
 		} catch (e: SQLException) {
 		}
 
@@ -278,10 +273,9 @@ class Database private constructor(var client: TelegramClient) {
 		try {
 			val rs = stmt!!.executeQuery(query)
 			rs.next()
-
 			val result = rs.getInt(1)
-
 			rs.close()
+
 			return result
 		} catch (e: SQLException) {
 			throw RuntimeException("Could not get count of messages.")
@@ -434,6 +428,9 @@ class Database private constructor(var client: TelegramClient) {
 			ps_insert_or_ignore.clearBatch()
 			conn!!.commit()
 			conn!!.setAutoCommit(true)
+			
+			ps.close()
+			ps_insert_or_ignore.close()
 		} catch (e: Exception) {
 			e.printStackTrace()
 			throw RuntimeException("Exception shown above happened.")
@@ -489,6 +486,9 @@ class Database private constructor(var client: TelegramClient) {
 			ps_insert_or_replace.clearBatch()
 			conn!!.commit()
 			conn!!.setAutoCommit(true)
+			
+			ps_insert_or_ignore.close()
+			ps_insert_or_replace.close()
 		} catch (e: Exception) {
 			e.printStackTrace()
 			throw RuntimeException("Exception shown above happened.")
@@ -538,13 +538,32 @@ class Database private constructor(var client: TelegramClient) {
 			ps_insert_or_replace.clearBatch()
 			conn!!.commit()
 			conn!!.setAutoCommit(true)
+			
+			ps_insert_or_ignore.close()
+			ps_insert_or_replace.close()
 		} catch (e: Exception) {
 			e.printStackTrace()
 			throw RuntimeException("Exception shown above happened.")
 		}
-
 	}
-
+	
+	fun fetchSetting(key: String): String? {
+		val rs = stmt!!.executeQuery("SELECT value FROM settings WHERE key='${key}'")
+		rs.next()
+		return rs.getString(1)
+	}
+	
+	fun saveSetting(key: String, value: String?) {
+		val ps = conn!!.prepareStatement("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)")
+		ps.setString(1, key)
+		if (value==null) {
+			ps.setNull(2, Types.VARCHAR)
+		} else {
+			ps.setString(2, value)
+		}
+		ps.execute()
+	}
+	
 	fun getIdsFromQuery(query: String): LinkedList<Int> {
 		try {
 			val list = LinkedList<Int>()
@@ -567,6 +586,7 @@ class Database private constructor(var client: TelegramClient) {
 			while (rs.next()) {
 				map.put("count.messages.type." + rs.getString(1), rs.getInt(2))
 			}
+			rs.close()
 			return map
 		} catch (e: Exception) {
 			throw RuntimeException(e)
@@ -589,6 +609,7 @@ class Database private constructor(var client: TelegramClient) {
 				map.put("count.messages.media_type.$s", rs.getInt(2))
 			}
 			map.put("count.messages.media_type.any", count)
+			rs.close()
 			return map
 		} catch (e: Exception) {
 			throw RuntimeException(e)
@@ -628,6 +649,7 @@ class Database private constructor(var client: TelegramClient) {
 			}
 			map.put("authors.count.others", count_others)
 			map.put("authors.all", all_data)
+			rs.close()
 			return map
 		} catch (e: Exception) {
 			throw RuntimeException(e)
@@ -637,7 +659,9 @@ class Database private constructor(var client: TelegramClient) {
 	fun getMessageCountForExport(c: AbstractChat): Int {
 		val rs = stmt!!.executeQuery("SELECT COUNT(*) FROM messages WHERE " + c.query);
 		rs.next()
-		return rs.getInt(1)
+		val result = rs.getInt(1)
+		rs.close()
+		return result
 	}
 
 	fun getMessageTimesMatrix(c: AbstractChat): Array<IntArray> {
@@ -650,6 +674,7 @@ class Database private constructor(var client: TelegramClient) {
 			while (rs.next()) {
 				result[if (rs.getInt(1) == 0) 6 else rs.getInt(1) - 1][rs.getInt(2)] = rs.getInt(3)
 			}
+			rs.close()
 			return result
 		} catch (e: Exception) {
 			throw RuntimeException(e)

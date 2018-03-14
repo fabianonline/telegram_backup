@@ -40,6 +40,9 @@ git commit -m "Bumping the version to $VERSION" Dockerfile
 echo "Tagging the new version..."
 git tag -a "$VERSION" -m "Version $VERSION" || error
 
+echo "Building it..."
+gradle build || error "Build failed. What did you do?!"
+
 echo "Checking out stable..."
 git checkout stable || error
 
@@ -52,18 +55,15 @@ git push --all || error
 echo "Pushing tags to Github..."
 git push --tags || error
 
-echo "Building it..."
-gradle build || error "Build failed. What did you do?!"
-
 echo "Generating a release on Github..."
-json=$(ruby -e "require 'json'; puts({tag_name: '$VERSION', name: '$VERSION', draft: true, body: \$stdin.read}.to_json)" <<< "$release_notes") || error "Couldn't generate JSON for Github"
+json=$(ruby -e "require 'json'; puts({tag_name: '$VERSION', name: '$VERSION', body: \$stdin.read}.to_json)" <<< "$release_notes") || error "Couldn't generate JSON for Github"
 
 json=$(curl $CURL_OPTS https://api.github.com/repos/fabianonline/telegram_backup/releases -XPOST -d "$json") || error "Github failure"
 
 echo "Uploading telegram_backup.jar to Github..."
 upload_url=$(jq -r ".upload_url" <<< "$json") || error "Could not parse JSON from Github"
 upload_url=$(sed 's/{.*}//' <<< "$upload_url")
-release_url=$(jq -r ".url" <<< "$json") || error "Could not parse JSON from Github"
+release_url=$(jq -r ".html_url" <<< "$json") || error "Could not parse JSON from Github"
 curl $CURL_OPTS --header "Content-Type: application/zip" "${upload_url}?name=telegram_backup.jar" --upload-file build/libs/telegram_backup.jar || error "Asset upload to github failed"
 
 echo "Building the docker image..."
@@ -73,12 +73,15 @@ echo "Pushing the docker image..."
 docker push fabianonline/telegram_backup
 
 echo "Notifying the Telegram group..."
-release_notes=$(sed 's/\* /• /' <<< "$release_notes")
-message="Version $VERSION released"$'\n'$'\n'"$release_notes"$'\n'$'\n'"$release_url"
+release_notes=$(sed 's/\* /• /' | sed 's/&/&amp;/g' | sed 's/</\&lt;/g' | sed 's/>/\&gt;/g' <<< "$release_notes")
+message="<b>Version $VERSION was just released</b>"$'\n'$'\n'"$release_notes"$'\n'$'\n'"$release_url"
 
-curl https://api.telegram.org/bot${BOT_TOKEN}/sendMessage -XPOST --form "text=<-" --form-string "chat_id=${CHAT_ID}" <<< "$message"
+curl https://api.telegram.org/bot${BOT_TOKEN}/sendMessage -XPOST --form "text=<-" --form-string "chat_id=${CHAT_ID}" --form-string "parse_mode=HTML" --form-string "disable_web_page_preview=true" <<< "$message"
 
 echo "Cleaning release_notes.txt..."
 > release_notes.txt
+
+echo "Checking out master..."
+git checkout master
 
 echo "Done."
