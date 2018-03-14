@@ -78,6 +78,10 @@ class CommandLineController {
 			Utils.print_accounts(target_dir)
 			System.exit(0)
 		}
+		
+		if (CommandLineOptions.cmd_login) {
+			cmd_login(target_dir, CommandLineOptions.val_account)
+		}
 
 		logger.trace("Checking accounts")
 		try {
@@ -86,7 +90,7 @@ class CommandLineController {
 			show_error("The specified account could not be found.")
 		} catch(e: NoAccountsException) {
 			println("No accounts found. Starting login process...")
-			CommandLineOptions.cmd_login = true
+			cmd_login(target_dir, CommandLineOptions.val_account)
 		}
 
 		file_base = target_dir + File.separatorChar + account_to_use
@@ -273,9 +277,7 @@ class CommandLineController {
 		}
 	}
 
-	@Throws(RpcErrorException::class, IOException::class)
-	private fun cmd_login(phoneToUse: String?) {
-		val user = UserManager.getInstance()
+	private fun cmd_login(target_dir: String, phoneToUse: String?): Nothing {
 		val phone: String
 		if (phoneToUse == null) {
 			println("Please enter your phone number in international format.")
@@ -284,6 +286,7 @@ class CommandLineController {
 		} else {
 			phone = phoneToUse
 		}
+		
 		user.sendCodeToPhoneNumber(phone)
 		println("Telegram sent you a code. Please enter it here.")
 		val code = getLine()
