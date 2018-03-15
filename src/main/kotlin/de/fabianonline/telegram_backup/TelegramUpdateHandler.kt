@@ -140,7 +140,7 @@ internal class TelegramUpdateHandler : UpdateCallback {
 			vector.add(abs_msg)
 			db!!.saveMessages(vector, Kotlogram.API_LAYER)
 			System.out.print('.')
-			if (abs_msg is TLMessage) {
+			if (abs_msg is TLMessage && IniSettings.download_media==true) {
 				val fm = FileManagerFactory.getFileManager(abs_msg, user!!, client)
 				if (fm != null && !fm.isEmpty && !fm.downloaded) {
 					try {
