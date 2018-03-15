@@ -309,38 +309,46 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
 			logger.debug("Found {} messages", ids.size)
 			downloadMessages(ids, null, source_type=MessageSource.NORMAL)
 		}
-
-		val messages = this.db!!.getMessagesWithMedia()
-		logger.debug("Database returned {} messages with media", messages.size)
-		prog!!.onMediaDownloadStart(messages.size)
-		for (msg in messages) {
-			if (msg == null) continue
-			val m = FileManagerFactory.getFileManager(msg, user!!, client!!)
-			logger.trace("message {}, {}, {}, {}, {}",
-				msg.getId(),
-				msg.getMedia().javaClass.getSimpleName().replace("TLMessageMedia", "…"),
-				m!!.javaClass.getSimpleName(),
-				if (m.isEmpty) "empty" else "non-empty",
-				if (m.downloaded) "downloaded" else "not downloaded")
-			if (m.isEmpty) {
-				prog!!.onMediaDownloadedEmpty()
-			} else if (m.downloaded) {
-				prog!!.onMediaAlreadyPresent(m)
-			} else if (IniSettings.max_file_age!=null && (System.currentTimeMillis() / 1000) - msg.date > IniSettings.max_file_age * 24 * 60 * 60) {
-				prog!!.onMediaTooOld()
-			} else {
-				try {
-					val result = m.download()
-					if (result) {
-						prog!!.onMediaDownloaded(m)
-					} else {
+		
+		var offset = 0
+		val limit = 1000
+		val message_count = this.db!!.getMessagesWithMediaCount()
+		prog!!.onMediaDownloadStart(message_count)
+		while (true) {
+			logger.debug("Querying messages with media, limit={}, offset={}", limit, offset)
+			val messages = this.db!!.getMessagesWithMedia(limit=limit, offset=offset)
+			if (messages.size == 0) break
+			offset += limit
+			logger.debug("Database returned {} messages with media", messages.size)
+			
+			for (msg in messages) {
+				if (msg == null) continue
+				val m = FileManagerFactory.getFileManager(msg, user!!, client!!)
+				logger.trace("message {}, {}, {}, {}, {}",
+					msg.getId(),
+					msg.getMedia().javaClass.getSimpleName().replace("TLMessageMedia", "…"),
+					m!!.javaClass.getSimpleName(),
+					if (m.isEmpty) "empty" else "non-empty",
+					if (m.downloaded) "downloaded" else "not downloaded")
+				if (m.isEmpty) {
+					prog!!.onMediaDownloadedEmpty()
+				} else if (m.downloaded) {
+					prog!!.onMediaAlreadyPresent(m)
+				} else if (IniSettings.max_file_age!=null && (System.currentTimeMillis() / 1000) - msg.date > IniSettings.max_file_age * 24 * 60 * 60) {
+					prog!!.onMediaTooOld()
+				} else {
+					try {
+						val result = m.download()
+						if (result) {
+							prog!!.onMediaDownloaded(m)
+						} else {
+							prog!!.onMediaSkipped()
+						}
+					} catch (e: TimeoutException) {
+						// do nothing - skip this file
 						prog!!.onMediaSkipped()
 					}
-				} catch (e: TimeoutException) {
-					// do nothing - skip this file
-					prog!!.onMediaSkipped()
 				}
-
 			}
 		}
 		prog!!.onMediaDownloadFinished()

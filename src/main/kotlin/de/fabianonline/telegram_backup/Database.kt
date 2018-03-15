@@ -98,10 +98,14 @@ class Database private constructor(var client: TelegramClient) {
 
 		}
 
-	fun getMessagesWithMedia(): LinkedList<TLMessage?> {
+	fun getMessagesWithMediaCount() = queryInt("SELECT COUNT(*) FROM messages WHERE has_media=1")
+
+	fun getMessagesWithMedia(limit: Int = 0, offset: Int = 0): LinkedList<TLMessage?> {
 		try {
 			val list = LinkedList<TLMessage?>()
-			val rs = stmt!!.executeQuery("SELECT data FROM messages WHERE has_media=1")
+			var query = "SELECT data FROM messages WHERE has_media=1 ORDER BY id"
+			if (limit > 0) query += " LIMIT ${limit} OFFSET ${offset}"
+			val rs = stmt!!.executeQuery(query)
 			while (rs.next()) {
 				list.add(bytesToTLMessage(rs.getBytes(1)))
 			}
