@@ -52,6 +52,7 @@ internal class CommandLineDownloadProgress : DownloadProgressInterface {
 		println("'.' - Previously downloaded file        'e' - Empty file")
 		println("' ' - Ignored media type (weblinks or contacts, for example)")
 		println("'x' - File skipped because of errors - will be tried again at next run")
+		println("'_' - Message is older than max_file_age")
 		println("" + count + " Files to check / download")
 	}
 
@@ -75,6 +76,8 @@ internal class CommandLineDownloadProgress : DownloadProgressInterface {
 		showNewLine()
 		println("Done.")
 	}
+	
+	override fun onMediaTooOld() = show("_")
 
 	private fun show(letter: String) {
 		print(letter)

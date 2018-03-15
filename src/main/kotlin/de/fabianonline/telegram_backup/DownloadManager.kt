@@ -326,6 +326,8 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
 				prog!!.onMediaDownloadedEmpty()
 			} else if (m.downloaded) {
 				prog!!.onMediaAlreadyPresent(m)
+			} else if (IniSettings.max_file_age!=null && (System.currentTimeMillis() / 1000) - msg.date > IniSettings.max_file_age * 24 * 60 * 60) {
+				prog!!.onMediaTooOld()
 			} else {
 				try {
 					val result = m.download()

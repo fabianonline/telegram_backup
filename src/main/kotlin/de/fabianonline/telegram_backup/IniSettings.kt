@@ -82,4 +82,5 @@ object IniSettings {
 		get() = getStringList("whitelist_channels")
 	val blacklist_channels: List<String>?
 		get() = getStringList("blacklist_channels")
+	val max_file_age = getInt("max_file_age")
 }
