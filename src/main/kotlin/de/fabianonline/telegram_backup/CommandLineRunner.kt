@@ -29,24 +29,30 @@ import ch.qos.logback.core.ConsoleAppender
 import ch.qos.logback.classic.Level
 
 fun main(args: Array<String>) {
-	CommandLineOptions.parseOptions(args)
-
-	CommandLineRunner.setupLogging()
-	CommandLineRunner.checkVersion()
-
-
-
-	if (true || CommandLineOptions.cmd_console) {
-		// Always use the console for now.
-		CommandLineController()
-	} else {
-		GUIController()
-	}
+	val clr = CommandLineRunner(args)
+	
+	clr.setupLogging()
+	clr.checkVersion()
+	clr.run()
 }
 
-object CommandLineRunner {
+class CommandLineRunner(args: Array<String>) {
+	val logger = LoggerFactory.getLogger(CommandLineRunner::class.java) as Logger
+	val options = CommandLineOptions(args)
+	
+	fun run() {
+		// Always use the console for now.
+		try {
+			CommandLineController(options)
+		} catch (e: Throwable) {
+			println("An error occured!")
+			e.printStackTrace()
+			logger.error("Exception caught!", e)
+			System.exit(1)
+		}
+	}
+	
 	fun setupLogging() {
-		val logger = LoggerFactory.getLogger(CommandLineRunner::class.java) as Logger
 		logger.trace("Setting up Loggers...")
 		val rootLogger = LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME) as Logger
 		val rootContext = rootLogger.getLoggerContext()
@@ -65,13 +71,13 @@ object CommandLineRunner {
 		rootLogger.addAppender(appender)
 		rootLogger.setLevel(Level.OFF)
 
-		if (CommandLineOptions.cmd_trace) {
+		if (options.cmd_trace) {
 			(LoggerFactory.getLogger("de.fabianonline.telegram_backup") as Logger).setLevel(Level.TRACE)
-		} else if (CommandLineOptions.cmd_debug) {
+		} else if (options.cmd_debug) {
 			(LoggerFactory.getLogger("de.fabianonline.telegram_backup") as Logger).setLevel(Level.DEBUG)
 		}
 
-		if (CommandLineOptions.cmd_trace_telegram) {
+		if (options.cmd_trace_telegram) {
 			(LoggerFactory.getLogger("com.github.badoualy") as Logger).setLevel(Level.TRACE)
 		}
 	}

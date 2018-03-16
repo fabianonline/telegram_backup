@@ -43,7 +43,7 @@ import java.util.concurrent.TimeoutException
 
 import org.apache.commons.io.FileUtils
 
-class UnsupportedFileManager(msg: TLMessage, user: UserManager, client: TelegramClient, type: String) : AbstractMediaFileManager(msg, user, client) {
+class UnsupportedFileManager(msg: TLMessage, user: UserManager, type: String) : AbstractMediaFileManager(msg, user) {
 	override var name = type
 	override val targetFilename = ""
 	override val targetPath = ""

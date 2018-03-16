@@ -22,120 +22,64 @@ import com.github.badoualy.telegram.mtproto.auth.AuthKey
 import com.github.badoualy.telegram.mtproto.model.MTSession
 
 import org.apache.commons.io.FileUtils
+import org.slf4j.LoggerFactory
+import org.slf4j.Logger
 
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.IOException
 
-internal class ApiStorage(prefix: String?) : TelegramApiStorage {
-	private var prefix: String? = null
-	private var do_save = false
-	private var auth_key: AuthKey? = null
-	private var dc: DataCenter? = null
-	private var file_auth_key: File? = null
-	private var file_dc: File? = null
-
+internal class ApiStorage(val base_dir: String) : TelegramApiStorage {
+	var auth_key: AuthKey? = null
+	var dc: DataCenter? = null
+	val file_auth_key: File
+	val file_dc: File
+	val logger = LoggerFactory.getLogger(ApiStorage::class.java)
+	                                   
+	
 	init {
-		this.setPrefix(prefix)
-	}
-
-	fun setPrefix(prefix: String?) {
-		this.prefix = prefix
-		this.do_save = this.prefix != null
-		if (this.do_save) {
-			val base = Config.FILE_BASE +
-				File.separatorChar +
-				this.prefix +
-				File.separatorChar
-			this.file_auth_key = File(base + Config.FILE_NAME_AUTH_KEY)
-			this.file_dc = File(base + Config.FILE_NAME_DC)
-			this._saveAuthKey()
-			this._saveDc()
-		} else {
-			this.file_auth_key = null
-			this.file_dc = null
-		}
+		file_auth_key = File(base_dir + Config.FILE_NAME_AUTH_KEY)
+		file_dc = File(base_dir + Config.FILE_NAME_DC)
 	}
 
 	override fun saveAuthKey(authKey: AuthKey) {
-		this.auth_key = authKey
-		this._saveAuthKey()
-	}
-
-	private fun _saveAuthKey() {
-		if (this.do_save && this.auth_key != null) {
-			try {
-				FileUtils.writeByteArrayToFile(this.file_auth_key, this.auth_key!!.key)
-			} catch (e: IOException) {
-				e.printStackTrace()
-			}
-
-		}
+		FileUtils.writeByteArrayToFile(file_auth_key, authKey.key)
 	}
 
 	override fun loadAuthKey(): AuthKey? {
-		if (this.auth_key != null) return this.auth_key
-		if (this.file_auth_key != null) {
-			try {
-				return AuthKey(FileUtils.readFileToByteArray(this.file_auth_key))
-			} catch (e: IOException) {
-				if (e !is FileNotFoundException) e.printStackTrace()
-			}
-
+		try {
+			return AuthKey(FileUtils.readFileToByteArray(file_auth_key))
+		} catch (e: FileNotFoundException) {
+			return null
 		}
-
-		return null
 	}
 
 	override fun saveDc(dataCenter: DataCenter) {
-		this.dc = dataCenter
-		this._saveDc()
-	}
-
-	private fun _saveDc() {
-		if (this.do_save && this.dc != null) {
-			try {
-				FileUtils.write(this.file_dc, this.dc!!.toString())
-			} catch (e: IOException) {
-				e.printStackTrace()
-			}
-
-		}
+		FileUtils.write(file_dc, dataCenter.toString())
 	}
 
 	override fun loadDc(): DataCenter? {
-		if (this.dc != null) return this.dc
-		if (this.file_dc != null) {
-			try {
-				val infos = FileUtils.readFileToString(this.file_dc).split(":")
-				return DataCenter(infos[0], Integer.parseInt(infos[1]))
-			} catch (e: IOException) {
-				if (e !is FileNotFoundException) e.printStackTrace()
-			}
-
+		try {
+			val infos = FileUtils.readFileToString(this.file_dc).split(":")
+			return DataCenter(infos[0], Integer.parseInt(infos[1]))
+		} catch (e: FileNotFoundException) {
+			return null
 		}
-		return null
 	}
 
 	override fun deleteAuthKey() {
-		if (this.do_save) {
-			try {
-				FileUtils.forceDelete(this.file_auth_key)
-			} catch (e: IOException) {
-				e.printStackTrace()
-			}
-
+		try {
+			FileUtils.forceDelete(file_auth_key)
+		} catch (e: IOException) {
+			logger.warn("Exception in deleteAuthKey(): {}", e)
 		}
 	}
 
 	override fun deleteDc() {
-		if (this.do_save) {
-			try {
-				FileUtils.forceDelete(this.file_dc)
-			} catch (e: IOException) {
-				e.printStackTrace()
-			}
-
+		try {
+			FileUtils.forceDelete(file_dc)
+		} catch (e: IOException) {
+			logger.warn("Exception in deleteDc(): {}", e)
 		}
 	}
 

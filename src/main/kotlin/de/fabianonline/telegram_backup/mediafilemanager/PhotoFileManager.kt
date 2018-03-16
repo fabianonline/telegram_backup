@@ -42,7 +42,7 @@ import java.util.concurrent.TimeoutException
 
 import org.apache.commons.io.FileUtils
 
-class PhotoFileManager(msg: TLMessage, user: UserManager, client: TelegramClient) : AbstractMediaFileManager(msg, user, client) {
+class PhotoFileManager(msg: TLMessage, user: UserManager) : AbstractMediaFileManager(msg, user) {
 	private lateinit var photo: TLPhoto
 	override var size = 0
 	private lateinit var photo_size: TLPhotoSize

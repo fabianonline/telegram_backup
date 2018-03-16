@@ -42,7 +42,7 @@ import java.util.concurrent.TimeoutException
 
 import org.apache.commons.io.FileUtils
 
-open class DocumentFileManager(msg: TLMessage, user: UserManager, client: TelegramClient) : AbstractMediaFileManager(msg, user, client) {
+open class DocumentFileManager(msg: TLMessage, user: UserManager) : AbstractMediaFileManager(msg, user) {
 	protected var doc: TLDocument? = null
 	override lateinit var extension: String
 

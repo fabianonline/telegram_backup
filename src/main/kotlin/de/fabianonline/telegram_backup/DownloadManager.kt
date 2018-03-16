@@ -61,17 +61,8 @@ enum class MessageSource(val descr: String) {
 	SUPERGROUP("supergroup")
 }
 
-class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressInterface) {
-	internal var user: UserManager? = null
-	internal var db: Database? = null
-	internal var prog: DownloadProgressInterface? = null
+class DownloadManager(val client: TelegramClient, val prog: DownloadProgressInterface, val db: Database, val user_manager: UserManager, val inisettings: IniSettings) {
 	internal var has_seen_flood_wait_message = false
-
-	init {
-		this.user = UserManager.getInstance()
-		this.prog = p
-		this.db = Database.getInstance()
-	}
 
 	@Throws(RpcErrorException::class, IOException::class)
 	fun downloadMessages(limit: Int?) {
@@ -173,18 +164,14 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
 		}
 		*/
 
-		if (IniSettings.download_channels || IniSettings.download_supergroups) {
-			// TODO Add chat title (and other stuff?) to the database
+		if (inisettings.download_channels) {
+			println("Checking channels...")
+			for (channel in chats.channels) { if (channel.download) downloadMessagesFromChannel(channel) }
+		}
 			
-			if (IniSettings.download_channels) {
-				println("Checking channels...")
-				for (channel in chats.channels) { if (channel.download) downloadMessagesFromChannel(channel) }
-			}
-			
-			if (IniSettings.download_supergroups) {
-				println("Checking supergroups...")
-				for (supergroup in chats.supergroups) { if (supergroup.download) downloadMessagesFromChannel(supergroup) }
-			}
+		if (inisettings.download_supergroups) {
+			println("Checking supergroups...")
+			for (supergroup in chats.supergroups) { if (supergroup.download) downloadMessagesFromChannel(supergroup) }
 		}
 	}
 	
@@ -315,7 +302,7 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
 		prog!!.onMediaDownloadStart(messages.size)
 		for (msg in messages) {
 			if (msg == null) continue
-			val m = FileManagerFactory.getFileManager(msg, user!!, client!!)
+			val m = FileManagerFactory.getFileManager(msg, user_manager)
 			logger.trace("message {}, {}, {}, {}, {}",
 				msg.getId(),
 				msg.getMedia().javaClass.getSimpleName().replace("TLMessageMedia", "…"),
@@ -366,10 +353,10 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
 			if (tl_peer_channel == null) continue
 			
 			var download = true
-			if (IniSettings.whitelist_channels != null) {
-				download = IniSettings.whitelist_channels!!.contains(tl_channel.getId().toString())
-			} else if (IniSettings.blacklist_channels != null) {
-				download = !IniSettings.blacklist_channels!!.contains(tl_channel.getId().toString())
+			if (inisettings.whitelist_channels != null) {
+				download = inisettings.whitelist_channels.contains(tl_channel.getId().toString())
+			} else if (inisettings.blacklist_channels != null) {
+				download = !inisettings.blacklist_channels.contains(tl_channel.getId().toString())
 			}
 			val channel = Channel(id=tl_channel.getId(), access_hash=tl_channel.getAccessHash(), title=tl_channel.getTitle(), obj=tl_peer_channel, download=download)
 			if (tl_channel.getMegagroup()) {

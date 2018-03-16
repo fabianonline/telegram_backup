@@ -29,149 +29,136 @@ import java.util.HashMap
 import org.slf4j.LoggerFactory
 import org.slf4j.Logger
 
-class CommandLineController {
-	private val storage: ApiStorage
-	val app: TelegramApp
-	val target_dir: String
-	val file_base: String
-	val phone_number: String
-	val account_file_base: String
-
-	private fun getLine(): String {
-		if (System.console() != null) {
-			return System.console().readLine("> ")
-		} else {
-			print("> ")
-			return Scanner(System.`in`).nextLine()
-		}
-	}
-
-	private fun getPassword(): String {
-		if (System.console() != null) {
-			return String(System.console().readPassword("> "))
-		} else {
-			return getLine()
-		}
-	}
-
+class CommandLineController(val options: CommandLineOptions) {
 	init {
+		val storage: ApiStorage
+		val app: TelegramApp
+		val target_dir: String
+		val file_base: String
+		val phone_number: String
+		val handler: TelegramUpdateHandler
+		val client: TelegramClient
+		val user_manager: UserManager
+		val inisettings: IniSettings
+		val database: Database
 		logger.info("CommandLineController started. App version {}", Config.APP_APPVER)
 		
 		printHeader()
-		if (CommandLineOptions.cmd_version) {
+		if (options.cmd_version) {
 			System.exit(0)
-		} else if (CommandLineOptions.cmd_help) {
+		} else if (options.cmd_help) {
 			show_help()
 			System.exit(0)
-		} else if (CommandLineOptions.cmd_license) {
+		} else if (options.cmd_license) {
 			show_license()
 			System.exit(0)
 		}
+		
+		// Setup TelegramApp
+		logger.debug("Initializing TelegramApp")
+		app = TelegramApp(Config.APP_ID, Config.APP_HASH, Config.APP_MODEL, Config.APP_SYSVER, Config.APP_APPVER, Config.APP_LANG)
 
 		// Setup file_base
 		logger.debug("Target dir from Config: {}", Config.TARGET_DIR.anonymize())
-		target_dir = CommandLineOptions.val_target ?: Config.TARGET_DIR
+		target_dir = options.val_target ?: Config.TARGET_DIR
 		logger.debug("Target dir after options: {}", target_dir)
 		println("Base directory for files: ${target_dir.anonymize()}")
 
-		if (CommandLineOptions.cmd_list_accounts) {
+		if (options.cmd_list_accounts) {
 			Utils.print_accounts(target_dir)
 			System.exit(0)
 		}
 		
-		if (CommandLineOptions.cmd_login) {
-			cmd_login(target_dir, CommandLineOptions.val_account)
+		if (options.cmd_login) {
+			cmd_login(app, target_dir, options.val_account)
 		}
 
 		logger.trace("Checking accounts")
-		try {
-			phone_number = selectAccount(target_dir, CommandLineOptions.val_account)
+		phone_number = try { selectAccount(target_dir, options.val_account)
 		} catch(e: AccountNotFoundException) {
 			show_error("The specified account could not be found.")
 		} catch(e: NoAccountsException) {
 			println("No accounts found. Starting login process...")
-			cmd_login(target_dir, CommandLineOptions.val_account)
+			cmd_login(app, target_dir, options.val_account)
 		}
+		
+		// TODO: Create a new TelegramApp if the user set his/her own TelegramApp credentials
 
-		file_base = target_dir + File.separatorChar + account_to_use
+		// At this point we can assume that the selected user account ("phone_number") exists.
+		// So we can create some objects:
+		file_base = build_file_base(target_dir, phone_number)
 
-		account = Account(file_base, account_to_use)
-
-		logger.debug("Initializing TelegramApp")
-		app = TelegramApp(Config.APP_ID, Config.APP_HASH, Config.APP_MODEL, Config.APP_SYSVER, Config.APP_APPVER, Config.APP_LANG)
-
-		logger.debug("CommandLineOptions.cmd_login: {}", CommandLineOptions.cmd_login)
 		logger.info("Initializing ApiStorage")
-		storage = ApiStorage(account)
+		storage = ApiStorage(file_base)
+		
 		logger.info("Initializing TelegramUpdateHandler")
-		val handler = TelegramUpdateHandler()
+		handler = TelegramUpdateHandler()
+		
 		logger.info("Creating Client")
-		val client = Kotlogram.getDefaultClient(app, storage, Kotlogram.PROD_DC4, handler)
+		client = Kotlogram.getDefaultClient(app, storage, Kotlogram.PROD_DC4, handler)
+		
+		// From now on we have a new catch-all-block that will terminate it's TelegramClient when an exception happens.
 		try {
 			logger.info("Initializing UserManager")
-			UserManager.init(client)
-			val user = UserManager.getInstance()
-			if (!CommandLineOptions.cmd_login && !user.loggedIn) {
+			user_manager = UserManager(client)
+		
+			// TODO
+			/*if (!options.cmd_login && !user.loggedIn) {
 				println("Your authorization data is invalid or missing. You will have to login with Telegram again.")
-				CommandLineOptions.cmd_login = true
-			}
-			if (account != null && user.loggedIn) {
-				if (account != "+" + user.user!!.getPhone()) {
-					logger.error("Account: {}, user.user!!.getPhone(): +{}", account.anonymize(), user.user!!.getPhone().anonymize())
-					throw RuntimeException("Account / User mismatch")
-				}
+				options.cmd_login = true
+			}*/
+			
+			if (phone_number != user_manager.phone) {
+				logger.error("phone_number: {}, user_manager.phone: {}", phone_number.anonymize(), user_manager.phone.anonymize())
+				show_error("Account / User mismatch")
 			}
 			
 			// Load the ini file.
-			IniSettings.load()
+			inisettings = IniSettings(file_base)
 			
-			logger.debug("CommandLineOptions.cmd_login: {}", CommandLineOptions.cmd_login)
-			if (CommandLineOptions.cmd_login) {
-				cmd_login(CommandLineOptions.val_account)
-				System.exit(0)
-			}
 			// If we reach this point, we can assume that there is an account and a database can be loaded / created.
-			Database.init(client)
-			if (CommandLineOptions.cmd_stats) {
-				cmd_stats()
+			database = Database(file_base, user_manager)
+			
+			if (options.cmd_stats) {
+				cmd_stats(file_base, database)
 				System.exit(0)
 			}
-			if (CommandLineOptions.val_test != null) {
-				if (CommandLineOptions.val_test == 1) {
+			
+			if (options.val_test != null) {
+				if (options.val_test == 1) {
 					TestFeatures.test1()
-				} else if (CommandLineOptions.val_test == 2) {
+				} else if (options.val_test == 2) {
 					TestFeatures.test2()
 				} else {
-					System.out.println("Unknown test " + CommandLineOptions.val_test)
+					System.out.println("Unknown test " + options.val_test)
 				}
 				System.exit(1)
 			}
-			logger.debug("CommandLineOptions.val_export: {}", CommandLineOptions.val_export)
-			if (CommandLineOptions.val_export != null) {
-				if (CommandLineOptions.val_export!!.toLowerCase().equals("html")) {
-					(HTMLExporter()).export()
+			
+			val export = options.val_export
+			logger.debug("options.val_export: {}", export)
+			if (export != null) {
+				if (export.toLowerCase().equals("html")) {
+					HTMLExporter().export()
 					System.exit(0)
 				} else {
-					show_error("Unknown export format.")
+					show_error("Unknown export format '${export}'.")
 				}
 			}
-			if (user.loggedIn) {
-				System.out.println("You are logged in as ${user.userString.anonymize()}")
-			} else {
-				println("You are not logged in.")
-				System.exit(1)
-			}
-			logger.info("Initializing Download Manager")
-			val d = DownloadManager(client, CommandLineDownloadProgress())
 			
-			if (CommandLineOptions.cmd_list_channels) {
+			println("You are logged in as ${user_manager.toString().anonymize()}")
+
+			logger.info("Initializing Download Manager")
+			val d = DownloadManager(client, CommandLineDownloadProgress(), database, user_manager, inisettings)
+			
+			if (options.cmd_list_channels) {
 				val chats = d.getChats()
 				val print_header = {download: Boolean -> println("%-15s %-40s %s".format("ID", "Title", if (download) "Download" else "")); println("-".repeat(65)) }
 				val format = {c: DownloadManager.Channel, download: Boolean -> "%-15s %-40s %s".format(c.id.toString().anonymize(), c.title.anonymize(), if (download) (if(c.download) "YES" else "no") else "")}
 				var download: Boolean
 
 				println("Channels:")
-				download = IniSettings.download_channels
+				download = inisettings.download_channels
 				if (!download) println("Download of channels is disabled - see download_channels in config.ini")
 				print_header(download)
 				for (c in chats.channels) {
@@ -179,7 +166,7 @@ class CommandLineController {
 				}
 				println()
 				println("Supergroups:")
-				download = IniSettings.download_supergroups
+				download = inisettings.download_supergroups
 				if (!download) println("Download of supergroups is disabled - see download_supergroups in config.ini")
 				print_header(download)
 				for (c in chats.supergroups) {
@@ -188,10 +175,10 @@ class CommandLineController {
 				System.exit(0)
 			}
 			
-			logger.debug("Calling DownloadManager.downloadMessages with limit {}", CommandLineOptions.val_limit_messages)
-			d.downloadMessages(CommandLineOptions.val_limit_messages)
-			logger.debug("IniSettings.download_media: {}", IniSettings.download_media)
-			if (IniSettings.download_media) {
+			logger.debug("Calling DownloadManager.downloadMessages with limit {}", options.val_limit_messages)
+			d.downloadMessages(options.val_limit_messages)
+			logger.debug("IniSettings#download_media: {}", inisettings.download_media)
+			if (inisettings.download_media) {
 				logger.debug("Calling DownloadManager.downloadMedia")
 				d.downloadMedia()
 			} else {
@@ -202,9 +189,9 @@ class CommandLineController {
 			e.printStackTrace()
 			logger.error("Exception caught!", e)
 			// If we encountered an exception, we definitely don't want to start the daemon mode now.
-			CommandLineOptions.cmd_daemon = false
+			options.cmd_daemon = false
 		} finally {
-			if (CommandLineOptions.cmd_daemon) {
+			if (options.cmd_daemon) {
 				handler.activate()
 				println("DAEMON mode requested - keeping running.")
 			} else {
@@ -225,79 +212,63 @@ class CommandLineController {
 	}
 
 	private fun selectAccount(file_base: String, requested_account: String?): String {
-		val found_account: String?
+		var found_account: String? = null
 		val accounts = Utils.getAccounts(file_base)
 		if (requested_account != null) {
 			logger.debug("Account requested: {}", requested_account.anonymize())
 			logger.trace("Checking accounts for match.")
 			found_account = accounts.find{it == requested_account}
-
-			if (found_account == null) {
-				throw AccountNotFoundException()
-			}
 		} else if (accounts.size == 0) {
 			throw NoAccountsException()
 		} else if (accounts.size == 1) {
 			found_account = accounts.firstElement()
-			println("Using only available account: " + account.anonymize())
+			println("Using only available account: " + found_account.anonymize())
 		} else {
-			show_error(("You didn't specify which account to use.\n" +
+			show_error(("You have more than one account but didn't specify which one to use.\n" +
 				"Use '--account <x>' to use account <x>.\n" +
 				"Use '--list-accounts' to see all available accounts."))
 			System.exit(1)
 		}
+		
+		if (found_account == null) {
+			throw AccountNotFoundException()
+		}
+		
 		logger.debug("accounts.size: {}", accounts.size)
 		logger.debug("account: {}", found_account.anonymize())
-		return found_account!!
+		return found_account
 	}
 
-	private fun cmd_stats() {
+	private fun cmd_stats(file_base: String, db: Database) {
 		println()
 		println("Stats:")
 		val format = "%40s: %d%n"
-		System.out.format(format, "Number of accounts", Utils.getAccounts().size)
-		System.out.format(format, "Number of messages", Database.getInstance().getMessageCount())
-		System.out.format(format, "Number of chats", Database.getInstance().getChatCount())
-		System.out.format(format, "Number of users", Database.getInstance().getUserCount())
-		System.out.format(format, "Top message ID", Database.getInstance().getTopMessageID())
+		System.out.format(format, "Number of accounts", Utils.getAccounts(file_base).size)
+		System.out.format(format, "Number of messages", db.getMessageCount())
+		System.out.format(format, "Number of chats", db.getChatCount())
+		System.out.format(format, "Number of users", db.getUserCount())
+		System.out.format(format, "Top message ID", db.getTopMessageID())
 		println()
 		println("Media Types:")
-		for ((key, value) in Database.getInstance().getMessageMediaTypesWithCount()) {
+		for ((key, value) in db.getMessageMediaTypesWithCount()) {
 			System.out.format(format, key, value)
 		}
 		println()
 		println("Api layers of messages:")
-		for ((key, value) in Database.getInstance().getMessageApiLayerWithCount()) {
+		for ((key, value) in db.getMessageApiLayerWithCount()) {
 			System.out.format(format, key, value)
 		}
 		println()
 		println("Message source types:")
-		for ((key, value) in Database.getInstance().getMessageSourceTypeWithCount()) {
+		for ((key, value) in db.getMessageSourceTypeWithCount()) {
 			System.out.format(format, key, value)
 		}
 	}
 
-	private fun cmd_login(target_dir: String, phoneToUse: String?): Nothing {
-		val phone: String
-		if (phoneToUse == null) {
-			println("Please enter your phone number in international format.")
-			println("Example: +4917077651234")
-			phone = getLine()
-		} else {
-			phone = phoneToUse
-		}
-		
-		user.sendCodeToPhoneNumber(phone)
-		println("Telegram sent you a code. Please enter it here.")
-		val code = getLine()
-		user.verifyCode(code)
-		if (user.isPasswordNeeded) {
-			println("We also need your account password. Please enter it now. It should not be printed, so it's okay if you see nothing while typing it.")
-			val pw = getPassword()
-			user.verifyPassword(pw)
-		}
-		storage.setPrefix("+" + user.user!!.getPhone())
-		System.out.println("Everything seems fine. Please run this tool again with '--account +" + user.user!!.getPhone().anonymize() + " to use this account.")
+	private fun cmd_login(app: TelegramApp, target_dir: String, phoneToUse: String?): Nothing {
+		LoginManager(app, target_dir, phoneToUse).run()
+		System.exit(0)
+		throw RuntimeException("Code never reaches this. This exists just to keep the Kotlin compiler happy.")
 	}
 
 	private fun show_help() {
@@ -323,15 +294,18 @@ class CommandLineController {
 	companion object {
 		private val logger = LoggerFactory.getLogger(CommandLineController::class.java)
 
-		public fun show_error(error: String) {
+		public fun show_error(error: String): Nothing {
 			logger.error(error)
 			println("ERROR: " + error)
 			System.exit(1)
+			throw RuntimeException("Code never reaches this. This exists just to keep the Kotlin compiler happy.")
 		}
 
 		fun show_license() {
 			println("TODO: Print the GPL.")
 		}
+		
+		fun build_file_base(target_dir: String, account_to_use: String) = target_dir + File.separatorChar + account_to_use + File.separatorChar
 	}
 
 	class AccountNotFoundException() : Exception("Account not found") {}

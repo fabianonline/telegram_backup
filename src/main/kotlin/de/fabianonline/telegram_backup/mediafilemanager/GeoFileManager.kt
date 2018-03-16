@@ -43,7 +43,7 @@ import java.util.concurrent.TimeoutException
 
 import org.apache.commons.io.FileUtils
 
-class GeoFileManager(msg: TLMessage, user: UserManager, client: TelegramClient) : AbstractMediaFileManager(msg, user, client) {
+class GeoFileManager(msg: TLMessage, user: UserManager) : AbstractMediaFileManager(msg, user) {
 	protected lateinit var geo: TLGeoPoint
 
 	// We don't know the size, so we just guess.

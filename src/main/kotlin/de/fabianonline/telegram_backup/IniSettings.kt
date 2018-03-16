@@ -4,19 +4,14 @@ import java.io.File
 import org.slf4j.LoggerFactory
 import org.slf4j.Logger
 
-object IniSettings {
+class IniSettings(val file_base: String) {
 	val logger = LoggerFactory.getLogger(IniSettings::class.java)
 	var settings = mutableMapOf<String, MutableList<String>>()
 	
 	init {
-		if (UserManager.getInstance().user != null) {
-			loadIni(UserManager.getInstance().fileBase + "config.ini")
-			copySampleIni(UserManager.getInstance().fileBase + "config.sample.ini")
-		}
+		loadIni(file_base + "config.ini")
+		copySampleIni(file_base + "config.sample.ini")
 	}
-	
-	// Dummy function that can be called to force this object to run its init-code.
-	fun load() { }
 	
 	private fun loadIni(filename: String) {
 		val file = File(filename)
@@ -66,20 +61,12 @@ object IniSettings {
 	}
 	fun getArray(key: String): List<String> = settings.get(key) ?: listOf<String>()
 	
-	val gmaps_key: String
-		get() = getString("gmaps_key", default=Config.SECRET_GMAPS)!!
-	val pagination: Boolean
-		get() = getBoolean("pagination", default=true)
-	val pagination_size: Int
-		get() = getInt("pagination_size", default=Config.DEFAULT_PAGINATION)!!
-	val download_media: Boolean
-		get() = getBoolean("download_media", default=true)
-	val download_channels: Boolean
-		get() = getBoolean("download_channels", default=false)
-	val download_supergroups: Boolean
-		get() = getBoolean("download_supergroups", default=false)
-	val whitelist_channels: List<String>?
-		get() = getStringList("whitelist_channels")
-	val blacklist_channels: List<String>?
-		get() = getStringList("blacklist_channels")
+	val gmaps_key = getString("gmaps_key", default=Config.SECRET_GMAPS)!!
+	val pagination = getBoolean("pagination", default=true)
+	val pagination_size = getInt("pagination_size", default=Config.DEFAULT_PAGINATION)!!
+	val download_media = getBoolean("download_media", default=true)
+	val download_channels = getBoolean("download_channels", default=false)
+	val download_supergroups = getBoolean("download_supergroups", default=false)
+	val whitelist_channels = getStringList("whitelist_channels")
+	val blacklist_channels = getStringList("blacklist_channels")
 }

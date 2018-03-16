@@ -15,10 +15,10 @@
 * along with this program. If not, see <http://www.gnu.org/licenses/>. */
 package de.fabianonline.telegram_backup
 
-internal object CommandLineOptions {
-	public var cmd_console = false
-	public var cmd_help = false
-	public var cmd_login = false
+class CommandLineOptions(args: Array<String>) {
+	var cmd_console = false
+	var cmd_help = false
+	var cmd_login = false
 	var cmd_debug = false
 	var cmd_trace = false
 	var cmd_trace_telegram = false
@@ -34,8 +34,8 @@ internal object CommandLineOptions {
 	var val_target: String? = null
 	var val_export: String? = null
 	var val_test: Int? = null
-	@JvmStatic
-	fun parseOptions(args: Array<String>) {
+
+	init {
 		var last_cmd: String? = null
 		loop@ for (arg in args) {
 			if (last_cmd != null) {

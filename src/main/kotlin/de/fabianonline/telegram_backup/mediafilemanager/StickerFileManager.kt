@@ -50,7 +50,7 @@ import java.util.concurrent.TimeoutException
 
 import org.apache.commons.io.FileUtils
 
-class StickerFileManager(msg: TLMessage, user: UserManager, client: TelegramClient) : DocumentFileManager(msg, user, client) {
+class StickerFileManager(msg: TLMessage, user: UserManager) : DocumentFileManager(msg, user) {
 
 	override val isSticker = true
 

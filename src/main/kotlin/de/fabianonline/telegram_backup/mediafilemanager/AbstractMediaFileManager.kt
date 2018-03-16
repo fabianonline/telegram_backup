@@ -43,7 +43,7 @@ import java.util.concurrent.TimeoutException
 
 import org.apache.commons.io.FileUtils
 
-abstract class AbstractMediaFileManager(protected var message: TLMessage, protected var user: UserManager, protected var client: TelegramClient) {
+abstract class AbstractMediaFileManager(protected var message: TLMessage, protected var user: UserManager) {
 	open var isEmpty = false
 	abstract val size: Int
 	abstract val extension: String
