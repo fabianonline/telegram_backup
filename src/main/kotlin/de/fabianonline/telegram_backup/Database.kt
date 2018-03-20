@@ -69,7 +69,7 @@ class Database constructor(val file_base: String, val user_manager: UserManager)
 		}
 
 		// Run updates
-		val updates = DatabaseUpdates(conn!!, this)
+		val updates = DatabaseUpdates(conn, this)
 		updates.doUpdates()
 
 		println("Database is ready.")
@@ -489,13 +489,7 @@ class Database constructor(val file_base: String, val user_manager: UserManager)
 		ps_insert_or_replace.close()
 	}
 	
-	fun fetchSetting(key: String): String? {
-		val rs = stmt.executeQuery("SELECT value FROM settings WHERE key='${key}'")
-		rs.next()
-		val result = rs.getString(1)
-		rs.close()
-		return result
-	}
+	fun fetchSetting(key: String): String? = queryString("SELECT value FROM settings WHERE key='${key}'")
 	
 	fun saveSetting(key: String, value: String?) {
 		val ps = conn.prepareStatement("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)")

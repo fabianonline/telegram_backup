@@ -18,7 +18,6 @@ package de.fabianonline.telegram_backup.mediafilemanager
 
 import de.fabianonline.telegram_backup.UserManager
 import de.fabianonline.telegram_backup.Database
-import de.fabianonline.telegram_backup.StickerConverter
 import de.fabianonline.telegram_backup.DownloadProgressInterface
 
 import com.github.badoualy.telegram.api.TelegramClient

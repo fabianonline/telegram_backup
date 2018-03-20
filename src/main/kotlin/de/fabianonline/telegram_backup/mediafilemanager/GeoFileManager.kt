@@ -17,33 +17,15 @@
 package de.fabianonline.telegram_backup.mediafilemanager
 
 import de.fabianonline.telegram_backup.UserManager
-import de.fabianonline.telegram_backup.Database
-import de.fabianonline.telegram_backup.StickerConverter
-import de.fabianonline.telegram_backup.DownloadProgressInterface
 import de.fabianonline.telegram_backup.DownloadManager
 import de.fabianonline.telegram_backup.IniSettings
 
-import com.github.badoualy.telegram.api.TelegramClient
-import com.github.badoualy.telegram.tl.core.TLIntVector
-import com.github.badoualy.telegram.tl.core.TLObject
-import com.github.badoualy.telegram.tl.api.messages.TLAbsMessages
-import com.github.badoualy.telegram.tl.api.messages.TLAbsDialogs
 import com.github.badoualy.telegram.tl.api.*
-import com.github.badoualy.telegram.tl.api.upload.TLFile
-import com.github.badoualy.telegram.tl.exception.RpcErrorException
-import com.github.badoualy.telegram.tl.api.request.TLRequestUploadGetFile
 
 import java.io.IOException
 import java.io.File
-import java.io.FileOutputStream
-import java.util.ArrayList
-import java.util.LinkedList
-import java.net.URL
-import java.util.concurrent.TimeoutException
 
-import org.apache.commons.io.FileUtils
-
-class GeoFileManager(msg: TLMessage, user: UserManager) : AbstractMediaFileManager(msg, user) {
+class GeoFileManager(msg: TLMessage, user: UserManager, file_base: String) : AbstractMediaFileManager(msg, user, file_base) {
 	protected lateinit var geo: TLGeoPoint
 
 	// We don't know the size, so we just guess.

@@ -30,6 +30,8 @@ import org.slf4j.LoggerFactory
 import org.slf4j.Logger
 
 class CommandLineController(val options: CommandLineOptions) {
+	val logger = LoggerFactory.getLogger(CommandLineController::class.java)
+
 	init {
 		val storage: ApiStorage
 		val app: TelegramApp
@@ -37,7 +39,7 @@ class CommandLineController(val options: CommandLineOptions) {
 		val file_base: String
 		val phone_number: String
 		val handler: TelegramUpdateHandler
-		val client: TelegramClient
+		var client: TelegramClient
 		val user_manager: UserManager
 		val inisettings: IniSettings
 		val database: Database
@@ -91,11 +93,8 @@ class CommandLineController(val options: CommandLineOptions) {
 		logger.info("Initializing ApiStorage")
 		storage = ApiStorage(file_base)
 		
-		logger.info("Initializing TelegramUpdateHandler")
-		handler = TelegramUpdateHandler()
-		
 		logger.info("Creating Client")
-		client = Kotlogram.getDefaultClient(app, storage, Kotlogram.PROD_DC4, handler)
+		client = Kotlogram.getDefaultClient(app, storage, Kotlogram.PROD_DC4, null)
 		
 		// From now on we have a new catch-all-block that will terminate it's TelegramClient when an exception happens.
 		try {
@@ -126,9 +125,9 @@ class CommandLineController(val options: CommandLineOptions) {
 			
 			if (options.val_test != null) {
 				if (options.val_test == 1) {
-					TestFeatures.test1()
+					TestFeatures(database).test1()
 				} else if (options.val_test == 2) {
-					TestFeatures.test2()
+					TestFeatures(database).test2()
 				} else {
 					System.out.println("Unknown test " + options.val_test)
 				}
@@ -139,7 +138,7 @@ class CommandLineController(val options: CommandLineOptions) {
 			logger.debug("options.val_export: {}", export)
 			if (export != null) {
 				if (export.toLowerCase().equals("html")) {
-					HTMLExporter().export()
+					HTMLExporter(database, user_manager, ini=inisettings, file_base=file_base).export()
 					System.exit(0)
 				} else {
 					show_error("Unknown export format '${export}'.")
@@ -184,22 +183,24 @@ class CommandLineController(val options: CommandLineOptions) {
 			} else {
 				println("Skipping media download because download_media is set to false.")
 			}
+
+			if (options.cmd_daemon) {
+				logger.info("Initializing TelegramUpdateHandler")
+				handler = TelegramUpdateHandler(user_manager, database)
+				client.close()
+				logger.info("Creating new client")
+				client = Kotlogram.getDefaultClient(app, storage, Kotlogram.PROD_DC4, handler)
+				println("DAEMON mode requested - keeping running.")
+			}
 		} catch (e: Throwable) {
 			println("An error occured!")
 			e.printStackTrace()
 			logger.error("Exception caught!", e)
-			// If we encountered an exception, we definitely don't want to start the daemon mode now.
-			options.cmd_daemon = false
 		} finally {
-			if (options.cmd_daemon) {
-				handler.activate()
-				println("DAEMON mode requested - keeping running.")
-			} else {
-				client.close()
-				println()
-				println("----- EXIT -----")
-				System.exit(0)
-			}
+			client.close()
+			println()
+			println("----- EXIT -----")
+			System.exit(0)
 		}
 	}
 

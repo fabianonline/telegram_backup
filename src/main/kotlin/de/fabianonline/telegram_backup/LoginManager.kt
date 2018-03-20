@@ -1,6 +1,15 @@
 package de.fabianonline.telegram_backup
 
+import com.github.badoualy.telegram.api.Kotlogram
+import com.github.badoualy.telegram.api.TelegramApp
+import com.github.badoualy.telegram.api.TelegramClient
+import com.github.badoualy.telegram.tl.api.TLUser
+import com.github.badoualy.telegram.tl.api.account.TLPassword
 import com.github.badoualy.telegram.tl.api.auth.TLSentCode
+import com.github.badoualy.telegram.tl.core.TLBytes
+import com.github.badoualy.telegram.tl.exception.RpcErrorException
+import java.security.MessageDigest
+import java.util.*
 
 class LoginManager(val app: TelegramApp, val target_dir: String, val phoneToUse: String?) {
 	fun run() {
@@ -31,7 +40,7 @@ class LoginManager(val app: TelegramApp, val target_dir: String, val phoneToUse:
 			val pw = getPassword()
 			verify_password(client, pw)
 		}
-		System.out.println("Everything seems fine. Please run this tool again with '--account +" + user.user!!.getPhone().anonymize() + " to use this account.")
+		System.out.println("Everything seems fine. Please run this tool again with '--account ${phone} to use this account.")
 	}
 	
 	private fun send_code_to_phone_number(client: TelegramClient, phone: String): TLSentCode {

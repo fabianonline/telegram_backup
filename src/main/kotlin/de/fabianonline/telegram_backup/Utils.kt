@@ -32,6 +32,8 @@ object Utils {
 	@JvmField public val VERSION_1_NEWER = 1
 	@JvmField public val VERSION_2_NEWER = 2
 
+	var anonymize = false
+
 	private val logger = LoggerFactory.getLogger(Utils::class.java) as Logger
 
 	fun print_accounts(file_base: String) {
@@ -193,7 +195,7 @@ object Utils {
 }
 
 fun String.anonymize(): String {
-	return if (!CommandLineOptions.cmd_anonymize) this else this.replace(Regex("[0-9]"), "1").replace(Regex("[A-Z]"), "A").replace(Regex("[a-z]"), "a") + " (ANONYMIZED)"
+	return if (Utils.anonymize) this else this.replace(Regex("[0-9]"), "1").replace(Regex("[A-Z]"), "A").replace(Regex("[a-z]"), "a") + " (ANONYMIZED)"
 }
 
 fun Any.toJson(): String = Gson().toJson(this)

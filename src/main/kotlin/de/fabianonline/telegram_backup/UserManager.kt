@@ -48,7 +48,7 @@ class UserManager(val client: TelegramClient) {
 		tl_user = full_user.getUser().getAsUser()
 	}
 
-	fun toString(): String {
+	override fun toString(): String {
 		val sb = StringBuilder()
 		sb.append(tl_user.getFirstName() ?: "")
 		if (tl_user.getLastName() != null) {

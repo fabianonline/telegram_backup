@@ -26,7 +26,6 @@ class CommandLineOptions(args: Array<String>) {
 	var cmd_version = false
 	var cmd_license = false
 	var cmd_daemon = false
-	var cmd_anonymize = false
 	var cmd_stats = false
 	var cmd_list_channels = false
 	var val_account: String? = null
@@ -84,7 +83,7 @@ class CommandLineOptions(args: Array<String>) {
 					last_cmd = "--test"
 					continue@loop
 				}
-				"--anonymize" -> cmd_anonymize = true
+				"--anonymize" -> Utils.anonymize = true
 				"--stats" -> cmd_stats = true
 				"--list-channels" -> cmd_list_channels = true
 				else -> throw RuntimeException("Unknown command " + arg)

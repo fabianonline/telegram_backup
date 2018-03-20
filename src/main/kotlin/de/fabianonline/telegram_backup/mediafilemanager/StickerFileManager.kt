@@ -18,7 +18,6 @@ package de.fabianonline.telegram_backup.mediafilemanager
 
 import de.fabianonline.telegram_backup.UserManager
 import de.fabianonline.telegram_backup.Database
-import de.fabianonline.telegram_backup.StickerConverter
 import de.fabianonline.telegram_backup.DownloadProgressInterface
 import de.fabianonline.telegram_backup.DownloadManager
 import de.fabianonline.telegram_backup.Config
@@ -50,7 +49,7 @@ import java.util.concurrent.TimeoutException
 
 import org.apache.commons.io.FileUtils
 
-class StickerFileManager(msg: TLMessage, user: UserManager) : DocumentFileManager(msg, user) {
+class StickerFileManager(msg: TLMessage, user: UserManager, file_base: String) : DocumentFileManager(msg, user, file_base) {
 
 	override val isSticker = true
 
@@ -80,7 +79,7 @@ class StickerFileManager(msg: TLMessage, user: UserManager) : DocumentFileManage
 
 	override val targetPath: String
 		get() {
-			val path = user.fileBase + Config.FILE_FILES_BASE + File.separatorChar + Config.FILE_STICKER_BASE + File.separatorChar
+			val path = file_base + Config.FILE_FILES_BASE + File.separatorChar + Config.FILE_STICKER_BASE + File.separatorChar
 			File(path).mkdirs()
 			return path
 		}
@@ -93,19 +92,6 @@ class StickerFileManager(msg: TLMessage, user: UserManager) : DocumentFileManage
 		get() = "sticker"
 	override val description: String
 		get() = "Sticker"
-
-	@Throws(RpcErrorException::class, IOException::class, TimeoutException::class)
-	override fun download(): Boolean {
-		val old_file = Config.FILE_BASE + File.separatorChar + Config.FILE_STICKER_BASE + File.separatorChar + targetFilename
-
-		logger.trace("Old filename exists: {}", File(old_file).exists())
-
-		if (File(old_file).exists()) {
-			Files.copy(Paths.get(old_file), Paths.get(targetPathAndFilename), StandardCopyOption.REPLACE_EXISTING)
-			return true
-		}
-		return super.download()
-	}
 
 	companion object {
 		private val logger = LoggerFactory.getLogger(StickerFileManager::class.java)
