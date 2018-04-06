@@ -41,7 +41,7 @@ import java.util.concurrent.TimeoutException
 import org.apache.commons.io.FileUtils
 
 object FileManagerFactory {
-	fun getFileManager(m: TLMessage?, u: UserManager, c: TelegramClient): AbstractMediaFileManager? {
+	fun getFileManager(m: TLMessage?, u: UserManager, file_base: String): AbstractMediaFileManager? {
 		if (m == null) return null
 		val media = m.getMedia() ?: return null
 
