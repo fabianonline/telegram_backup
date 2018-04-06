@@ -42,16 +42,17 @@ class CommandLineController(val options: CommandLineOptions) {
 		var client: TelegramClient
 		val user_manager: UserManager
 		val inisettings: IniSettings
+		val settings: Settings
 		val database: Database
 		logger.info("CommandLineController started. App version {}", Config.APP_APPVER)
 		
 		printHeader()
-		if (options.cmd_version) {
+		if (options.booleans.contains("version")) {
 			System.exit(0)
-		} else if (options.cmd_help) {
+		} else if (options.booleans.contains("help")) {
 			show_help()
 			System.exit(0)
-		} else if (options.cmd_license) {
+		} else if (options.booleans.contains("license")) {
 			show_license()
 			System.exit(0)
 		}
@@ -62,26 +63,26 @@ class CommandLineController(val options: CommandLineOptions) {
 
 		// Setup file_base
 		logger.debug("Target dir from Config: {}", Config.TARGET_DIR.anonymize())
-		target_dir = options.val_target ?: Config.TARGET_DIR
+		target_dir = options.values.get("target")?.last() ?: Config.TARGET_DIR
 		logger.debug("Target dir after options: {}", target_dir)
 		println("Base directory for files: ${target_dir.anonymize()}")
 
-		if (options.cmd_list_accounts) {
+		if (options.booleans.contains("list_accounts")) {
 			Utils.print_accounts(target_dir)
 			System.exit(0)
 		}
 		
-		if (options.cmd_login) {
-			cmd_login(app, target_dir, options.val_account)
+		if (options.booleans.contains("login")) {
+			cmd_login(app, target_dir, options.values.get("account")?.last())
 		}
 
 		logger.trace("Checking accounts")
-		phone_number = try { selectAccount(target_dir, options.val_account)
+		phone_number = try { selectAccount(target_dir, options.values.get("account")?.last())
 		} catch(e: AccountNotFoundException) {
 			show_error("The specified account could not be found.")
 		} catch(e: NoAccountsException) {
 			println("No accounts found. Starting login process...")
-			cmd_login(app, target_dir, options.val_account)
+			cmd_login(app, target_dir, options.values.get("account")?.last())
 		}
 		
 		// TODO: Create a new TelegramApp if the user set his/her own TelegramApp credentials
@@ -112,33 +113,22 @@ class CommandLineController(val options: CommandLineOptions) {
 				show_error("Account / User mismatch")
 			}
 			
-			// Load the ini file.
-			inisettings = IniSettings(file_base)
-			
 			// If we reach this point, we can assume that there is an account and a database can be loaded / created.
 			database = Database(file_base, user_manager)
 			
-			if (options.cmd_stats) {
+			// Load the settings and stuff.
+			settings = Settings(file_base, database, options)
+			
+			if (options.booleans.contains("stats")) {
 				cmd_stats(file_base, database)
 				System.exit(0)
 			}
 			
-			if (options.val_test != null) {
-				if (options.val_test == 1) {
-					TestFeatures(database).test1()
-				} else if (options.val_test == 2) {
-					TestFeatures(database).test2()
-				} else {
-					System.out.println("Unknown test " + options.val_test)
-				}
-				System.exit(1)
-			}
-			
-			val export = options.val_export
+			val export = options.values.get("export")?.last()
 			logger.debug("options.val_export: {}", export)
 			if (export != null) {
-				if (export.toLowerCase().equals("html")) {
-					HTMLExporter(database, user_manager, ini=inisettings, file_base=file_base).export()
+				if (export.toLowerCase() == "html") {
+					HTMLExporter(database, user_manager, settings=settings, file_base=file_base).export()
 					System.exit(0)
 				} else {
 					show_error("Unknown export format '${export}'.")
@@ -150,7 +140,7 @@ class CommandLineController(val options: CommandLineOptions) {
 			logger.info("Initializing Download Manager")
 			val d = DownloadManager(client, CommandLineDownloadProgress(), database, user_manager, inisettings)
 			
-			if (options.cmd_list_channels) {
+			if (options.booleans.contains("list_channels")) {
 				val chats = d.getChats()
 				val print_header = {download: Boolean -> println("%-15s %-40s %s".format("ID", "Title", if (download) "Download" else "")); println("-".repeat(65)) }
 				val format = {c: DownloadManager.Channel, download: Boolean -> "%-15s %-40s %s".format(c.id.toString().anonymize(), c.title.anonymize(), if (download) (if(c.download) "YES" else "no") else "")}
@@ -174,8 +164,8 @@ class CommandLineController(val options: CommandLineOptions) {
 				System.exit(0)
 			}
 			
-			logger.debug("Calling DownloadManager.downloadMessages with limit {}", options.val_limit_messages)
-			d.downloadMessages(options.val_limit_messages)
+			logger.debug("Calling DownloadManager.downloadMessages with limit {}", options.values.get("limit_messages")?.last())
+			d.downloadMessages(options.values.get("limit_messages")?.last()?.toInt())
 			logger.debug("IniSettings#download_media: {}", inisettings.download_media)
 			if (inisettings.download_media) {
 				logger.debug("Calling DownloadManager.downloadMedia")
@@ -184,7 +174,7 @@ class CommandLineController(val options: CommandLineOptions) {
 				println("Skipping media download because download_media is set to false.")
 			}
 
-			if (options.cmd_daemon) {
+			if (options.boolean.contains("daemon")) {
 				logger.info("Initializing TelegramUpdateHandler")
 				handler = TelegramUpdateHandler(user_manager, database)
 				client.close()
@@ -193,7 +183,7 @@ class CommandLineController(val options: CommandLineOptions) {
 				println("DAEMON mode requested - keeping running.")
 			}
 		} catch (e: Throwable) {
-			println("An error occured!")
+			println("An error occurred!")
 			e.printStackTrace()
 			logger.error("Exception caught!", e)
 		} finally {
@@ -274,19 +264,19 @@ class CommandLineController(val options: CommandLineOptions) {
 
 	private fun show_help() {
 		println("Valid options are:")
-		println(" -h, --help            Shows this help.")
-		println(" -a, --account <x>     Use account <x>.")
-		println(" -l, --login           Login to an existing telegram account.")
+		println(" --help                Shows this help.")
+		println(" --account <x>         Use account <x>.")
+		println(" --login               Login to an existing telegram account.")
 		println(" --debug               Shows some debug information.")
 		println(" --trace               Shows lots of debug information. Overrides --debug.")
 		println(" --trace-telegram      Shows lots of debug messages from the library used to access Telegram.")
-		println(" -A, --list-accounts   List all existing accounts ")
+		println(" --list-accounts       List all existing accounts ")
 		println(" --limit-messages <x>  Downloads at most the most recent <x> messages.")
-		println(" -t, --target <x>      Target directory for the files.")
-		println(" -e, --export <format> Export the database. Valid formats are:")
+		println(" --target <x>          Target directory for the files.")
+		println(" --export <format>     Export the database. Valid formats are:")
 		println("                html - Creates HTML files.")
 		println(" --license             Displays the license of this program.")
-		println(" -d, --daemon          Keep running after the backup and automatically save new messages.")
+		println(" --daemon              Keep running after the backup and automatically save new messages.")
 		println(" --anonymize           (Try to) Remove all sensitive information from output. Useful for requesting support.")
 		println(" --stats               Print some usage statistics.")
 		println(" --list-channels       Lists all channels together with their ID")

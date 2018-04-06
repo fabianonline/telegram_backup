@@ -240,6 +240,16 @@ class Database constructor(val file_base: String, val user_manager: UserManager)
 		rs.close()
 		return result
 	}
+	
+	fun queryStringMap(query: String): Map<String, String> {
+		val map = mutableMapOf<String, String>()
+		val rs = stmt.executeQuery(query)
+		while(rs.next()) {
+			map.add(rs.getString(1), rs.getString(2))
+		}
+		rs.close()
+		return map
+	}
 
 	@Synchronized
 	fun saveMessages(all: TLVector<TLAbsMessage>, api_layer: Int, source_type: MessageSource = MessageSource.NORMAL) {
@@ -489,7 +499,7 @@ class Database constructor(val file_base: String, val user_manager: UserManager)
 		ps_insert_or_replace.close()
 	}
 	
-	fun fetchSetting(key: String): String? = queryString("SELECT value FROM settings WHERE key='${key}'")
+	fun fetchSettings() = queryStringMap("SELECT key, value FROM settings WHERE key='${key}'")
 	
 	fun saveSetting(key: String, value: String?) {
 		val ps = conn.prepareStatement("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)")

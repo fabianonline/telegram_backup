@@ -41,29 +41,29 @@ import java.util.concurrent.TimeoutException
 import org.apache.commons.io.FileUtils
 
 object FileManagerFactory {
-	fun getFileManager(m: TLMessage?, u: UserManager): AbstractMediaFileManager? {
+	fun getFileManager(m: TLMessage?, u: UserManager, c: TelegramClient): AbstractMediaFileManager? {
 		if (m == null) return null
 		val media = m.getMedia() ?: return null
 
 		if (media is TLMessageMediaPhoto) {
-			return PhotoFileManager(m, u)
+			return PhotoFileManager(m, u, file_base)
 		} else if (media is TLMessageMediaDocument) {
-			val d = DocumentFileManager(m, u)
+			val d = DocumentFileManager(m, u, file_base)
 			return if (d.isSticker) {
-				StickerFileManager(m, u)
+				StickerFileManager(m, u, file_base)
 			} else d
 		} else if (media is TLMessageMediaGeo) {
-			return GeoFileManager(m, u)
+			return GeoFileManager(m, u, file_base)
 		} else if (media is TLMessageMediaEmpty) {
-			return UnsupportedFileManager(m, u, "empty")
+			return UnsupportedFileManager(m, u, file_base, "empty")
 		} else if (media is TLMessageMediaUnsupported) {
-			return UnsupportedFileManager(m, u, "unsupported")
+			return UnsupportedFileManager(m, u, file_base, "unsupported")
 		} else if (media is TLMessageMediaWebPage) {
-			return UnsupportedFileManager(m, u, "webpage")
+			return UnsupportedFileManager(m, u, file_base, "webpage")
 		} else if (media is TLMessageMediaContact) {
-			return UnsupportedFileManager(m, u, "contact")
+			return UnsupportedFileManager(m, u, file_base, "contact")
 		} else if (media is TLMessageMediaVenue) {
-			return UnsupportedFileManager(m, u, "venue")
+			return UnsupportedFileManager(m, u, file_base, "venue")
 		} else {
 			AbstractMediaFileManager.throwUnexpectedObjectError(media)
 		}

@@ -53,6 +53,11 @@ class CommandLineRunner(args: Array<String>) {
 	}
 	
 	fun setupLogging() {
+		if (options.booleans.hasKey('anonymize')) {
+			Utils.anonymize = true
+		}
+	
+	
 		logger.trace("Setting up Loggers...")
 		val rootLogger = LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME) as Logger
 		val rootContext = rootLogger.getLoggerContext()
