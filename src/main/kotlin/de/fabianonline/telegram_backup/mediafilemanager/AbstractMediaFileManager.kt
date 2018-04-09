@@ -21,6 +21,7 @@ import de.fabianonline.telegram_backup.Config
 
 import com.github.badoualy.telegram.tl.api.*
 import com.github.badoualy.telegram.tl.exception.RpcErrorException
+import de.fabianonline.telegram_backup.Settings
 
 import java.io.IOException
 import java.io.File

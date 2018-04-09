@@ -18,14 +18,15 @@ package de.fabianonline.telegram_backup.mediafilemanager
 
 import de.fabianonline.telegram_backup.UserManager
 import de.fabianonline.telegram_backup.DownloadManager
-import de.fabianonline.telegram_backup.IniSettings
 
 import com.github.badoualy.telegram.tl.api.*
+import de.fabianonline.telegram_backup.Config
+import de.fabianonline.telegram_backup.Settings
 
 import java.io.IOException
 import java.io.File
 
-class GeoFileManager(msg: TLMessage, user: UserManager, file_base: String) : AbstractMediaFileManager(msg, user, file_base) {
+class GeoFileManager(msg: TLMessage, user: UserManager, file_base: String, val settings: Settings?) : AbstractMediaFileManager(msg, user, file_base) {
 	protected lateinit var geo: TLGeoPoint
 
 	// We don't know the size, so we just guess.
@@ -59,7 +60,7 @@ class GeoFileManager(msg: TLMessage, user: UserManager, file_base: String) : Abs
 			"center=${geo.getLat()},${geo.getLong()}&" +
 			"markers=color:red|${geo.getLat()},${geo.getLong()}&" +
 			"zoom=14&size=300x150&scale=2&format=png&" +
-			"key=" + IniSettings.gmaps_key
+			"key=" + (settings?.gmaps_key ?: Config.SECRET_GMAPS)
 		return DownloadManager.downloadExternalFile(targetPathAndFilename, url)
 	}
 }

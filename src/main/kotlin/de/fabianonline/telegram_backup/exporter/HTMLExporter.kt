@@ -37,11 +37,11 @@ import de.fabianonline.telegram_backup.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-class HTMLExporter(val db: Database, val user: UserManager, val ini: IniSettings, val file_base: String) {
+class HTMLExporter(val db: Database, val user: UserManager, val settings: Settings, val file_base: String) {
 	@Throws(IOException::class)
 	fun export() {
 		try {
-			val pagination = if (ini.pagination) ini.pagination_size else -1
+			val pagination = if (settings.pagination) settings.pagination_size else -1
 			
 			// Create base dir
 			logger.debug("Creating base dir")

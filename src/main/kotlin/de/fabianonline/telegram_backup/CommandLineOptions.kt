@@ -17,27 +17,24 @@ package de.fabianonline.telegram_backup
 
 class CommandLineOptions(args: Array<String>) {
 	val booleans = mutableListOf<String>()
-	val values = mutableMapOf<String, MutableList<String>>()
+	val values = mutableMapOf<String, String>()
 	var last_key: String? = null
 	
 	init {
 		for(arg in args) {
-			if (arg.starts_with("--")) {
+			if (arg.startsWith("--")) {
 				if (last_key!=null) {
-					booleans.add(last_key)
+					booleans.add(last_key!!)
 				}
-				last_key = arg.substr(2)
+				last_key = arg.substring(2)
 			} else {
-				if (last_key==null) throw RuntimeException("Unexpected parameter without switch: $arg")
-				var list = values.get(last_key)
-				if (list==null) {
-					list = mutableListOf<String>()
-					values.add(last_key, list)
+				if (last_key==null) {
+					throw RuntimeException("Unexpected unnamed parameter ${arg}")
 				}
-				list.add(arg)
+				values.put(last_key!!, arg)
 				last_key = null
 			}
 		}
-		if (last_key!=null) booleans.add(last_key)
+		if (last_key!=null) booleans.add(last_key!!)
 	}
 }

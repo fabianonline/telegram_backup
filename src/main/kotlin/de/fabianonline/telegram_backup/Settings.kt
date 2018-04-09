@@ -5,25 +5,41 @@ import org.slf4j.LoggerFactory
 
 class Settings(val file_base: String, val database: Database, val cli_settings: CommandLineOptions) {
 	val logger = LoggerFactory.getLogger(Settings::class.java)
-	val settings = mutableMapOf<String, Setting>()
-
-	val gmaps_key: Setting
 
 	private val db_settings: Map<String, String>
 
-	private var ini_settings: Map<String, List<String>>
+	val ini_settings: Map<String, List<String>>
 
 	init {
 		db_settings = database.fetchSettings()
 		ini_settings = load_ini("config.ini")
 		copy_sample_ini("config.sample.ini")
-
+	}
 		// Merging CLI and INI settings
-		gmaps_key = get_setting("gmaps_key", default=Config.SECRET_GMAPS)
+	val gmaps_key = get_setting_string("gmaps_key", default=Config.SECRET_GMAPS)
+	val pagination = get_setting_boolean("pagination", default=true)
+	val pagination_size = get_setting_int("pagination_size", default=Config.DEFAULT_PAGINATION)
+	val download_media = get_setting_boolean("download_media", default=true)
+	val download_channels = get_setting_boolean("download_channels", default=false)
+	val download_supergroups = get_setting_boolean("download_supergroups", default=false)
+	val whitelist_channels = get_setting_list("whitelist_channels")
+	val blacklist_channels = get_setting_list("blacklist_channels")
+
+
+	private fun get_setting_string(name: String, default: String): String {
+		return ini_settings[name]?.last() ?: cli_settings.values[name] ?: default
 	}
 
-	private fun get_setting(name: String, default: String? = null): Setting {
-		return Setting.build(name, ini_settings[name], cli_settings.values[name], default)
+	private fun get_setting_int(name: String, default: Int): Int {
+		return ini_settings[name]?.last()?.toInt() ?: cli_settings.values[name]?.toInt() ?: default
+	}
+
+	private fun get_setting_boolean(name: String, default: Boolean): Boolean {
+		return ini_settings[name]?.last()?.toBoolean() ?: cli_settings.values[name]?.toBoolean() ?: default
+	}
+
+	private fun get_setting_list(name: String): List<String>? {
+		return ini_settings[name]
 	}
 
 	private fun load_ini(filename: String): Map<String, List<String>> {
@@ -63,39 +79,7 @@ class Settings(val file_base: String, val database: Database, val cli_settings: 
 		File(filename).outputStream().use { stream.copyTo(it) }
 		stream.close()
 	}
-	
-	
-	open class Setting(name: String, value: List<String>?, source: SettingSource) {
-		companion object {
-			val all = mutableListOf<Setting>()
 
-			fun build(name: String, ini_value: List<String>?, cli_value: List<String>?, default: String?): Setting {
-				var value: List<String>?
-				var source: SettingSource
-				if (cli_value != null) {
-					value=cli_value
-					source=SettingSource.CLI
-				} else if (ini_value != null) {
-					value=ini_value
-					source=SettingSource.INI
-				} else {
-					if (default!=null) {
-						value = listOf(default)
-					} else {
-						value = null
-					}
-					source=SettingSource.DEFAULT
-				}
-				return Setting(name, value, source);
-			}
-		}
-	}
-
-	enum class SettingSource {
-		INI,
-		CLI,
-		DEFAULT
-	}
 }
 /*
 class DbSettings(val database: Database) {

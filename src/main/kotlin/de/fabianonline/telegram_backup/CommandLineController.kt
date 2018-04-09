@@ -41,7 +41,6 @@ class CommandLineController(val options: CommandLineOptions) {
 		val handler: TelegramUpdateHandler
 		var client: TelegramClient
 		val user_manager: UserManager
-		val inisettings: IniSettings
 		val settings: Settings
 		val database: Database
 		logger.info("CommandLineController started. App version {}", Config.APP_APPVER)
@@ -63,7 +62,7 @@ class CommandLineController(val options: CommandLineOptions) {
 
 		// Setup file_base
 		logger.debug("Target dir from Config: {}", Config.TARGET_DIR.anonymize())
-		target_dir = options.values.get("target")?.last() ?: Config.TARGET_DIR
+		target_dir = options.values.get("target") ?: Config.TARGET_DIR
 		logger.debug("Target dir after options: {}", target_dir)
 		println("Base directory for files: ${target_dir.anonymize()}")
 
@@ -73,16 +72,16 @@ class CommandLineController(val options: CommandLineOptions) {
 		}
 		
 		if (options.booleans.contains("login")) {
-			cmd_login(app, target_dir, options.values.get("account")?.last())
+			cmd_login(app, target_dir, options.values.get("account"))
 		}
 
 		logger.trace("Checking accounts")
-		phone_number = try { selectAccount(target_dir, options.values.get("account")?.last())
+		phone_number = try { selectAccount(target_dir, options.values.get("account"))
 		} catch(e: AccountNotFoundException) {
 			show_error("The specified account could not be found.")
 		} catch(e: NoAccountsException) {
 			println("No accounts found. Starting login process...")
-			cmd_login(app, target_dir, options.values.get("account")?.last())
+			cmd_login(app, target_dir, options.values.get("account"))
 		}
 		
 		// TODO: Create a new TelegramApp if the user set his/her own TelegramApp credentials
@@ -124,7 +123,7 @@ class CommandLineController(val options: CommandLineOptions) {
 				System.exit(0)
 			}
 			
-			val export = options.values.get("export")?.last()
+			val export = options.values["export"]
 			logger.debug("options.val_export: {}", export)
 			if (export != null) {
 				if (export.toLowerCase() == "html") {
@@ -138,7 +137,7 @@ class CommandLineController(val options: CommandLineOptions) {
 			println("You are logged in as ${user_manager.toString().anonymize()}")
 
 			logger.info("Initializing Download Manager")
-			val d = DownloadManager(client, CommandLineDownloadProgress(), database, user_manager, inisettings)
+			val d = DownloadManager(client, CommandLineDownloadProgress(), database, user_manager, settings, file_base)
 			
 			if (options.booleans.contains("list_channels")) {
 				val chats = d.getChats()
@@ -147,7 +146,7 @@ class CommandLineController(val options: CommandLineOptions) {
 				var download: Boolean
 
 				println("Channels:")
-				download = inisettings.download_channels
+				download = settings.download_channels
 				if (!download) println("Download of channels is disabled - see download_channels in config.ini")
 				print_header(download)
 				for (c in chats.channels) {
@@ -155,7 +154,7 @@ class CommandLineController(val options: CommandLineOptions) {
 				}
 				println()
 				println("Supergroups:")
-				download = inisettings.download_supergroups
+				download = settings.download_supergroups
 				if (!download) println("Download of supergroups is disabled - see download_supergroups in config.ini")
 				print_header(download)
 				for (c in chats.supergroups) {
@@ -166,17 +165,17 @@ class CommandLineController(val options: CommandLineOptions) {
 			
 			logger.debug("Calling DownloadManager.downloadMessages with limit {}", options.values.get("limit_messages")?.last())
 			d.downloadMessages(options.values.get("limit_messages")?.last()?.toInt())
-			logger.debug("IniSettings#download_media: {}", inisettings.download_media)
-			if (inisettings.download_media) {
+			logger.debug("IniSettings#download_media: {}", settings.download_media)
+			if (settings.download_media) {
 				logger.debug("Calling DownloadManager.downloadMedia")
 				d.downloadMedia()
 			} else {
 				println("Skipping media download because download_media is set to false.")
 			}
 
-			if (options.boolean.contains("daemon")) {
+			if (options.booleans.contains("daemon")) {
 				logger.info("Initializing TelegramUpdateHandler")
-				handler = TelegramUpdateHandler(user_manager, database)
+				handler = TelegramUpdateHandler(user_manager, database, file_base, settings)
 				client.close()
 				logger.info("Creating new client")
 				client = Kotlogram.getDefaultClient(app, storage, Kotlogram.PROD_DC4, handler)
@@ -203,7 +202,7 @@ class CommandLineController(val options: CommandLineOptions) {
 	}
 
 	private fun selectAccount(file_base: String, requested_account: String?): String {
-		var found_account: String? = null
+		var found_account: String?
 		val accounts = Utils.getAccounts(file_base)
 		if (requested_account != null) {
 			logger.debug("Account requested: {}", requested_account.anonymize())
@@ -218,7 +217,6 @@ class CommandLineController(val options: CommandLineOptions) {
 			show_error(("You have more than one account but didn't specify which one to use.\n" +
 				"Use '--account <x>' to use account <x>.\n" +
 				"Use '--list-accounts' to see all available accounts."))
-			System.exit(1)
 		}
 		
 		if (found_account == null) {

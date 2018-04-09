@@ -245,14 +245,14 @@ class Database constructor(val file_base: String, val user_manager: UserManager)
 		val map = mutableMapOf<String, String>()
 		val rs = stmt.executeQuery(query)
 		while(rs.next()) {
-			map.add(rs.getString(1), rs.getString(2))
+			map.put(rs.getString(1), rs.getString(2))
 		}
 		rs.close()
 		return map
 	}
 
 	@Synchronized
-	fun saveMessages(all: TLVector<TLAbsMessage>, api_layer: Int, source_type: MessageSource = MessageSource.NORMAL) {
+	fun saveMessages(all: TLVector<TLAbsMessage>, api_layer: Int, source_type: MessageSource = MessageSource.NORMAL, settings: Settings?) {
 		//"(id, dialog_id, from_id, from_type, text, time, has_media, data, sticker, type) " +
 		//"VALUES " +
 		//"(?,  ?,         ?,       ?,         ?,    ?,    ?,         ?,    ?,       ?)");
@@ -314,7 +314,7 @@ class Database constructor(val file_base: String, val user_manager: UserManager)
 				}
 				ps.setString(7, text)
 				ps.setString(8, "" + msg.getDate())
-				val f = FileManagerFactory.getFileManager(msg, user_manager)
+				val f = FileManagerFactory.getFileManager(msg, user_manager, file_base, settings)
 				if (f == null) {
 					ps.setNull(9, Types.BOOLEAN)
 					ps.setNull(10, Types.VARCHAR)
@@ -499,7 +499,7 @@ class Database constructor(val file_base: String, val user_manager: UserManager)
 		ps_insert_or_replace.close()
 	}
 	
-	fun fetchSettings() = queryStringMap("SELECT key, value FROM settings WHERE key='${key}'")
+	fun fetchSettings() = queryStringMap("SELECT key, value FROM settings")
 	
 	fun saveSetting(key: String, value: String?) {
 		val ps = conn.prepareStatement("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)")

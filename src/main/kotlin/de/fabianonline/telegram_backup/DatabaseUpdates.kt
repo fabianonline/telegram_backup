@@ -313,7 +313,7 @@ internal class DB_Update_6(conn: Connection, db: Database) : DatabaseUpdate(conn
 			} else {
 				ps.setInt(1, msg.getFwdFrom().getFromId())
 			}
-			val f = FileManagerFactory.getFileManager(msg, db.user_manager)
+			val f = FileManagerFactory.getFileManager(msg, db.user_manager, db.file_base, settings = null)
 			if (f == null) {
 				ps.setNull(2, Types.VARCHAR)
 				ps.setNull(3, Types.VARCHAR)
@@ -431,7 +431,7 @@ internal class DB_Update_9(conn: Connection, db: Database) : DatabaseUpdate(conn
 				}
 			}
 			rs.close()
-			db.saveMessages(messages, api_layer=53, source_type=MessageSource.SUPERGROUP)
+			db.saveMessages(messages, api_layer=53, source_type=MessageSource.SUPERGROUP, settings=null)
 			execute("DELETE FROM messages WHERE id IN (" + messages_to_delete.joinToString() + ")")
 			print(".")
 			

@@ -29,6 +29,7 @@ import com.github.badoualy.telegram.tl.api.*
 import com.github.badoualy.telegram.tl.api.upload.TLFile
 import com.github.badoualy.telegram.tl.exception.RpcErrorException
 import com.github.badoualy.telegram.tl.api.request.TLRequestUploadGetFile
+import de.fabianonline.telegram_backup.Settings
 
 import java.io.IOException
 import java.io.File
@@ -41,7 +42,7 @@ import java.util.concurrent.TimeoutException
 import org.apache.commons.io.FileUtils
 
 object FileManagerFactory {
-	fun getFileManager(m: TLMessage?, u: UserManager, file_base: String): AbstractMediaFileManager? {
+	fun getFileManager(m: TLMessage?, u: UserManager, file_base: String, settings: Settings?): AbstractMediaFileManager? {
 		if (m == null) return null
 		val media = m.getMedia() ?: return null
 
@@ -53,7 +54,7 @@ object FileManagerFactory {
 				StickerFileManager(m, u, file_base)
 			} else d
 		} else if (media is TLMessageMediaGeo) {
-			return GeoFileManager(m, u, file_base)
+			return GeoFileManager(m, u, file_base, settings)
 		} else if (media is TLMessageMediaEmpty) {
 			return UnsupportedFileManager(m, u, file_base, "empty")
 		} else if (media is TLMessageMediaUnsupported) {

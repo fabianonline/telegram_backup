@@ -28,14 +28,14 @@ import de.fabianonline.telegram_backup.mediafilemanager.AbstractMediaFileManager
 import de.fabianonline.telegram_backup.mediafilemanager.FileManagerFactory
 import org.slf4j.LoggerFactory
 
-internal class TelegramUpdateHandler(val user_manager: UserManager, val db: Database) : UpdateCallback {
+internal class TelegramUpdateHandler(val user_manager: UserManager, val db: Database, val file_base: String, val settings: Settings) : UpdateCallback {
 	val logger = LoggerFactory.getLogger(TelegramUpdateHandler::class.java)
 
 	override fun onUpdates(client: TelegramClient, updates: TLUpdates) {
 
 		logger.debug("onUpdates - " + updates.getUpdates().size + " Updates, " + updates.getUsers().size + " Users, " + updates.getChats().size + " Chats")
 		for (update in updates.getUpdates()) {
-			processUpdate(update, client)
+			processUpdate(update)
 			logger.debug("  " + update.javaClass.getName())
 		}
 		db.saveUsers(updates.getUsers())
@@ -45,7 +45,7 @@ internal class TelegramUpdateHandler(val user_manager: UserManager, val db: Data
 	override fun onUpdatesCombined(client: TelegramClient, updates: TLUpdatesCombined) {
 		logger.debug("onUpdatesCombined")
 		for (update in updates.getUpdates()) {
-			processUpdate(update, client)
+			processUpdate(update)
 		}
 		db.saveUsers(updates.getUsers())
 		db.saveChats(updates.getChats())
@@ -53,7 +53,7 @@ internal class TelegramUpdateHandler(val user_manager: UserManager, val db: Data
 
 	override fun onUpdateShort(client: TelegramClient, update: TLUpdateShort) {
 		logger.debug("onUpdateShort")
-		processUpdate(update.getUpdate(), client)
+		processUpdate(update.getUpdate())
 		logger.debug("  " + update.getUpdate().javaClass.getName())
 	}
 
@@ -76,7 +76,7 @@ internal class TelegramUpdateHandler(val user_manager: UserManager, val db: Data
 			message.getEntities(), null, null)
 		val vector = TLVector<TLAbsMessage>(TLAbsMessage::class.java)
 		vector.add(msg)
-		db.saveMessages(vector, Kotlogram.API_LAYER)
+		db.saveMessages(vector, Kotlogram.API_LAYER, settings=settings)
 		System.out.print('.')
 	}
 
@@ -109,7 +109,7 @@ internal class TelegramUpdateHandler(val user_manager: UserManager, val db: Data
 			m.getEntities(), null, null)
 		val vector = TLVector<TLAbsMessage>(TLAbsMessage::class.java)
 		vector.add(msg)
-		db.saveMessages(vector, Kotlogram.API_LAYER)
+		db.saveMessages(vector, Kotlogram.API_LAYER, settings=settings)
 		System.out.print('.')
 	}
 
@@ -121,15 +121,15 @@ internal class TelegramUpdateHandler(val user_manager: UserManager, val db: Data
 		logger.debug("onUpdateTooLong")
 	}
 
-	private fun processUpdate(update: TLAbsUpdate, client: TelegramClient) {
+	private fun processUpdate(update: TLAbsUpdate) {
 		if (update is TLUpdateNewMessage) {
 			val abs_msg = update.getMessage()
 			val vector = TLVector<TLAbsMessage>(TLAbsMessage::class.java)
 			vector.add(abs_msg)
-			db.saveMessages(vector, Kotlogram.API_LAYER)
+			db.saveMessages(vector, Kotlogram.API_LAYER, settings=settings)
 			System.out.print('.')
 			if (abs_msg is TLMessage) {
-				val fm = FileManagerFactory.getFileManager(abs_msg, user_manager)
+				val fm = FileManagerFactory.getFileManager(abs_msg, user_manager, file_base, settings)
 				if (fm != null && !fm.isEmpty && !fm.downloaded) {
 					try {
 						fm.download()
