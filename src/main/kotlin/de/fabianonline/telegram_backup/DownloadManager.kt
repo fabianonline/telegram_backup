@@ -63,18 +63,18 @@ enum class MessageSource(val descr: String) {
 class DownloadManager(val client: TelegramClient, val prog: DownloadProgressInterface, val db: Database, val user_manager: UserManager, val settings: Settings, val file_base: String) {
 	@Throws(RpcErrorException::class, IOException::class)
 	fun downloadMessages(limit: Int?) {
-		Utils.obeyFloodWait() {
-			_downloadMessages(limit)
-		}
-	}
-
-	@Throws(RpcErrorException::class, IOException::class, TimeoutException::class)
-	fun _downloadMessages(limit: Int?) {
-		logger.info("This is _downloadMessages with limit {}", limit)
+		logger.info("This is downloadMessages with limit {}", limit)
 		logger.info("Downloading the last dialogs")
 		System.out.println("Downloading most recent dialogs... ")
 		var max_message_id = 0
-		val chats = getChats()
+		var result: ChatList? = null
+		
+		Utils.obeyFloodWait() {
+			result = getChats()
+		}
+		
+		val chats = result!!
+		
 		logger.debug("Got {} dialogs, {} supergoups, {} channels", chats.dialogs.size, chats.supergroups.size, chats.channels.size)
 
 		for (d in chats.dialogs) {
@@ -101,7 +101,7 @@ class DownloadManager(val client: TelegramClient, val prog: DownloadProgressInte
 		if (max_database_id == max_message_id) {
 			System.out.println("No new messages to download.")
 		} else if (max_database_id > max_message_id) {
-			throw RuntimeException("max_database_id is bigger then max_message_id. This shouldn't happen. But the telegram api nonetheless does that sometimes. Just ignore this error, wait a few seconds and then try again.")
+			throw RuntimeException("max_database_id is bigger than max_message_id. This shouldn't happen. But the telegram api nonetheless does that sometimes. Just ignore this error, wait a few seconds and then try again.")
 		} else {
 			val start_id = max_database_id + 1
 			val end_id = max_message_id
@@ -117,38 +117,38 @@ class DownloadManager(val client: TelegramClient, val prog: DownloadProgressInte
 		logger.debug("db_count: {}", db_count)
 		logger.debug("db_max: {}", db_max)
 
-		/*if (db_count != db_max) {
-			if (limit != null) {
-				System.out.println("You are missing messages in your database. But since you're using '--limit-messages', I won't download these now.");
-			} else {
-				LinkedList<Integer> all_missing_ids = db.getMissingIDs();
-				LinkedList<Integer> downloadable_missing_ids = new LinkedList<Integer>();
-				for (Integer id : all_missing_ids) {
-					if (id > max_message_id - 1000000) downloadable_missing_ids.add(id);
+			/*if (db_count != db_max) {
+				if (limit != null) {
+					System.out.println("You are missing messages in your database. But since you're using '--limit-messages', I won't download these now.");
+				} else {
+					LinkedList<Integer> all_missing_ids = db.getMissingIDs();
+					LinkedList<Integer> downloadable_missing_ids = new LinkedList<Integer>();
+					for (Integer id : all_missing_ids) {
+						if (id > max_message_id - 1000000) downloadable_missing_ids.add(id);
+					}
+					count_missing = all_missing_ids.size();
+					System.out.println("" + all_missing_ids.size() + " messages are missing in your Database.");
+					System.out.println("I can (and will) download " + downloadable_missing_ids.size() + " of them.");
+
+					downloadMessages(downloadable_missing_ids, null);
 				}
-				count_missing = all_missing_ids.size();
-				System.out.println("" + all_missing_ids.size() + " messages are missing in your Database.");
-				System.out.println("I can (and will) download " + downloadable_missing_ids.size() + " of them.");
 
-				downloadMessages(downloadable_missing_ids, null);
+				logger.info("Logging this run");
+				db.logRun(Math.min(max_database_id + 1, max_message_id), max_message_id, count_missing);
 			}
-
-			logger.info("Logging this run");
-			db.logRun(Math.min(max_database_id + 1, max_message_id), max_message_id, count_missing);
-		}
-		*/
+			*/
 
 		if (settings.download_channels) {
 			println("Checking channels...")
 			for (channel in chats.channels) { if (channel.download) downloadMessagesFromChannel(channel) }
 		}
-			
+				
 		if (settings.download_supergroups) {
 			println("Checking supergroups...")
 			for (supergroup in chats.supergroups) { if (supergroup.download) downloadMessagesFromChannel(supergroup) }
 		}
 	}
-	
+
 	private fun downloadMessagesFromChannel(channel: Channel) {
 		val obj = channel.obj
 		val max_known_id = db.getTopMessageIDForChannel(channel.id)
@@ -209,11 +209,7 @@ class DownloadManager(val client: TelegramClient, val prog: DownloadProgressInte
 			db.saveChats(response.getChats())
 			db.saveUsers(response.getUsers())
 			logger.trace("Sleeping")
-			try {
-				TimeUnit.MILLISECONDS.sleep(Config.DELAY_AFTER_GET_MESSAGES)
-			} catch (e: InterruptedException) {
-			}
-
+			try { TimeUnit.MILLISECONDS.sleep(Config.DELAY_AFTER_GET_MESSAGES) } catch (e: InterruptedException) { }
 		}
 		logger.debug("Finished.")
 
@@ -223,13 +219,6 @@ class DownloadManager(val client: TelegramClient, val prog: DownloadProgressInte
 	@Throws(RpcErrorException::class, IOException::class)
 	fun downloadMedia() {
 		download_client = client.getDownloaderClient()
-		Utils.obeyFloodWait() {
-			_downloadMedia()
-		}
-	}
-
-	@Throws(RpcErrorException::class, IOException::class)
-	private fun _downloadMedia() {
 		logger.info("This is _downloadMedia")
 		logger.info("Checking if there are messages in the DB with a too old API layer")
 		val ids = db.getIdsFromQuery("SELECT id FROM messages WHERE has_media=1 AND api_layer<" + Kotlogram.API_LAYER)
@@ -359,15 +348,13 @@ class DownloadManager(val client: TelegramClient, val prog: DownloadProgressInte
 				}
 				logger.trace("offset before the loop is {}", offset)
 				fos = FileOutputStream(temp_filename, true)
-				var response: TLFile? = null
-				var try_again: Boolean
 				do {
-					try_again = false
 					logger.trace("offset: {} block_size: {} size: {}", offset, size, size)
 					val req = TLRequestUploadGetFile(loc, offset, size)
+					var resp: TLFile? = null
 					try {
 						Utils.obeyFloodWait() {
-							response = download_client!!.executeRpcQuery(req, dcID) as TLFile
+							resp = download_client!!.executeRpcQuery(req, dcID) as TLFile
 						}
 					} catch (e: RpcErrorException) {
 						if (e.getCode() == 400) {
@@ -377,19 +364,16 @@ class DownloadManager(val client: TelegramClient, val prog: DownloadProgressInte
 						throw e
 					}
 					
-					val resp = response!!
+					val response = resp!!
 					
-					offset += resp.getBytes().getData().size
-					logger.trace("response: {} total size: {}", resp.getBytes().getData().size, offset)
+					offset += response.getBytes().getData().size
+					logger.trace("response: {} total size: {}", response.getBytes().getData().size, offset)
 
-					fos.write(resp.getBytes().getData())
+					fos.write(response.getBytes().getData())
 					fos.flush()
-					try {
-						TimeUnit.MILLISECONDS.sleep(Config.DELAY_AFTER_GET_FILE)
-					} catch (e: InterruptedException) {
-					}
+					try { TimeUnit.MILLISECONDS.sleep(Config.DELAY_AFTER_GET_FILE) } catch (e: InterruptedException) { }
 
-				} while (offset < size && (try_again || resp.getBytes().getData().size > 0))
+				} while (offset < size && response.getBytes().getData().size > 0)
 				fos.close()
 				if (offset < size) {
 					System.out.println("Requested file $target with $size bytes, but got only $offset bytes.")
