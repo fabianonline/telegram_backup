@@ -352,9 +352,9 @@ class DownloadManager(val client: TelegramClient, val prog: DownloadProgressInte
 			if (tl_peer_channel == null) continue
 			
 			var download = true
-			if (settings.whitelist_channels != null) {
+			if (settings.whitelist_channels.isNotEmpty()) {
 				download = settings.whitelist_channels.contains(tl_channel.getId().toString())
-			} else if (settings.blacklist_channels != null) {
+			} else if (settings.blacklist_channels.isNotEmpty()) {
 				download = !settings.blacklist_channels.contains(tl_channel.getId().toString())
 			}
 			val channel = Channel(id=tl_channel.getId(), access_hash=tl_channel.getAccessHash(), title=tl_channel.getTitle(), obj=tl_peer_channel, download=download)
