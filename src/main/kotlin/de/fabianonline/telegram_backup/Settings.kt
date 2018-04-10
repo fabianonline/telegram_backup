@@ -19,7 +19,7 @@ class Settings(val file_base: String, val database: Database, val cli_settings: 
 		// Merging CLI and INI settings
 		
 	val sf = SettingsFactory(ini_settings, cli_settings)
-	val gmaps_key = sf.getString("gmaps_key", default=Config.SECRET_GMAPS)
+	val gmaps_key = sf.getString("gmaps_key", default=Config.SECRET_GMAPS, secret=true)
 	val pagination = sf.getBoolean("pagination", default=true)
 	val pagination_size = sf.getInt("pagination_size", default=Config.DEFAULT_PAGINATION)
 	val download_media = sf.getBoolean("download_media", default=true)
@@ -69,18 +69,24 @@ class Settings(val file_base: String, val database: Database, val cli_settings: 
 		File(filename).outputStream().use { stream.copyTo(it) }
 		stream.close()
 	}
+	
+	fun print() {
+		println()
+		Setting.all_settings.forEach { it.print() }
+		println()
+	}
 }
 
 class SettingsFactory(val ini: Map<String, List<String>>, val cli: CommandLineOptions) {
-	fun getInt(name: String, default: Int) = getSetting(name, listOf(default.toString())).get().toInt()
-	fun getBoolean(name: String, default: Boolean) = getSetting(name, listOf(default.toString())).get().toBoolean()
-	fun getString(name: String, default: String) = getSetting(name, listOf(default)).get()
-	fun getStringList(name: String, default: List<String>) = getSetting(name, default).getList()
+	fun getInt(name: String, default: Int, secret: Boolean = false) = getSetting(name, listOf(default.toString()), secret).get().toInt()
+	fun getBoolean(name: String, default: Boolean, secret: Boolean = false) = getSetting(name, listOf(default.toString()), secret).get().toBoolean()
+	fun getString(name: String, default: String, secret: Boolean = false) = getSetting(name, listOf(default), secret).get()
+	fun getStringList(name: String, default: List<String>, secret: Boolean = false) = getSetting(name, default, secret).getList()
 	
-	fun getSetting(name: String, default: List<String>) = Setting(ini, cli, name, default)
+	fun getSetting(name: String, default: List<String>, secret: Boolean) = Setting(ini, cli, name, default, secret)
 }
 
-class Setting(val ini: Map<String, List<String>>, val cli: CommandLineOptions, val name: String, val default: List<String>) {
+class Setting(val ini: Map<String, List<String>>, val cli: CommandLineOptions, val name: String, val default: List<String>, val secret: Boolean) {
 	val values: List<String>
 	val source: SettingSource
 	val logger = LoggerFactory.getLogger(Setting::class.java)
@@ -110,6 +116,10 @@ class Setting(val ini: Map<String, List<String>>, val cli: CommandLineOptions, v
 	
 	fun getCli(name: String): String? {
 		return cli.values[name]
+	}
+	
+	fun print() {
+		println("%-25s %-10s %s".format(name, source, (if (secret && source==SettingSource.DEFAULT) "[REDACTED]" else values)))
 	}
 	
 	companion object {

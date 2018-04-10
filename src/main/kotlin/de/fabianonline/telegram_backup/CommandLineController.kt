@@ -121,6 +121,9 @@ class CommandLineController(val options: CommandLineOptions) {
 			if (options.booleans.contains("stats")) {
 				cmd_stats(file_base, database)
 				System.exit(0)
+			} else if (options.booleans.contains("settings")) {
+				settings.print()
+				System.exit(0)
 			}
 			
 			val export = options.values["export"]
