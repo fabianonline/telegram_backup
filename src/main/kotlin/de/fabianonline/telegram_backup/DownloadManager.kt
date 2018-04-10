@@ -61,36 +61,11 @@ enum class MessageSource(val descr: String) {
 }
 
 class DownloadManager(val client: TelegramClient, val prog: DownloadProgressInterface, val db: Database, val user_manager: UserManager, val settings: Settings, val file_base: String) {
-	internal var has_seen_flood_wait_message = false
-
 	@Throws(RpcErrorException::class, IOException::class)
 	fun downloadMessages(limit: Int?) {
-		var completed: Boolean
-		do {
-			completed = true
-			try {
-				_downloadMessages(limit)
-			} catch (e: RpcErrorException) {
-				if (e.getCode() == 420) { // FLOOD_WAIT
-					completed = false
-					Utils.obeyFloodWaitException(e)
-				} else {
-					throw e
-				}
-			} catch (e: TimeoutException) {
-				completed = false
-				System.out.println("")
-				System.out.println("Telegram took too long to respond to our request.")
-				System.out.println("I'm going to wait a minute and then try again.")
-				try {
-					TimeUnit.MINUTES.sleep(1)
-				} catch (e2: InterruptedException) {
-				}
-
-				System.out.println("")
-			}
-
-		} while (!completed)
+		Utils.obeyFloodWait() {
+			_downloadMessages(limit)
+		}
 	}
 
 	@Throws(RpcErrorException::class, IOException::class, TimeoutException::class)
@@ -211,31 +186,19 @@ class DownloadManager(val client: TelegramClient, val prog: DownloadProgressInte
 			logger.trace("vector.size(): {}", vector.size)
 			logger.trace("ids.size(): {}", ids.size)
 
-			var response: TLAbsMessages
-			var tries = 0
-			while (true) {
-				logger.trace("Trying getMessages(), tries={}", tries)
-				if (tries >= 5) {
-					CommandLineController.show_error("Couldn't getMessages after 5 tries. Quitting.")
-				}
-				tries++
-				try {
+			var resp: TLAbsMessages? = null
+			try {
+				Utils.obeyFloodWait(max_tries=5) {
 					if (channel == null) {
-						response = client.messagesGetMessages(vector)
+						resp = client.messagesGetMessages(vector)
 					} else {
-						response = client.channelsGetMessages(channel, vector)
-					}
-					break
-				} catch (e: RpcErrorException) {
-					if (e.getCode() == 420) { // FLOOD_WAIT
-						Utils.obeyFloodWaitException(e, has_seen_flood_wait_message)
-						has_seen_flood_wait_message = true
-					} else {
-						throw e
+						resp = client.channelsGetMessages(channel, vector)
 					}
 				}
-
+			} catch (e: MaxTriesExceededException) {
+				CommandLineController.show_error("Couldn't getMessages after 5 tries. Quitting.")
 			}
+			val response = resp!!
 			logger.trace("response.getMessages().size(): {}", response.getMessages().size)
 			if (response.getMessages().size != vector.size) {
 				CommandLineController.show_error("Requested ${vector.size} messages, but got ${response.getMessages().size}. That is unexpected. Quitting.")
@@ -260,29 +223,9 @@ class DownloadManager(val client: TelegramClient, val prog: DownloadProgressInte
 	@Throws(RpcErrorException::class, IOException::class)
 	fun downloadMedia() {
 		download_client = client.getDownloaderClient()
-		var completed: Boolean
-		do {
-			completed = true
-			try {
-				_downloadMedia()
-			} catch (e: RpcErrorException) {
-				if (e.getCode() == 420) { // FLOOD_WAIT
-					completed = false
-					Utils.obeyFloodWaitException(e)
-				} else {
-					throw e
-				}
-			}
-			/*catch (TimeoutException e) {
-				completed = false;
-				System.out.println("");
-				System.out.println("Telegram took too long to respond to our request.");
-				System.out.println("I'm going to wait a minute and then try again.");
-				logger.warn("TimeoutException caught", e);
-				try { TimeUnit.MINUTES.sleep(1); } catch(InterruptedException e2) {}
-				System.out.println("");
-			}*/
-		} while (!completed)
+		Utils.obeyFloodWait() {
+			_downloadMedia()
+		}
 	}
 
 	@Throws(RpcErrorException::class, IOException::class)
@@ -423,31 +366,30 @@ class DownloadManager(val client: TelegramClient, val prog: DownloadProgressInte
 					logger.trace("offset: {} block_size: {} size: {}", offset, size, size)
 					val req = TLRequestUploadGetFile(loc, offset, size)
 					try {
-						response = download_client!!.executeRpcQuery(req, dcID) as TLFile
-					} catch (e: RpcErrorException) {
-						if (e.getCode() == 420) { // FLOOD_WAIT
-							try_again = true
-							Utils.obeyFloodWaitException(e)
-							continue // response is null since we didn't actually receive any data. Skip the rest of this iteration and try again.
-						} else if (e.getCode() == 400) {
-							//Somehow this file is broken. No idea why. Let's skip it for now
-							return false
-						} else {
-							throw e
+						Utils.obeyFloodWait() {
+							response = download_client!!.executeRpcQuery(req, dcID) as TLFile
 						}
+					} catch (e: RpcErrorException) {
+						if (e.getCode() == 400) {
+							// Somehow this file is broken. No idea why. Let's skip it for now.
+							return false
+						}
+						throw e
 					}
+					
+					val resp = response!!
+					
+					offset += resp.getBytes().getData().size
+					logger.trace("response: {} total size: {}", resp.getBytes().getData().size, offset)
 
-					offset += response.getBytes().getData().size
-					logger.trace("response: {} total size: {}", response.getBytes().getData().size, offset)
-
-					fos.write(response.getBytes().getData())
+					fos.write(resp.getBytes().getData())
 					fos.flush()
 					try {
 						TimeUnit.MILLISECONDS.sleep(Config.DELAY_AFTER_GET_FILE)
 					} catch (e: InterruptedException) {
 					}
 
-				} while (offset < size && (try_again || response!!.getBytes().getData().size > 0))
+				} while (offset < size && (try_again || resp.getBytes().getData().size > 0))
 				fos.close()
 				if (offset < size) {
 					System.out.println("Requested file $target with $size bytes, but got only $offset bytes.")

@@ -20,6 +20,7 @@ import com.github.badoualy.telegram.tl.exception.RpcErrorException
 import java.io.File
 import java.util.Vector
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 import com.google.gson.*
 import java.net.URL
 import org.apache.commons.io.IOUtils
@@ -31,6 +32,8 @@ object Utils {
 	@JvmField public val VERSIONS_EQUAL = 0
 	@JvmField public val VERSION_1_NEWER = 1
 	@JvmField public val VERSION_2_NEWER = 2
+	
+	var hasSeenFloodWaitMessage = false
 
 	var anonymize = false
 
@@ -96,30 +99,48 @@ object Utils {
 		}
 
 	}
-
-	@Throws(RpcErrorException::class)
-	@JvmOverloads internal fun obeyFloodWaitException(e: RpcErrorException?, silent: Boolean = false) {
-		if (e == null || e.getCode() != 420) return
-
-		val delay: Long = e.getTagInteger()!!.toLong()
-		if (!silent) {
-			System.out.println("")
-			System.out.println(
-				"Telegram complained about us (okay, me) making too many requests in too short time by\n" +
-					"sending us \"" + e.getTag() + "\" as an error. So we now have to wait a bit. Telegram\n" +
-					"asked us to wait for " + delay + " seconds.\n" +
+	
+	fun obeyFloodWait(max_tries: Int = -1, method: () -> Unit) {
+		var tries = 0
+		while (true) {
+			tries++
+			if (max_tries>0 && tries>max_tries) throw MaxTriesExceededException()
+			logger.trace("This is try ${tries}.")
+			try {
+				method.invoke()
+				// If we reach this, the method has returned successfully -> we are done
+				return
+			} catch(e: RpcErrorException) {
+				// If we got something else than a FLOOD_WAIT error, we just rethrow it
+				if (e.getCode() != 420) throw e
+				
+				val delay = e.getTagInteger()!!.toLong()
+				
+				if (!hasSeenFloodWaitMessage) {
+					println(
+						"\n" +
+						"Telegram complained about us (okay, me) making too many requests in too short time by\n" +
+						"sending us \"${e.getTag()}\" as an error. So we now have to wait a bit. Telegram\n" +
+						"asked us to wait for ${delay} seconds.\n" +
+						"\n" +
+						"So I'm going to do just that for now. If you don't want to wait, you can quit by pressing\n" +
+						"Ctrl+C. You can restart me at any time and I will just continue to download your\n" +
+						"messages and media. But be advised that just restarting me is not going to change\n" +
+						"the fact that Telegram won't talk to me until then." +
+						"\n")
+				}
+				hasSeenFloodWaitMessage = true
+				
+				try { TimeUnit.SECONDS.sleep(delay + 1) } catch (e: InterruptedException) { }
+			} catch (e: TimeoutException) {
+				println(
 					"\n" +
-					"So I'm going to do just that for now. If you don't want to wait, you can quit by pressing\n" +
-					"Ctrl+C. You can restart me at any time and I will just continue to download your\n" +
-					"messages and media. But be advised that just restarting me is not going to change\n" +
-					"the fact that Telegram won't talk to me until then.")
-			System.out.println("")
+					"Telegram took too long to respond to our request.\n" +
+					"I'm going to wait a minute and then try again." +
+					"\n")
+				try { TimeUnit.MINUTES.sleep(1) } catch (e: InterruptedException) { }
+			}
 		}
-		try {
-			TimeUnit.SECONDS.sleep(delay + 1)
-		} catch (e2: InterruptedException) {
-		}
-
 	}
 
 	@JvmStatic
@@ -200,3 +221,5 @@ fun String.anonymize(): String {
 
 fun Any.toJson(): String = Gson().toJson(this)
 fun Any.toPrettyJson(): String = GsonBuilder().setPrettyPrinting().create().toJson(this)
+
+class MaxTriesExceededException(): RuntimeException("Max tries exceeded") {}
