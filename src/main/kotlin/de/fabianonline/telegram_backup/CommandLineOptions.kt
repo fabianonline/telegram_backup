@@ -25,6 +25,7 @@ class CommandLineOptions(args: Array<String>) {
 			if (arg.startsWith("--")) {
 				if (last_key!=null) {
 					booleans.add(last_key!!)
+					values.put(last_key!!, "true")
 				}
 				last_key = arg.substring(2)
 			} else {
@@ -35,6 +36,9 @@ class CommandLineOptions(args: Array<String>) {
 				last_key = null
 			}
 		}
-		if (last_key!=null) booleans.add(last_key!!)
+		if (last_key!=null) {
+			booleans.add(last_key!!)
+			values.put(last_key!!, "true")
+		}
 	}
 }
