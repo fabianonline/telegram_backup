@@ -19,26 +19,42 @@ class CommandLineOptions(args: Array<String>) {
 	val booleans = mutableListOf<String>()
 	val values = mutableMapOf<String, String>()
 	var last_key: String? = null
+	val substitutions = mapOf("-t" to "--target")
 	
 	init {
-		for(arg in args) {
-			if (arg.startsWith("--")) {
-				if (last_key!=null) {
-					booleans.add(last_key!!)
-					values.put(last_key!!, "true")
-				}
-				last_key = arg.substring(2)
-			} else {
-				if (last_key==null) {
-					throw RuntimeException("Unexpected unnamed parameter ${arg}")
-				}
-				values.put(last_key!!, arg)
-				last_key = null
+		val list = args.toMutableList()
+		
+		while (list.isNotEmpty()) {
+			
+			var current_arg = list.removeAt(0)
+			if (!current_arg.startsWith("-")) throw RuntimeException("Unexpected unnamed parameter ${current_arg}")
+			
+			var next_arg: String? = null
+			
+			if (current_arg.contains("=")) {
+				val parts = current_arg.split("=", limit=2)
+				current_arg = parts[0]
+				next_arg = parts[1]
+			} else if (list.isNotEmpty() && !list[0].startsWith("--")) {
+				next_arg = list.removeAt(0)
 			}
-		}
-		if (last_key!=null) {
-			booleans.add(last_key!!)
-			values.put(last_key!!, "true")
+			
+			if (!current_arg.startsWith("--") && current_arg.startsWith("-")) {
+				val replacement = substitutions.get(current_arg)
+				if (replacement == null) throw RuntimeException("Unknown short parameter ${current_arg}")
+				current_arg = replacement
+			}
+			
+			current_arg = current_arg.substring(2)
+				
+			if (next_arg == null) {
+				// current_arg seems to be a boolean value
+				booleans.add(current_arg)
+				values.put(current_arg, "true")
+			} else {
+				// current_arg has the value next_arg
+				values.put(current_arg, next_arg)
+			}
 		}
 	}
 }
