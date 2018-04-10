@@ -195,7 +195,7 @@ object Utils {
 }
 
 fun String.anonymize(): String {
-	return if (Utils.anonymize) this else this.replace(Regex("[0-9]"), "1").replace(Regex("[A-Z]"), "A").replace(Regex("[a-z]"), "a") + " (ANONYMIZED)"
+	return if (!Utils.anonymize) this else this.replace(Regex("[0-9]"), "1").replace(Regex("[A-Z]"), "A").replace(Regex("[a-z]"), "a") + " (ANONYMIZED)"
 }
 
 fun Any.toJson(): String = Gson().toJson(this)
