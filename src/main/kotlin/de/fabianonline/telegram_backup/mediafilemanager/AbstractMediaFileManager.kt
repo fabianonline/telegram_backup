@@ -17,33 +17,17 @@
 package de.fabianonline.telegram_backup.mediafilemanager
 
 import de.fabianonline.telegram_backup.UserManager
-import de.fabianonline.telegram_backup.Database
-import de.fabianonline.telegram_backup.StickerConverter
-import de.fabianonline.telegram_backup.DownloadProgressInterface
 import de.fabianonline.telegram_backup.Config
-import de.fabianonline.telegram_backup.DownloadManager
 
-import com.github.badoualy.telegram.api.TelegramClient
-import com.github.badoualy.telegram.tl.core.TLIntVector
-import com.github.badoualy.telegram.tl.core.TLObject
-import com.github.badoualy.telegram.tl.api.messages.TLAbsMessages
-import com.github.badoualy.telegram.tl.api.messages.TLAbsDialogs
 import com.github.badoualy.telegram.tl.api.*
-import com.github.badoualy.telegram.tl.api.upload.TLFile
 import com.github.badoualy.telegram.tl.exception.RpcErrorException
-import com.github.badoualy.telegram.tl.api.request.TLRequestUploadGetFile
+import de.fabianonline.telegram_backup.Settings
 
 import java.io.IOException
 import java.io.File
-import java.io.FileOutputStream
-import java.util.ArrayList
-import java.util.LinkedList
-import java.net.URL
 import java.util.concurrent.TimeoutException
 
-import org.apache.commons.io.FileUtils
-
-abstract class AbstractMediaFileManager(protected var message: TLMessage, protected var user: UserManager, protected var client: TelegramClient) {
+abstract class AbstractMediaFileManager(protected var message: TLMessage, protected var user: UserManager, val file_base: String) {
 	open var isEmpty = false
 	abstract val size: Int
 	abstract val extension: String
@@ -56,7 +40,7 @@ abstract class AbstractMediaFileManager(protected var message: TLMessage, protec
 
 	open val targetPath: String
 		get() {
-			val path = user.fileBase + Config.FILE_FILES_BASE + File.separatorChar
+			val path = file_base + Config.FILE_FILES_BASE + File.separatorChar
 			File(path).mkdirs()
 			return path
 		}

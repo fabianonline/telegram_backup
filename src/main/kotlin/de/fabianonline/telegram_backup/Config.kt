@@ -29,7 +29,7 @@ object Config {
 	val APP_APPVER: String
 	val APP_LANG = "en"
 
-	var FILE_BASE = System.getProperty("user.home") + File.separatorChar + ".telegram_backup"
+	var TARGET_DIR = System.getProperty("user.home") + File.separatorChar + ".telegram_backup"
 	val FILE_NAME_AUTH_KEY = "auth.dat"
 	val FILE_NAME_DC = "dc.dat"
 	val FILE_NAME_DB = "database.sqlite"

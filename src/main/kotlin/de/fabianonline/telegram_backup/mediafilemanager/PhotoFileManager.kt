@@ -17,32 +17,15 @@
 package de.fabianonline.telegram_backup.mediafilemanager
 
 import de.fabianonline.telegram_backup.UserManager
-import de.fabianonline.telegram_backup.Database
-import de.fabianonline.telegram_backup.StickerConverter
-import de.fabianonline.telegram_backup.DownloadProgressInterface
 import de.fabianonline.telegram_backup.DownloadManager
 
-import com.github.badoualy.telegram.api.TelegramClient
-import com.github.badoualy.telegram.tl.core.TLIntVector
-import com.github.badoualy.telegram.tl.core.TLObject
-import com.github.badoualy.telegram.tl.api.messages.TLAbsMessages
-import com.github.badoualy.telegram.tl.api.messages.TLAbsDialogs
 import com.github.badoualy.telegram.tl.api.*
-import com.github.badoualy.telegram.tl.api.upload.TLFile
 import com.github.badoualy.telegram.tl.exception.RpcErrorException
-import com.github.badoualy.telegram.tl.api.request.TLRequestUploadGetFile
 
 import java.io.IOException
-import java.io.File
-import java.io.FileOutputStream
-import java.util.ArrayList
-import java.util.LinkedList
-import java.net.URL
 import java.util.concurrent.TimeoutException
 
-import org.apache.commons.io.FileUtils
-
-class PhotoFileManager(msg: TLMessage, user: UserManager, client: TelegramClient) : AbstractMediaFileManager(msg, user, client) {
+class PhotoFileManager(msg: TLMessage, user: UserManager, file_base: String) : AbstractMediaFileManager(msg, user, file_base) {
 	private lateinit var photo: TLPhoto
 	override var size = 0
 	private lateinit var photo_size: TLPhotoSize
