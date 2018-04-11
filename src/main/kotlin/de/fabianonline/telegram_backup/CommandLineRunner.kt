@@ -53,7 +53,7 @@ class CommandLineRunner(args: Array<String>) {
 	}
 	
 	fun setupLogging() {
-		if (options.booleans.contains("anonymize")) {
+		if (options.isSet("anonymize")) {
 			Utils.anonymize = true
 		}
 	
@@ -76,13 +76,13 @@ class CommandLineRunner(args: Array<String>) {
 		rootLogger.addAppender(appender)
 		rootLogger.setLevel(Level.OFF)
 
-		if (options.booleans.contains("trace")) {
+		if (options.isSet("trace")) {
 			(LoggerFactory.getLogger("de.fabianonline.telegram_backup") as Logger).setLevel(Level.TRACE)
-		} else if (options.booleans.contains("debug")) {
+		} else if (options.isSet("debug")) {
 			(LoggerFactory.getLogger("de.fabianonline.telegram_backup") as Logger).setLevel(Level.DEBUG)
 		}
 
-		if (options.booleans.contains("trace_telegram")) {
+		if (options.isSet("trace_telegram")) {
 			(LoggerFactory.getLogger("com.github.badoualy") as Logger).setLevel(Level.TRACE)
 		}
 	}

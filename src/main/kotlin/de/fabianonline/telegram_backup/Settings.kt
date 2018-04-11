@@ -115,7 +115,7 @@ class Setting(val ini: Map<String, List<String>>, val cli: CommandLineOptions, v
 	}
 	
 	fun getCli(name: String): String? {
-		return cli.values[name]
+		return cli.get(name)
 	}
 	
 	fun print() {

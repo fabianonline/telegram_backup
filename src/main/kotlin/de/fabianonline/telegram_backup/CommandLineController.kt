@@ -46,12 +46,12 @@ class CommandLineController(val options: CommandLineOptions) {
 		logger.info("CommandLineController started. App version {}", Config.APP_APPVER)
 		
 		printHeader()
-		if (options.booleans.contains("version")) {
+		if (options.isSet("version")) {
 			System.exit(0)
-		} else if (options.booleans.contains("help")) {
+		} else if (options.isSet("help")) {
 			show_help()
 			System.exit(0)
-		} else if (options.booleans.contains("license")) {
+		} else if (options.isSet("license")) {
 			show_license()
 			System.exit(0)
 		}
@@ -62,26 +62,26 @@ class CommandLineController(val options: CommandLineOptions) {
 
 		// Setup file_base
 		logger.debug("Target dir from Config: {}", Config.TARGET_DIR.anonymize())
-		target_dir = options.values.get("target") ?: Config.TARGET_DIR
+		target_dir = options.get("target") ?: Config.TARGET_DIR
 		logger.debug("Target dir after options: {}", target_dir)
 		println("Base directory for files: ${target_dir.anonymize()}")
 
-		if (options.booleans.contains("list_accounts")) {
+		if (options.isSet("list_accounts")) {
 			Utils.print_accounts(target_dir)
 			System.exit(0)
 		}
 		
-		if (options.booleans.contains("login")) {
-			cmd_login(app, target_dir, options.values.get("account"))
+		if (options.isSet("login")) {
+			cmd_login(app, target_dir, options.get("account"))
 		}
 
 		logger.trace("Checking accounts")
-		phone_number = try { selectAccount(target_dir, options.values.get("account"))
+		phone_number = try { selectAccount(target_dir, options.get("account"))
 		} catch(e: AccountNotFoundException) {
 			show_error("The specified account could not be found.")
 		} catch(e: NoAccountsException) {
 			println("No accounts found. Starting login process...")
-			cmd_login(app, target_dir, options.values.get("account"))
+			cmd_login(app, target_dir, options.get("account"))
 		}
 		
 		// TODO: Create a new TelegramApp if the user set his/her own TelegramApp credentials
@@ -118,15 +118,15 @@ class CommandLineController(val options: CommandLineOptions) {
 			// Load the settings and stuff.
 			settings = Settings(file_base, database, options)
 			
-			if (options.booleans.contains("stats")) {
+			if (options.isSet("stats")) {
 				cmd_stats(file_base, database)
 				System.exit(0)
-			} else if (options.booleans.contains("settings")) {
+			} else if (options.isSet("settings")) {
 				settings.print()
 				System.exit(0)
 			}
 			
-			val export = options.values["export"]
+			val export = options.get("export")
 			logger.debug("options.val_export: {}", export)
 			if (export != null) {
 				if (export.toLowerCase() == "html") {
@@ -142,7 +142,7 @@ class CommandLineController(val options: CommandLineOptions) {
 			logger.info("Initializing Download Manager")
 			val d = DownloadManager(client, CommandLineDownloadProgress(), database, user_manager, settings, file_base)
 			
-			if (options.booleans.contains("list_channels")) {
+			if (options.isSet("list_channels")) {
 				val chats = d.getChats()
 				val print_header = {download: Boolean -> println("%-15s %-40s %s".format("ID", "Title", if (download) "Download" else "")); println("-".repeat(65)) }
 				val format = {c: DownloadManager.Channel, download: Boolean -> "%-15s %-40s %s".format(c.id.toString().anonymize(), c.title.anonymize(), if (download) (if(c.download) "YES" else "no") else "")}
@@ -166,8 +166,8 @@ class CommandLineController(val options: CommandLineOptions) {
 				System.exit(0)
 			}
 			
-			logger.debug("Calling DownloadManager.downloadMessages with limit {}", options.values.get("limit_messages")?.last())
-			d.downloadMessages(options.values.get("limit_messages")?.last()?.toInt())
+			logger.debug("Calling DownloadManager.downloadMessages with limit {}", options.get("limit_messages"))
+			d.downloadMessages(options.get("limit_messages")?.toInt())
 			logger.debug("IniSettings#download_media: {}", settings.download_media)
 			if (settings.download_media) {
 				logger.debug("Calling DownloadManager.downloadMedia")
@@ -176,7 +176,7 @@ class CommandLineController(val options: CommandLineOptions) {
 				println("Skipping media download because download_media is set to false.")
 			}
 
-			if (options.booleans.contains("daemon")) {
+			if (options.isSet("daemon")) {
 				logger.info("Initializing TelegramUpdateHandler")
 				handler = TelegramUpdateHandler(user_manager, database, file_base, settings)
 				client.close()

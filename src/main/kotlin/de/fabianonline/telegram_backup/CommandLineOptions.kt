@@ -16,8 +16,7 @@
 package de.fabianonline.telegram_backup
 
 class CommandLineOptions(args: Array<String>) {
-	val booleans = mutableListOf<String>()
-	val values = mutableMapOf<String, String>()
+	private val values = mutableMapOf<String, String>()
 	var last_key: String? = null
 	val substitutions = mapOf("-t" to "--target")
 	
@@ -49,12 +48,19 @@ class CommandLineOptions(args: Array<String>) {
 				
 			if (next_arg == null) {
 				// current_arg seems to be a boolean value
-				booleans.add(current_arg)
 				values.put(current_arg, "true")
+				if (current_arg.startsWith("no-")) {
+					current_arg = current_arg.substring(3)
+					values.put(current_arg, "false")
+				}
 			} else {
 				// current_arg has the value next_arg
 				values.put(current_arg, next_arg)
 			}
 		}
+		println(values)
 	}
+	
+	operator fun get(name: String): String? = values[name]
+	fun isSet(name: String): Boolean = values[name]=="true"
 }
