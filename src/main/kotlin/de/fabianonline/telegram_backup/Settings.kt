@@ -92,12 +92,12 @@ class Setting(val ini: Map<String, List<String>>, val cli: CommandLineOptions, v
 	val logger = LoggerFactory.getLogger(Setting::class.java)
 	
 	init {
-		if (getIni(name) != null) {
-			values = getIni(name)!!
-			source = SettingSource.INI
-		} else if (getCli(name) != null) {
+		if (getCli(name) != null) {
 			values = listOf(getCli(name)!!)
 			source = SettingSource.CLI
+		} else if (getIni(name) != null) {
+			values = getIni(name)!!
+			source = SettingSource.INI
 		} else {
 			values = default
 			source = SettingSource.DEFAULT
