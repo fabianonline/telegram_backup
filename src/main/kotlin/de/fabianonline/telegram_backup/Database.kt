@@ -84,7 +84,7 @@ class Database constructor(val file_base: String, val user_manager: UserManager)
 		try {
 			val missing = LinkedList<Int>()
 			val max = getTopMessageID()
-			val rs = stmt.executeQuery("SELECT message_id FROM messages WHERE source_type IN ('group', 'dialog') ORDER BY id")
+			val rs = executeQuery("SELECT message_id FROM messages WHERE source_type IN ('group', 'dialog') ORDER BY id")
 			rs.next()
 			var id = rs.getInt(1)
 			for (i in 1..max) {
@@ -114,7 +114,7 @@ class Database constructor(val file_base: String, val user_manager: UserManager)
 			val list = LinkedList<TLMessage?>()
 			var query = "SELECT data FROM messages WHERE has_media=1 ORDER BY id"
 			if (limit > 0) query += " LIMIT ${limit} OFFSET ${offset}"
-			val rs = stmt.executeQuery(query)
+			val rs = executeQuery(query)
 			while (rs.next()) {
 				list.add(bytesToTLMessage(rs.getBytes(1)))
 			}
@@ -136,7 +136,7 @@ class Database constructor(val file_base: String, val user_manager: UserManager)
 	fun getMessageSourceTypeWithCount(): HashMap<String, Int> {
 		val map = HashMap<String, Int>()
 		try {
-			val rs = stmt.executeQuery("SELECT COUNT(id), source_type FROM messages GROUP BY source_type ORDER BY source_type")
+			val rs = executeQuery("SELECT COUNT(id), source_type FROM messages GROUP BY source_type ORDER BY source_type")
 			while (rs.next()) {
 				val source_type = rs.getString(2) ?: "null"
 				map.put("count.messages.source_type.${source_type}", rs.getInt(1))
@@ -151,7 +151,7 @@ class Database constructor(val file_base: String, val user_manager: UserManager)
 	fun getMessageApiLayerWithCount(): HashMap<String, Int> {
 		val map = HashMap<String, Int>()
 		try {
-			val rs = stmt.executeQuery("SELECT COUNT(id), api_layer FROM messages GROUP BY api_layer ORDER BY api_layer")
+			val rs = executeQuery("SELECT COUNT(id), api_layer FROM messages GROUP BY api_layer ORDER BY api_layer")
 			while (rs.next()) {
 				var layer = rs.getInt(2)
 				map.put("count.messages.api_layer.$layer", rs.getInt(1))
@@ -172,7 +172,7 @@ class Database constructor(val file_base: String, val user_manager: UserManager)
 	fun getListOfChatsForExport(): LinkedList<Chat> {
 		val list = LinkedList<Chat>()
 
-		val rs = stmt.executeQuery("SELECT chats.id, chats.name, COUNT(messages.id) as c " +
+		val rs = executeQuery("SELECT chats.id, chats.name, COUNT(messages.id) as c " +
 			"FROM chats, messages WHERE messages.source_type IN('group', 'supergroup', 'channel') AND messages.source_id=chats.id " +
 			"GROUP BY chats.id ORDER BY c DESC")
 		while (rs.next()) {
@@ -185,7 +185,7 @@ class Database constructor(val file_base: String, val user_manager: UserManager)
 
 	fun getListOfDialogsForExport(): LinkedList<Dialog> {
 		val list = LinkedList<Dialog>()
-		val rs = stmt.executeQuery(
+		val rs = executeQuery(
 			"SELECT users.id, first_name, last_name, username, COUNT(messages.id) as c " +
 				"FROM users, messages WHERE messages.source_type='dialog' AND messages.source_id=users.id " +
 				"GROUP BY users.id ORDER BY c DESC")
@@ -228,9 +228,18 @@ class Database constructor(val file_base: String, val user_manager: UserManager)
 		ps.execute()
 		ps.close()
 	}
+	
+	fun executeQuery(query: String): ResultSet {
+		logger.trace("Query: {}", query)
+		try {
+			return stmt.executeQuery(query)
+		} catch (e: SQLException) {
+			throw RuntimeException("An SQL error happened. Query: ${query} Error message: ${e.message}", e)
+		}
+	}
 
 	fun queryInt(query: String): Int {
-		val rs = stmt.executeQuery(query)
+		val rs = executeQuery(query)
 		rs.next()
 		val result = rs.getInt(1)
 		rs.close()
@@ -238,7 +247,7 @@ class Database constructor(val file_base: String, val user_manager: UserManager)
 	}
 	
 	fun queryString(query: String): String {
-		val rs = stmt.executeQuery(query)
+		val rs = executeQuery(query)
 		rs.next()
 		val result = rs.getString(1)
 		rs.close()
@@ -247,7 +256,7 @@ class Database constructor(val file_base: String, val user_manager: UserManager)
 	
 	fun queryStringMap(query: String): Map<String, String> {
 		val map = mutableMapOf<String, String>()
-		val rs = stmt.executeQuery(query)
+		val rs = executeQuery(query)
 		while(rs.next()) {
 			map.put(rs.getString(1), rs.getString(2))
 		}
@@ -519,7 +528,7 @@ class Database constructor(val file_base: String, val user_manager: UserManager)
 	
 	fun getIdsFromQuery(query: String): LinkedList<Int> {
 		val list = LinkedList<Int>()
-		val rs = stmt.executeQuery(query)
+		val rs = executeQuery(query)
 		while (rs.next()) {
 			list.add(rs.getInt(1))
 		}
@@ -529,7 +538,7 @@ class Database constructor(val file_base: String, val user_manager: UserManager)
 
 	fun getMessageTypesWithCount(c: AbstractChat): HashMap<String, Int> {
 		val map = HashMap<String, Int>()
-		val rs = stmt.executeQuery("SELECT message_type, COUNT(message_id) FROM messages WHERE " + c.query + " GROUP BY message_type")
+		val rs = executeQuery("SELECT message_type, COUNT(message_id) FROM messages WHERE " + c.query + " GROUP BY message_type")
 		while (rs.next()) {
 			map.put("count.messages.type." + rs.getString(1), rs.getInt(2))
 		}
@@ -540,7 +549,7 @@ class Database constructor(val file_base: String, val user_manager: UserManager)
 	fun getMessageMediaTypesWithCount(c: AbstractChat): HashMap<String, Int> {
 		val map = HashMap<String, Int>()
 		var count = 0
-		val rs = stmt.executeQuery("SELECT media_type, COUNT(message_id) FROM messages WHERE " + c.query + " GROUP BY media_type")
+		val rs = executeQuery("SELECT media_type, COUNT(message_id) FROM messages WHERE " + c.query + " GROUP BY media_type")
 		while (rs.next()) {
 			var type = rs.getString(1) ?: "null"
 			if (type != "null") count += rs.getInt(2)
@@ -558,7 +567,7 @@ class Database constructor(val file_base: String, val user_manager: UserManager)
 		// Set a default value for 'me' to fix the charts for channels - cause I
 		// possibly didn't send any messages there.
 		map.put("authors.count.me", 0)
-		val rs = stmt.executeQuery("SELECT users.id, users.first_name, users.last_name, users.username, COUNT(messages.id) " +
+		val rs = executeQuery("SELECT users.id, users.first_name, users.last_name, users.username, COUNT(messages.id) " +
 			"FROM messages " +
 			"LEFT JOIN users ON users.id=messages.sender_id " +
 			"WHERE " + c.query + " GROUP BY sender_id")
@@ -590,7 +599,7 @@ class Database constructor(val file_base: String, val user_manager: UserManager)
 
 	fun getMessageTimesMatrix(c: AbstractChat): Array<IntArray> {
 		val result = Array(7) { IntArray(24) }
-		val rs = stmt.executeQuery("SELECT STRFTIME('%w', time, 'unixepoch') as DAY, " +
+		val rs = executeQuery("SELECT STRFTIME('%w', time, 'unixepoch') as DAY, " +
 			"STRFTIME('%H', time, 'unixepoch') AS hour, " +
 			"COUNT(id) FROM messages WHERE " + c.query + " GROUP BY hour, day " +
 			"ORDER BY hour, day")
@@ -616,7 +625,7 @@ class Database constructor(val file_base: String, val user_manager: UserManager)
 			query = query + " LIMIT ${limit} OFFSET ${offset}"
 		}	
 		
-		val rs = stmt.executeQuery(query)
+		val rs = executeQuery(query)
 		
 		val format_time = SimpleDateFormat("HH:mm:ss")
 		val format_date = SimpleDateFormat("d MMM yy")
