@@ -126,15 +126,12 @@ class CommandLineController(val options: CommandLineOptions) {
 				System.exit(0)
 			}
 			
-			val export = options.get("export")
+			val export = options.get("export")?.toLowerCase()
 			logger.debug("options.val_export: {}", export)
-			if (export != null) {
-				if (export.toLowerCase() == "html") {
-					HTMLExporter(database, user_manager, settings=settings, file_base=file_base).export()
-					System.exit(0)
-				} else {
-					show_error("Unknown export format '${export}'.")
-				}
+			when (export) {
+				"html" -> { HTMLExporter(database, user_manager, settings=settings, file_base=file_base).export(); System.exit(0) }
+				null -> { /* No export whished -> do nothing. */ }
+				else -> show_error("Unknown export format '${export}'.")
 			}
 			
 			println("You are logged in as ${user_manager.toString().anonymize()}")
