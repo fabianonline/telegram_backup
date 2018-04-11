@@ -58,7 +58,6 @@ class CommandLineOptions(args: Array<String>) {
 				values.put(current_arg, next_arg)
 			}
 		}
-		println(values)
 	}
 	
 	operator fun get(name: String): String? = values[name]
