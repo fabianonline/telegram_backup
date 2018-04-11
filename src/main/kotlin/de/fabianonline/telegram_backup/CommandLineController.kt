@@ -185,6 +185,7 @@ class CommandLineController(val options: CommandLineOptions) {
 			println("An error occurred!")
 			e.printStackTrace()
 			logger.error("Exception caught!", e)
+			System.exit(1)
 		} finally {
 			client.close()
 			println()
