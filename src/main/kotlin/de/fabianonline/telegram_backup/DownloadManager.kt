@@ -140,19 +140,22 @@ class DownloadManager(val client: TelegramClient, val prog: DownloadProgressInte
 
 		if (settings.download_channels) {
 			println("Checking channels...")
-			for (channel in chats.channels) { if (channel.download) downloadMessagesFromChannel(channel) }
+			for (channel in chats.channels) { if (channel.download) downloadMessagesFromChannel(channel, limit) }
 		}
 				
 		if (settings.download_supergroups) {
 			println("Checking supergroups...")
-			for (supergroup in chats.supergroups) { if (supergroup.download) downloadMessagesFromChannel(supergroup) }
+			for (supergroup in chats.supergroups) { if (supergroup.download) downloadMessagesFromChannel(supergroup, limit) }
 		}
 	}
 
-	private fun downloadMessagesFromChannel(channel: Channel) {
+	private fun downloadMessagesFromChannel(channel: Channel, limit: Int?) {
 		val obj = channel.obj
-		val max_known_id = db.getTopMessageIDForChannel(channel.id)
+		var max_known_id = db.getTopMessageIDForChannel(channel.id)
 		if (obj.getTopMessage() > max_known_id) {
+			if (limit != null) {
+				max_known_id = Math.max(max_known_id, obj.getTopMessage() - limit)
+			}
 			val ids = makeIdList(max_known_id + 1, obj.getTopMessage())
 			var channel_name = channel.title
 
