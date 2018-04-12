@@ -28,6 +28,7 @@ import com.github.badoualy.telegram.tl.core.TLIntVector
 import com.github.badoualy.telegram.tl.core.TLObject
 import com.github.badoualy.telegram.tl.api.messages.TLAbsMessages
 import com.github.badoualy.telegram.tl.api.messages.TLAbsDialogs
+import com.github.badoualy.telegram.tl.api.messages.TLDialogsSlice
 import com.github.badoualy.telegram.tl.api.*
 import com.github.badoualy.telegram.tl.api.upload.TLFile
 import com.github.badoualy.telegram.tl.exception.RpcErrorException
@@ -283,34 +284,57 @@ class DownloadManager(val client: TelegramClient, val prog: DownloadProgressInte
 	
 	fun getChats(): ChatList {
 		val cl = ChatList()
-		logger.trace("Calling messagesGetDialogs")
-		val dialogs = client.messagesGetDialogs(0, 0, TLInputPeerEmpty(), 100)
-		logger.trace("Got {} dialogs back", dialogs.getDialogs().size)
-		
-		// Add dialogs
-		cl.dialogs.addAll(dialogs.getDialogs().filter{it.getPeer() !is TLPeerChannel})
-		
-		// Add supergoups and channels
-		for (tl_channel in dialogs.getChats().filter{it is TLChannel}.map{it as TLChannel}) {
-			val tl_peer_channel = dialogs.getDialogs().find{var p = it.getPeer() ; p is TLPeerChannel && p.getChannelId()==tl_channel.getId()}
-			
-			if (tl_peer_channel == null) continue
-			
-			var download = true
-			if (settings.whitelist_channels.isNotEmpty()) {
-				download = settings.whitelist_channels.contains(tl_channel.getId().toString())
-			} else if (settings.blacklist_channels.isNotEmpty()) {
-				download = !settings.blacklist_channels.contains(tl_channel.getId().toString())
+		logger.debug("Getting list of chats...")
+		val limit = 100
+		var offset = 0
+		while (true) {
+			var temp: TLAbsDialogs? = null
+			logger.trace("Calling messagesGetDialogs with offset {}", offset)
+			Utils.obeyFloodWait {
+				temp = client.messagesGetDialogs(offset, 0, TLInputPeerEmpty(), limit)
 			}
-			val channel = Channel(id=tl_channel.getId(), access_hash=tl_channel.getAccessHash(), title=tl_channel.getTitle(), obj=tl_peer_channel, download=download)
-			if (tl_channel.getMegagroup()) {
-				channel.message_source = MessageSource.SUPERGROUP
-				cl.supergroups.add(channel)
-			} else {
-				channel.message_source = MessageSource.CHANNEL
-				cl.channels.add(channel)
+			val dialogs = temp!!
+			val last_message = dialogs.messages.filter{ it is TLMessage || it is TLMessageService }.last()
+			offset = when(last_message) {
+				is TLMessage -> last_message.date
+				is TLMessageService -> last_message.date
+				else -> throw RuntimeException("Unexpected last_message type ${last_message.javaClass}")
+			}
+			logger.trace("Got {} dialogs back", dialogs.dialogs.size)
+			logger.trace("New offset will be {}", offset)
+			
+			// Add dialogs
+			cl.dialogs.addAll(dialogs.getDialogs().filter{it.getPeer() !is TLPeerChannel})
+			
+			// Add supergoups and channels
+			for (tl_channel in dialogs.getChats().filter{it is TLChannel}.map{it as TLChannel}) {
+				val tl_peer_channel = dialogs.getDialogs().find{var p = it.getPeer() ; p is TLPeerChannel && p.getChannelId()==tl_channel.getId()}
+				
+				if (tl_peer_channel == null) continue
+				
+				var download = true
+				if (settings.whitelist_channels.isNotEmpty()) {
+					download = settings.whitelist_channels.contains(tl_channel.getId().toString())
+				} else if (settings.blacklist_channels.isNotEmpty()) {
+					download = !settings.blacklist_channels.contains(tl_channel.getId().toString())
+				}
+				val channel = Channel(id=tl_channel.getId(), access_hash=tl_channel.getAccessHash(), title=tl_channel.getTitle(), obj=tl_peer_channel, download=download)
+				if (tl_channel.getMegagroup()) {
+					channel.message_source = MessageSource.SUPERGROUP
+					cl.supergroups.add(channel)
+				} else {
+					channel.message_source = MessageSource.CHANNEL
+					cl.channels.add(channel)
+				}
+			}
+			
+			if (dialogs.dialogs.size < limit) {
+				logger.debug("Got only ${dialogs.dialogs.size} back instead of ${limit}. Stopping the loop.")
+				logger.debug("Got ${cl.dialogs.size} groups, ${cl.channels.size} channels and ${cl.supergroups.size} supergroups.")
+				break;
 			}
 		}
+		
 		return cl
 	}
 	
