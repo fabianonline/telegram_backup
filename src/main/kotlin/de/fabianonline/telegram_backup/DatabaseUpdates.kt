@@ -15,6 +15,8 @@ import org.slf4j.LoggerFactory
 import org.slf4j.Logger
 import de.fabianonline.telegram_backup.mediafilemanager.FileManagerFactory
 import de.fabianonline.telegram_backup.mediafilemanager.AbstractMediaFileManager
+import com.github.salomonbrys.kotson.*
+import com.google.gson.*
 
 class DatabaseUpdates(protected var conn: Connection, protected var db: Database) {
 
@@ -33,6 +35,7 @@ class DatabaseUpdates(protected var conn: Connection, protected var db: Database
 		register(DB_Update_8(conn, db))
 		register(DB_Update_9(conn, db))
 		register(DB_Update_10(conn, db))
+		register(DB_Update_11(conn, db))
 	}
 
 	fun doUpdates() {
@@ -449,5 +452,42 @@ internal class DB_Update_10(conn: Connection, db: Database) : DatabaseUpdate(con
 	@Throws(SQLException::class)
 	override fun _doUpdate() {
 		execute("CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT)")
+	}
+}
+
+internal class DB_Update_11(conn: Connection, db: Database) : DatabaseUpdate(conn, db) {
+	override val version = 11
+	val logger = LoggerFactory.getLogger(DB_Update_11::class.java)
+	
+	override fun _doUpdate() {
+		execute("ALTER TABLE messages ADD COLUMN json TEXT NULL")
+		val limit = 5000
+		var offset = 0
+		var i = 0
+		val ps = conn.prepareStatement("UPDATE messages SET json=? WHERE id=?")
+		do {
+			i = 0
+			logger.debug("Querying with limit $limit and offset $offset")
+			val rs = db.executeQuery("SELECT id, data FROM messages WHERE json IS NULL AND api_layer=53 LIMIT $limit")
+			while (rs.next()) {
+				i++
+				val id = rs.getInt(1)
+				val msg = Database.bytesToTLMessage(rs.getBytes(2))
+				if (msg == null) continue
+				val json = msg.toJson()
+				ps.setString(1, json)
+				ps.setInt(2, id)
+				ps.addBatch()
+			}
+			rs.close()
+			conn.setAutoCommit(false)
+			ps.executeBatch()
+			ps.clearBatch()
+			conn.commit()
+			conn.setAutoCommit(true)
+			                                    
+			print(".")
+		} while (i >= limit)
+		ps.close()
 	}
 }

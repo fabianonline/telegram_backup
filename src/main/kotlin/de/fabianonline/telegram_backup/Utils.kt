@@ -17,11 +17,13 @@
 package de.fabianonline.telegram_backup
 
 import com.github.badoualy.telegram.tl.exception.RpcErrorException
+import com.github.badoualy.telegram.tl.api.TLMessage
 import java.io.File
 import java.util.Vector
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import com.google.gson.*
+import com.github.salomonbrys.kotson.*
 import java.net.URL
 import org.apache.commons.io.IOUtils
 import de.fabianonline.telegram_backup.Version
@@ -223,3 +225,25 @@ fun Any.toJson(): String = Gson().toJson(this)
 fun Any.toPrettyJson(): String = GsonBuilder().setPrettyPrinting().create().toJson(this)
 
 class MaxTriesExceededException(): RuntimeException("Max tries exceeded") {}
+
+fun TLMessage.toJson(): String {
+	val json = Gson().toJsonTree(this)
+	cleanUpMessageJson(json)
+	return json.toString()
+}
+
+fun cleanUpMessageJson(json : JsonElement) {
+	if (json.isJsonArray) {
+		json.array.forEach {cleanUpMessageJson(it)}
+		return
+	} else if (!json.isJsonObject) {
+		return
+	}
+	if (json.obj.has("bytes")) {
+		json.obj -= "bytes"
+		return
+	}
+	json.obj.forEach {_: String, elm: JsonElement ->
+		if (elm.isJsonObject || elm.isJsonArray) cleanUpMessageJson(elm)
+	}
+}
