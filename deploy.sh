@@ -49,6 +49,9 @@ git checkout stable || error
 echo "Merging master into stable..."
 git merge --no-ff -m "Merging master into stable for version $VERSION" master || error
 
+echo "Checking out master again..."
+git checkout master || error
+
 echo "Pushing all to Github..."
 git push --all || error
 
