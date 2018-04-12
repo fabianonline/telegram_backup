@@ -87,7 +87,11 @@ class CommandLineRunner(args: Array<String>) {
 		}
 	}
 
-	fun checkVersion(): Boolean {
+	fun checkVersion() {
+		if (Config.APP_APPVER.contains("-")) {
+			println("Your version ${Config.APP_APPVER} seems to be a development version. Version check is disabled.")
+			return
+		}
 		val v = Utils.getNewestVersion()
 		if (v != null && v.isNewer) {
 			println()
@@ -105,8 +109,6 @@ class CommandLineRunner(args: Array<String>) {
 			println()
 			println()
 			TimeUnit.SECONDS.sleep(5)
-			return false
 		}
-		return true
 	}
 }
