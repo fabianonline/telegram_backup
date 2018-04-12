@@ -67,7 +67,7 @@ class Settings(val file_base: String, val database: Database, val cli_settings: 
 
 	private fun copy_sample_ini(filename: String) {
 		val stream = Config::class.java.getResourceAsStream("/config.sample.ini")
-		File(file_base + "config.sample.ini").outputStream().use { stream.copyTo(it) }
+		File(file_base + filename).outputStream().use { stream.copyTo(it) }
 		stream.close()
 	}
 	
