@@ -115,6 +115,10 @@ class CommandLineController(val options: CommandLineOptions) {
 			// If we reach this point, we can assume that there is an account and a database can be loaded / created.
 			database = Database(file_base, user_manager)
 			
+			Runtime.getRuntime().addShutdownHook(Thread() {
+				database.close()
+			})
+			
 			// Load the settings and stuff.
 			settings = Settings(file_base, database, options)
 			

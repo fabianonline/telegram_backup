@@ -662,6 +662,13 @@ class Database constructor(val file_base: String, val user_manager: UserManager)
 		rs.close()
 		return list
 	}
+	
+	fun close() {
+		logger.debug("Closing database.")
+		try { stmt.close() } catch (e: Throwable) { logger.debug("Exception during stmt.close()", e) }
+		try { conn.close() } catch (e: Throwable) { logger.debug("Exception during conn.close()", e) }
+		logger.debug("Database closed.")
+	}
 
 
 	abstract inner class AbstractChat {
