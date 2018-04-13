@@ -242,7 +242,6 @@ class DownloadManager(val client: TelegramClient, val prog: DownloadProgressInte
 			if (messages.size == 0) break
 			offset += limit
 			logger.debug("Database returned {} messages with media", messages.size)
-			prog.onMediaDownloadStart(messages.size)
 			for (msg in messages) {
 				if (msg == null) continue
 				val m = FileManagerFactory.getFileManager(msg, user_manager, file_base, settings=settings)
