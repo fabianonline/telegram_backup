@@ -17,7 +17,7 @@
 package de.fabianonline.telegram_backup
 
 import com.github.badoualy.telegram.tl.exception.RpcErrorException
-import com.github.badoualy.telegram.tl.api.TLMessage
+import com.github.badoualy.telegram.tl.api.TLAbsMessage
 import java.io.File
 import java.util.Vector
 import java.util.concurrent.TimeUnit
@@ -226,7 +226,7 @@ fun Any.toPrettyJson(): String = GsonBuilder().setPrettyPrinting().create().toJs
 
 class MaxTriesExceededException(): RuntimeException("Max tries exceeded") {}
 
-fun TLMessage.toJson(): String {
+fun TLAbsMessage.toJson(): String {
 	val json = Gson().toJsonTree(this)
 	cleanUpMessageJson(json)
 	return json.toString()

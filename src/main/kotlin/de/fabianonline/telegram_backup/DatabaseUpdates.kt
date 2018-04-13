@@ -461,6 +461,8 @@ internal class DB_Update_11(conn: Connection, db: Database) : DatabaseUpdate(con
 	
 	override fun _doUpdate() {
 		execute("ALTER TABLE messages ADD COLUMN json TEXT NULL")
+		execute("ALTER TABLE chats ADD COLUMN json TEXT NULL, api_layer INTEGER NULL")
+		execute("ALTER TABLE users ADD COLUMN json TEXT NULL, api_layer INTEGER NULL")
 		val limit = 5000
 		var offset = 0
 		var i = 0
