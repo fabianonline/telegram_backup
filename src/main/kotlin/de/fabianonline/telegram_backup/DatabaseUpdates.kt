@@ -463,10 +463,12 @@ internal class DB_Update_11(conn: Connection, db: Database) : DatabaseUpdate(con
 		execute("ALTER TABLE messages ADD COLUMN json TEXT NULL")
 		execute("ALTER TABLE chats ADD COLUMN json TEXT NULL, api_layer INTEGER NULL")
 		execute("ALTER TABLE users ADD COLUMN json TEXT NULL, api_layer INTEGER NULL")
-		val limit = 5000
+		val limit = 1000
 		var offset = 0
 		var i = 0
 		val ps = conn.prepareStatement("UPDATE messages SET json=? WHERE id=?")
+		println("    Updating messages to add their JSON representation to the database. This might take a few moments...")
+		print("    ")
 		do {
 			i = 0
 			logger.debug("Querying with limit $limit and offset $offset")
@@ -490,6 +492,7 @@ internal class DB_Update_11(conn: Connection, db: Database) : DatabaseUpdate(con
 			                                    
 			print(".")
 		} while (i >= limit)
+		println()
 		ps.close()
 	}
 }
