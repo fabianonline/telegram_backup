@@ -63,7 +63,7 @@ class CommandLineController(val options: CommandLineOptions) {
 		// Setup file_base
 		logger.debug("Target dir from Config: {}", Config.TARGET_DIR.anonymize())
 		target_dir = options.get("target") ?: Config.TARGET_DIR
-		logger.debug("Target dir after options: {}", target_dir)
+		logger.debug("Target dir after options: {}", target_dir.anonymize())
 		println("Base directory for files: ${target_dir.anonymize()}")
 
 		if (options.isSet("list_accounts")) {
