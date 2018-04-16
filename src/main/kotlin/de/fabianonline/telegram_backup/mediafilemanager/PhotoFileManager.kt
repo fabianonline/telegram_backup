@@ -25,45 +25,47 @@ import com.github.badoualy.telegram.tl.exception.RpcErrorException
 import java.io.IOException
 import java.util.concurrent.TimeoutException
 
-class PhotoFileManager(msg: TLMessage, user: UserManager, file_base: String) : AbstractMediaFileManager(msg, user, file_base) {
-	private lateinit var photo: TLPhoto
+class PhotoFileManager(json: JsonObject, user: UserManager, file_base: String) : AbstractMediaFileManager(json, user, file_base) {
+	//private lateinit var photo: TLPhoto
 	override var size = 0
-	private lateinit var photo_size: TLPhotoSize
+	//private lateinit var photo_size: TLPhotoSize
 
 	override val extension = "jpg"
 	override val letter = "p"
 	override val name = "photo"
 	override val description = "Photo"
+	
+	var biggestSize: JsonObject?
+	var biggestSizeW = 0
+	var biggestSizeH = 0
 
 	init {
-		val p = (msg.getMedia() as TLMessageMediaPhoto).getPhoto()
-		if (p is TLPhoto) {
-			this.photo = p
-
-			var biggest: TLPhotoSize? = null
-			for (s in photo.getSizes())
-				if (s is TLPhotoSize) {
-					if (biggest == null || s.getW() > biggest.getW() && s.getH() > biggest.getH()) {
-						biggest = s
-					}
-				}
-			if (biggest == null) {
-				throw RuntimeException("Could not find a size for a photo.")
+		/*val p = (msg.getMedia() as TLMessageMediaPhoto).getPhoto()*/
+		
+		for (elm in json["sizes"]) {
+			val s = elm.obj
+			if (biggestSize == null || (s["w"].int > biggestSizeW && s["h"].int > biggestSizeH)) {
+				biggestSize = s
+				biggestSizeW = s["w"].int
+				biggestSizeH = s["h"].int
+				size = s["size"].int // file size
 			}
-			this.photo_size = biggest
-			this.size = biggest.getSize()
-		} else if (p is TLPhotoEmpty) {
+			if (biggestSize == null) throw RuntimeException("Could not find a size for a photo.")
+		}
+			
+		/*} else if (p is TLPhotoEmpty) {
 			this.isEmpty = true
 		} else {
 			throwUnexpectedObjectError(p)
-		}
+		}*/
 	}
 
 	@Throws(RpcErrorException::class, IOException::class, TimeoutException::class)
 	override fun download(): Boolean {
-		if (isEmpty) return true
-		val loc = photo_size.getLocation() as TLFileLocation
-		DownloadManager.downloadFile(targetPathAndFilename, size, loc.getDcId(), loc.getVolumeId(), loc.getLocalId(), loc.getSecret())
+		/*if (isEmpty) return true*/
+		//val loc = photo_size.getLocation() as TLFileLocation
+		val loc = biggestSize["location"].obj
+		DownloadManager.downloadFile(targetPathAndFilename, size, loc["dcId"].int, loc["volumeId"].long, loc["localId"].int, loc["secret"].long)
 		return true
 	}
 }

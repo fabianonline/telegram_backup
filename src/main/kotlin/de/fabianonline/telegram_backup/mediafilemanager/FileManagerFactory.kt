@@ -38,15 +38,27 @@ import java.util.ArrayList
 import java.util.LinkedList
 import java.net.URL
 import java.util.concurrent.TimeoutException
+import com.google.gson.*
+import com.github.salomonbrys.kotson.*
 
 import org.apache.commons.io.FileUtils
 
 object FileManagerFactory {
 	fun getFileManager(m: TLMessage?, u: UserManager, file_base: String, settings: Settings?): AbstractMediaFileManager? {
 		if (m == null) return null
-		val media = m.getMedia() ?: return null
+		val json = Gson().toJsonTree(m).obj
+		return getFileManager(json, u, file_base, settings)
+	}
+	            
+	fun getFileManager(m: JsonObject?, u: UserManager, file_base: String, settings: Settings?): AbstractMediaFileManager? {
+		if (m == null) return null
+		val media = m.get("media")?.obj ?: return null
+		
+		if (media.contains("photo")) {
+			return PhotoFileManager(media["photo"].obj, u, file_base)
+		}
 
-		if (media is TLMessageMediaPhoto) {
+		/*if (media is TLMessageMediaPhoto) {
 			return PhotoFileManager(m, u, file_base)
 		} else if (media is TLMessageMediaDocument) {
 			val d = DocumentFileManager(m, u, file_base)
@@ -67,7 +79,7 @@ object FileManagerFactory {
 			return UnsupportedFileManager(m, u, file_base, "venue")
 		} else {
 			AbstractMediaFileManager.throwUnexpectedObjectError(media)
-		}
+		}*/
 		return null
 	}
 }

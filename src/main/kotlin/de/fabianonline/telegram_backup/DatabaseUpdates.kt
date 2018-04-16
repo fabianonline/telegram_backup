@@ -461,24 +461,25 @@ internal class DB_Update_11(conn: Connection, db: Database) : DatabaseUpdate(con
 	
 	override fun _doUpdate() {
 		execute("ALTER TABLE messages ADD COLUMN json TEXT NULL")
-		execute("ALTER TABLE chats ADD COLUMN json TEXT NULL, api_layer INTEGER NULL")
-		execute("ALTER TABLE users ADD COLUMN json TEXT NULL, api_layer INTEGER NULL")
-		val limit = 1000
+		execute("ALTER TABLE chats ADD COLUMN json TEXT NULL")
+		execute("ALTER TABLE chats ADD COLUMN api_layer INTEGER NULL")
+		execute("ALTER TABLE users ADD COLUMN json TEXT NULL")
+		execute("ALTER TABLE users ADD COLUMN api_layer INTEGER NULL")
+		val limit = 5000
 		var offset = 0
-		var i = 0
+		var i: Int
 		val ps = conn.prepareStatement("UPDATE messages SET json=? WHERE id=?")
 		println("    Updating messages to add their JSON representation to the database. This might take a few moments...")
 		print("    ")
 		do {
 			i = 0
-			logger.debug("Querying with limit $limit and offset $offset")
+			logger.debug("Querying with limit $limit, offset is now $offset")
 			val rs = db.executeQuery("SELECT id, data FROM messages WHERE json IS NULL AND api_layer=53 LIMIT $limit")
 			while (rs.next()) {
 				i++
 				val id = rs.getInt(1)
 				val msg = Database.bytesToTLMessage(rs.getBytes(2))
-				if (msg == null) continue
-				val json = msg.toJson()
+				val json = if (msg==null) Gson().toJson(null) else msg.toJson()
 				ps.setString(1, json)
 				ps.setInt(2, id)
 				ps.addBatch()
@@ -489,7 +490,7 @@ internal class DB_Update_11(conn: Connection, db: Database) : DatabaseUpdate(con
 			ps.clearBatch()
 			conn.commit()
 			conn.setAutoCommit(true)
-			                                    
+			offset += limit
 			print(".")
 		} while (i >= limit)
 		println()
