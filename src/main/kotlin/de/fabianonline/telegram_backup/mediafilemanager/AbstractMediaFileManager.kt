@@ -26,14 +26,17 @@ import de.fabianonline.telegram_backup.Settings
 import java.io.IOException
 import java.io.File
 import java.util.concurrent.TimeoutException
+import com.google.gson.*
+import com.github.salomonbrys.kotson.*
+import de.fabianonline.telegram_backup.*
 
-abstract class AbstractMediaFileManager(protected var message: TLMessage, protected var user: UserManager, val file_base: String) {
+abstract class AbstractMediaFileManager(private var json: JsonObject, val file_base: String) {
 	open var isEmpty = false
 	abstract val size: Int
 	abstract val extension: String
 
 	open val downloaded: Boolean
-		get() = File(targetPathAndFilename).isFile()
+		get() = !isEmpty && File(targetPathAndFilename).isFile()
 
 	val downloading: Boolean
 		get() = File("${targetPathAndFilename}.downloading").isFile()
@@ -47,10 +50,10 @@ abstract class AbstractMediaFileManager(protected var message: TLMessage, protec
 
 	open val targetFilename: String
 		get() {
-			val message_id = message.getId()
-			var to = message.getToId()
-			if (to is TLPeerChannel) {
-				val channel_id = to.getChannelId()
+			val message_id = json["id"].int
+			var to = json["toId"].obj
+			if (to.isA("peerChannel")) {
+				val channel_id = to["channelId"].int
 				return "channel_${channel_id}_${message_id}.$extension"
 			} else return "${message_id}.$extension"
 		}
@@ -77,8 +80,8 @@ abstract class AbstractMediaFileManager(protected var message: TLMessage, protec
 	}
 
 	companion object {
-		fun throwUnexpectedObjectError(o: Any) {
-			throw RuntimeException("Unexpected " + o.javaClass.getName())
+		fun throwUnexpectedObjectError(constructor: String) {
+			throw RuntimeException("Unexpected ${constructor}")
 		}
 	}
 }

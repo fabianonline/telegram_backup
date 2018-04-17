@@ -316,7 +316,7 @@ internal class DB_Update_6(conn: Connection, db: Database) : DatabaseUpdate(conn
 			} else {
 				ps.setInt(1, msg.getFwdFrom().getFromId())
 			}
-			val f = FileManagerFactory.getFileManager(msg, db.user_manager, db.file_base, settings = null)
+			val f = FileManagerFactory.getFileManager(msg, db.file_base, settings = null)
 			if (f == null) {
 				ps.setNull(2, Types.VARCHAR)
 				ps.setNull(3, Types.VARCHAR)

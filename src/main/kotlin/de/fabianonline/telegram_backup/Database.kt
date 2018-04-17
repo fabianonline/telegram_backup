@@ -43,6 +43,8 @@ import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.nio.file.FileAlreadyExistsException
 import java.text.SimpleDateFormat
+import com.google.gson.*
+import com.github.salomonbrys.kotson.*
 
 import de.fabianonline.telegram_backup.mediafilemanager.AbstractMediaFileManager
 import de.fabianonline.telegram_backup.mediafilemanager.FileManagerFactory
@@ -110,14 +112,16 @@ class Database constructor(val file_base: String, val user_manager: UserManager)
 
 	fun getMessagesWithMediaCount() = queryInt("SELECT COUNT(*) FROM messages WHERE has_media=1")
 
-	fun getMessagesWithMedia(limit: Int = 0, offset: Int = 0): LinkedList<TLMessage?> {
+	fun getMessagesWithMedia(limit: Int = 0, offset: Int = 0): LinkedList<Pair<Int, JsonObject>> {
 		try {
-			val list = LinkedList<TLMessage?>()
-			var query = "SELECT data FROM messages WHERE has_media=1 ORDER BY id"
+			val list = LinkedList<Pair<Int, JsonObject>>()
+			var query = "SELECT id, json FROM messages WHERE has_media=1 AND json IS NOT NULL ORDER BY id"
 			if (limit > 0) query += " LIMIT ${limit} OFFSET ${offset}"
 			val rs = executeQuery(query)
+			val parser = JsonParser()
 			while (rs.next()) {
-				list.add(bytesToTLMessage(rs.getBytes(1)))
+				val obj = parser.parse(rs.getString(2)).obj
+				list.add(Pair<Int, JsonObject>(rs.getInt(1), obj))
 			}
 			rs.close()
 			return list
@@ -325,7 +329,7 @@ class Database constructor(val file_base: String, val user_manager: UserManager)
 				}
 				ps.setString(7, text)
 				ps.setString(8, "" + msg.getDate())
-				val f = FileManagerFactory.getFileManager(msg, user_manager, file_base, settings)
+				val f = FileManagerFactory.getFileManager(msg, file_base, settings)
 				if (f == null) {
 					ps.setNull(9, Types.BOOLEAN)
 					ps.setNull(10, Types.VARCHAR)

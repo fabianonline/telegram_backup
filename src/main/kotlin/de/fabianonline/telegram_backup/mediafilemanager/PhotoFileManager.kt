@@ -25,7 +25,11 @@ import com.github.badoualy.telegram.tl.exception.RpcErrorException
 import java.io.IOException
 import java.util.concurrent.TimeoutException
 
-class PhotoFileManager(json: JsonObject, user: UserManager, file_base: String) : AbstractMediaFileManager(json, user, file_base) {
+import com.google.gson.*
+import com.github.salomonbrys.kotson.*
+import de.fabianonline.telegram_backup.*
+
+class PhotoFileManager(message: JsonObject, file_base: String) : AbstractMediaFileManager(message, file_base) {
 	//private lateinit var photo: TLPhoto
 	override var size = 0
 	//private lateinit var photo_size: TLPhotoSize
@@ -35,22 +39,33 @@ class PhotoFileManager(json: JsonObject, user: UserManager, file_base: String) :
 	override val name = "photo"
 	override val description = "Photo"
 	
-	var biggestSize: JsonObject?
+	val biggestSize: JsonObject
 	var biggestSizeW = 0
 	var biggestSizeH = 0
+	
+	val json = message["media"]["photo"].obj
+	override var isEmpty = json.isA("photoEmpty")
 
 	init {
 		/*val p = (msg.getMedia() as TLMessageMediaPhoto).getPhoto()*/
+		if (!isEmpty) {
+			var bsTemp: JsonObject? = null
 		
-		for (elm in json["sizes"]) {
-			val s = elm.obj
-			if (biggestSize == null || (s["w"].int > biggestSizeW && s["h"].int > biggestSizeH)) {
-				biggestSize = s
-				biggestSizeW = s["w"].int
-				biggestSizeH = s["h"].int
-				size = s["size"].int // file size
+			for (elm in json["sizes"].array) {
+				val s = elm.obj
+				if (!s.isA("photoSize")) continue
+				if (bsTemp == null || (s["w"].int > biggestSizeW && s["h"].int > biggestSizeH)) {
+					bsTemp = s
+					biggestSizeW = s["w"].int
+					biggestSizeH = s["h"].int
+					size = s["size"].int // file size
+				}
 			}
-			if (biggestSize == null) throw RuntimeException("Could not find a size for a photo.")
+
+			if (bsTemp == null) throw RuntimeException("Could not find a size for a photo.")
+			biggestSize = bsTemp
+		} else {
+			biggestSize = JsonObject()
 		}
 			
 		/*} else if (p is TLPhotoEmpty) {
@@ -64,6 +79,7 @@ class PhotoFileManager(json: JsonObject, user: UserManager, file_base: String) :
 	override fun download(): Boolean {
 		/*if (isEmpty) return true*/
 		//val loc = photo_size.getLocation() as TLFileLocation
+		
 		val loc = biggestSize["location"].obj
 		DownloadManager.downloadFile(targetPathAndFilename, size, loc["dcId"].int, loc["volumeId"].long, loc["localId"].int, loc["secret"].long)
 		return true

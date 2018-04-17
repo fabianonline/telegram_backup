@@ -224,6 +224,9 @@ fun String.anonymize(): String {
 fun Any.toJson(): String = Gson().toJson(this)
 fun Any.toPrettyJson(): String = GsonBuilder().setPrettyPrinting().create().toJson(this)
 
+fun JsonObject.isA(name: String): Boolean = this.contains("_constructor") && this["_constructor"].string.startsWith(name + "#")
+fun JsonElement.isA(name: String): Boolean = this.obj.isA(name)
+
 class MaxTriesExceededException(): RuntimeException("Max tries exceeded") {}
 
 fun TLAbsMessage.toJson(): String {
