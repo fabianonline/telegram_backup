@@ -18,6 +18,9 @@ package de.fabianonline.telegram_backup
 
 import com.github.badoualy.telegram.tl.exception.RpcErrorException
 import com.github.badoualy.telegram.tl.api.TLAbsMessage
+import com.github.badoualy.telegram.tl.api.TLAbsUser
+import com.github.badoualy.telegram.tl.api.TLAbsChat
+import com.github.badoualy.telegram.api.Kotlogram
 import java.io.File
 import java.util.Vector
 import java.util.concurrent.TimeUnit
@@ -230,8 +233,21 @@ fun JsonElement.isA(name: String): Boolean = this.obj.isA(name)
 class MaxTriesExceededException(): RuntimeException("Max tries exceeded") {}
 
 fun TLAbsMessage.toJson(): String {
-	val json = Gson().toJsonTree(this)
+	val json = Gson().toJsonTree(this).obj
 	cleanUpMessageJson(json)
+	json["api_layer"] = Kotlogram.API_LAYER
+	return json.toString()
+}
+
+fun TLAbsChat.toJson(): String {
+	val json = Gson().toJsonTree(this).obj
+	json["api_layer"] = Kotlogram.API_LAYER
+	return json.toString()
+}
+
+fun TLAbsUser.toJson(): String {
+	val json = Gson().toJsonTree(this).obj
+	json["api_layer"] = Kotlogram.API_LAYER
 	return json.toString()
 }
 
