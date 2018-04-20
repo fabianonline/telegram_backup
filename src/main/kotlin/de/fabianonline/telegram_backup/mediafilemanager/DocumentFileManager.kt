@@ -18,7 +18,7 @@ package de.fabianonline.telegram_backup.mediafilemanager
 
 import de.fabianonline.telegram_backup.UserManager
 import de.fabianonline.telegram_backup.DownloadManager
-
+import de.fabianonline.telegram_backup.DownloadProgressInterface
 import com.github.badoualy.telegram.tl.api.*
 import com.github.badoualy.telegram.tl.exception.RpcErrorException
 
@@ -74,8 +74,8 @@ open class DocumentFileManager(message: JsonObject, file_base: String) : Abstrac
 	}
 
 	@Throws(RpcErrorException::class, IOException::class, TimeoutException::class)
-	override fun download(): Boolean {
-		DownloadManager.downloadFile(targetPathAndFilename, size, json["dcId"].int, json["id"].long, json["accessHash"].long)
+	override fun download(prog: DownloadProgressInterface?): Boolean {
+		DownloadManager.downloadFile(targetPathAndFilename, size, json["dcId"].int, json["id"].long, json["accessHash"].long, prog)
 		return true
 	}
 }

@@ -30,4 +30,7 @@ interface DownloadProgressInterface {
 	fun onMediaAlreadyPresent(file_manager: AbstractMediaFileManager)
 	fun onMediaDownloadFinished()
 	fun onMediaFailed()
+	fun onMediaFileDownloadStarted()
+	fun onMediaFileDownloadStep()
+	fun onMediaFileDownloadFinished()
 }

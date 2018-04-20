@@ -65,7 +65,7 @@ abstract class AbstractMediaFileManager(private var json: JsonObject, val file_b
 	abstract val name: String
 	abstract val description: String
 	@Throws(RpcErrorException::class, IOException::class, TimeoutException::class)
-	abstract fun download(): Boolean
+	abstract fun download(prog: DownloadProgressInterface? = null): Boolean
 
 	protected fun extensionFromMimetype(mime: String): String {
 		when (mime) {

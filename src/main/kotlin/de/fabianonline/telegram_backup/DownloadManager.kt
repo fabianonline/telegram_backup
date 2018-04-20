@@ -263,7 +263,7 @@ class DownloadManager(val client: TelegramClient, val prog: DownloadProgressInte
 					prog.onMediaSkipped()
 				} else {
 					try {
-						val result = m.download()
+						val result = m.download(prog)
 						if (result) {
 							prog.onMediaDownloaded(m)
 						} else {
@@ -361,19 +361,19 @@ class DownloadManager(val client: TelegramClient, val prog: DownloadProgressInte
 		internal val logger = LoggerFactory.getLogger(DownloadManager::class.java)
 
 		@Throws(RpcErrorException::class, IOException::class, TimeoutException::class)
-		fun downloadFile(targetFilename: String, size: Int, dcId: Int, volumeId: Long, localId: Int, secret: Long) {
+		fun downloadFile(targetFilename: String, size: Int, dcId: Int, volumeId: Long, localId: Int, secret: Long, prog: DownloadProgressInterface?) {
 			val loc = TLInputFileLocation(volumeId, localId, secret)
-			downloadFileFromDc(targetFilename, loc, dcId, size)
+			downloadFileFromDc(targetFilename, loc, dcId, size, prog)
 		}
 
 		@Throws(RpcErrorException::class, IOException::class, TimeoutException::class)
-		fun downloadFile(targetFilename: String, size: Int, dcId: Int, id: Long, accessHash: Long) {
+		fun downloadFile(targetFilename: String, size: Int, dcId: Int, id: Long, accessHash: Long, prog: DownloadProgressInterface?) {
 			val loc = TLInputDocumentFileLocation(id, accessHash)
-			downloadFileFromDc(targetFilename, loc, dcId, size)
+			downloadFileFromDc(targetFilename, loc, dcId, size, prog)
 		}
 
 		@Throws(RpcErrorException::class, IOException::class, TimeoutException::class)
-		private fun downloadFileFromDc(target: String, loc: TLAbsInputFileLocation, dcID: Int, size: Int): Boolean {
+		private fun downloadFileFromDc(target: String, loc: TLAbsInputFileLocation, dcID: Int, size: Int, prog: DownloadProgressInterface?): Boolean {
 			var fos: FileOutputStream? = null
 			try {
 				val temp_filename = target + ".downloading"
@@ -392,6 +392,7 @@ class DownloadManager(val client: TelegramClient, val prog: DownloadProgressInte
 				}
 				logger.trace("offset before the loop is {}", offset)
 				fos = FileOutputStream(temp_filename, true)
+				if (prog != null) prog.onMediaFileDownloadStarted()
 				do {
 					logger.trace("offset: {} block_size: {} size: {}", offset, size, size)
 					val req = TLRequestUploadGetFile(loc, offset, size)
@@ -409,7 +410,7 @@ class DownloadManager(val client: TelegramClient, val prog: DownloadProgressInte
 					}
 					
 					val response = resp!!
-					
+					if (prog!=null) prog.onMediaFileDownloadStep()
 					offset += response.getBytes().getData().size
 					logger.trace("response: {} total size: {}", response.getBytes().getData().size, offset)
 
@@ -418,6 +419,7 @@ class DownloadManager(val client: TelegramClient, val prog: DownloadProgressInte
 					try { TimeUnit.MILLISECONDS.sleep(Config.DELAY_AFTER_GET_FILE) } catch (e: InterruptedException) { }
 
 				} while (offset < size && response.getBytes().getData().size > 0)
+				if (prog != null) prog.onMediaFileDownloadFinished()
 				fos.close()
 				if (offset < size) {
 					System.out.println("Requested file $target with $size bytes, but got only $offset bytes.")
@@ -472,13 +474,18 @@ class DownloadManager(val client: TelegramClient, val prog: DownloadProgressInte
 		}
 
 		@Throws(IOException::class)
-		fun downloadExternalFile(target: String, url: String): Boolean {
-			val (_, response, result) = Fuel.get(url).response()
-			if (result is Result.Success) {
-				File(target).writeBytes(response.data)
-				return true
+		fun downloadExternalFile(target: String, url: String, prog: DownloadProgressInterface?): Boolean {
+			if (prog != null) prog.onMediaFileDownloadStarted()
+			var success = true
+			Fuel.download(url).destination { _, _ ->
+				File(target)
+			}.progress { _, _ ->
+				if (prog != null) prog.onMediaFileDownloadStep()
+			}.response { _, _, result ->
+				success = (result is Result.Success)
 			}
-			return false
+			if (prog != null) prog.onMediaFileDownloadFinished()
+			return success
 		}
 	}
 }

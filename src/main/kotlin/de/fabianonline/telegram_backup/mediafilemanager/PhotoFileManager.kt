@@ -18,7 +18,7 @@ package de.fabianonline.telegram_backup.mediafilemanager
 
 import de.fabianonline.telegram_backup.UserManager
 import de.fabianonline.telegram_backup.DownloadManager
-
+import de.fabianonline.telegram_backup.DownloadProgressInterface
 import com.github.badoualy.telegram.tl.api.*
 import com.github.badoualy.telegram.tl.exception.RpcErrorException
 
@@ -76,12 +76,12 @@ class PhotoFileManager(message: JsonObject, file_base: String) : AbstractMediaFi
 	}
 
 	@Throws(RpcErrorException::class, IOException::class, TimeoutException::class)
-	override fun download(): Boolean {
+	override fun download(prog: DownloadProgressInterface?): Boolean {
 		/*if (isEmpty) return true*/
 		//val loc = photo_size.getLocation() as TLFileLocation
 		
 		val loc = biggestSize["location"].obj
-		DownloadManager.downloadFile(targetPathAndFilename, size, loc["dcId"].int, loc["volumeId"].long, loc["localId"].int, loc["secret"].long)
+		DownloadManager.downloadFile(targetPathAndFilename, size, loc["dcId"].int, loc["volumeId"].long, loc["localId"].int, loc["secret"].long, prog)
 		return true
 	}
 }

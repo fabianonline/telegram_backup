@@ -23,6 +23,8 @@ import de.fabianonline.telegram_backup.Utils
 internal class CommandLineDownloadProgress : DownloadProgressInterface {
 	private var mediaCount = 0
 	private var i = 0
+	private var step = 0
+	private val chars = arrayOf("|", "/", "-", "\\")
 
 	override fun onMessageDownloadStart(count: Int, source: String?) {
 		i = 0
@@ -58,6 +60,21 @@ internal class CommandLineDownloadProgress : DownloadProgressInterface {
 
 	override fun onMediaDownloaded(file_manager: AbstractMediaFileManager) {
 		show(file_manager.letter.toUpperCase())
+	}
+	
+	override fun onMediaFileDownloadStarted() {
+		step = 0
+		print(chars[step % chars.size])
+	}
+	
+	override fun onMediaFileDownloadStep() {
+		step++
+		print("\b")
+		print(chars[step % chars.size])
+	}
+	
+	override fun onMediaFileDownloadFinished() {
+		print("\b")
 	}
 
 	override fun onMediaDownloadedEmpty() {

@@ -18,7 +18,7 @@ package de.fabianonline.telegram_backup.mediafilemanager
 
 import de.fabianonline.telegram_backup.UserManager
 import de.fabianonline.telegram_backup.DownloadManager
-
+import de.fabianonline.telegram_backup.DownloadProgressInterface
 import com.github.badoualy.telegram.tl.api.*
 import de.fabianonline.telegram_backup.Config
 import de.fabianonline.telegram_backup.Settings
@@ -61,12 +61,12 @@ class GeoFileManager(message: JsonObject, file_base: String, val settings: Setti
 	}
 
 	@Throws(IOException::class)
-	override fun download(): Boolean {
+	override fun download(prog: DownloadProgressInterface?): Boolean {
 		val url = "https://maps.googleapis.com/maps/api/staticmap?" +
 			"center=${json["lat"].float},${json["_long"].float}&" +
 			"markers=color:red|${json["lat"].float},${json["_long"].float}&" +
 			"zoom=14&size=300x150&scale=2&format=png&" +
 			"key=" + (settings?.gmaps_key)
-		return DownloadManager.downloadExternalFile(targetPathAndFilename, url)
+		return DownloadManager.downloadExternalFile(targetPathAndFilename, url, prog)
 	}
 }

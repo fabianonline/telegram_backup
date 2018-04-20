@@ -17,7 +17,7 @@
 package de.fabianonline.telegram_backup.mediafilemanager
 
 import de.fabianonline.telegram_backup.UserManager
-
+import de.fabianonline.telegram_backup.DownloadProgressInterface
 import com.github.badoualy.telegram.tl.api.*
 import com.google.gson.JsonObject
 
@@ -32,5 +32,5 @@ class UnsupportedFileManager(json: JsonObject, file_base: String, type: String) 
 	override val letter = " "
 	override val description = "Unsupported / non-downloadable Media"
 
-	override fun download(): Boolean = true
+	override fun download(prog: DownloadProgressInterface?): Boolean = true
 }
