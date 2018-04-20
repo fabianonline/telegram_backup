@@ -1,0 +1,3 @@
+{{#messages}}
+"{{time}}","{{username}}","{{chat_name}}","{{message}}"
+{{/messages}}

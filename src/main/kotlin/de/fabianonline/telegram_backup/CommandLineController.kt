@@ -16,7 +16,7 @@
 package de.fabianonline.telegram_backup
 
 import de.fabianonline.telegram_backup.TelegramUpdateHandler
-import de.fabianonline.telegram_backup.exporter.HTMLExporter
+import de.fabianonline.telegram_backup.exporter.*
 import com.github.badoualy.telegram.api.Kotlogram
 import com.github.badoualy.telegram.api.TelegramApp
 import com.github.badoualy.telegram.api.TelegramClient
@@ -131,9 +131,11 @@ class CommandLineController(val options: CommandLineOptions) {
 			}
 			
 			val export = options.get("export")?.toLowerCase()
-			logger.debug("options.val_export: {}", export)
-			when (export) {
-				"html" -> { HTMLExporter(database, user_manager, settings=settings, file_base=file_base).export(); System.exit(0) }
+			logger.debug("options.export: {}", export)
+			when(export) {
+				"html" -> { HTMLExporter(database, user_manager, settings=settings, file_base=file_base).export() ; System.exit(0) }
+				"csv" -> { CSVExporter(database, file_base, settings).export(); System.exit(0) }
+				"csv_links" -> { CSVLinkExporter(database, file_base, settings).export() ; System.exit(0) }
 				null -> { /* No export whished -> do nothing. */ }
 				else -> show_error("Unknown export format '${export}'.")
 			}
@@ -278,6 +280,7 @@ class CommandLineController(val options: CommandLineOptions) {
 		println(" --target <x>          Target directory for the files.")
 		println(" --export <format>     Export the database. Valid formats are:")
 		println("                html - Creates HTML files.")
+		println("                csv  - Creates daily CSV files for the last 7 days. Set max_file_age to change the number of days.")
 		println(" --license             Displays the license of this program.")
 		println(" --daemon              Keep running after the backup and automatically save new messages.")
 		println(" --anonymize           (Try to) Remove all sensitive information from output. Useful for requesting support.")

@@ -623,8 +623,36 @@ class Database constructor(val file_base: String, val user_manager: UserManager)
 		rs.close()
 		return result
 	}
-
-	fun getMessagesForExport(c: AbstractChat, limit: Int=-1, offset: Int=0): LinkedList<HashMap<String, Any>> {
+	
+	fun getMessagesForCSVExport(start: Long, end: Long, method: (HashMap<String, Any>) -> Unit) {
+		var query = "SELECT text, time*1000, users.first_name as user_first_name, users.last_name as user_last_name, " +
+			"users.username as user_username, messages.json, source_type, source_id, text " +
+			"FROM messages " +
+			"LEFT JOIN users ON users.id=messages.sender_id " +
+			"WHERE time>=${start} AND time<${end} AND messages.api_layer=${Kotlogram.API_LAYER} " +
+			"ORDER BY messages.time"
+		val rs = stmt.executeQuery(query)
+		while (rs.next()) {
+			val map = HashMap<String, Any>()
+			map.put("text", rs.getString(1))
+			map.put("time", rs.getTime(2))
+			map.put("user_first_name", rs.getString(3))
+			map.put("user_last_name", rs.getString(4))
+			map.put("user_username", rs.getString(5))
+			map.put("json", rs.getString(6))
+			map.put("source_type", rs.getString(7))
+			map.put("source_id", rs.getInt(8))
+			map.put("message", rs.getString(9))
+			method.invoke(map)
+		}
+		rs.close()
+	}
+ 
+	fun getMessagesForExport(c: AbstractChat, limit: Int=-1, offset: Int=0, time_range: LongRange? = null): LinkedList<HashMap<String, Any>> {
+		var conditions = ""
+		if (time_range != null) {
+			conditions = "AND time>=#{time_range.start} AND time<=#{time_range.endInclusive}"
+		}
 		var query = "SELECT messages.message_id as message_id, text, time*1000 as time, has_media, " +
 			"media_type, media_file, media_size, users.first_name as user_first_name, users.last_name as user_last_name, " +
 			"users.username as user_username, users.id as user_id, " +
@@ -632,9 +660,9 @@ class Database constructor(val file_base: String, val user_manager: UserManager)
 			"FROM messages " +
 			"LEFT JOIN users ON users.id=messages.sender_id " +
 			"LEFT JOIN users AS users_fwd ON users_fwd.id=fwd_from_id WHERE " +
-			c.query + " " +
+			c.query + " " + conditions + " " +
 			"ORDER BY messages.message_id"
-		
+
 		if ( limit != -1 ) {
 			query = query + " LIMIT ${limit} OFFSET ${offset}"
 		}	
