@@ -36,38 +36,55 @@ import java.io.File
 import java.io.FileOutputStream
 import java.util.ArrayList
 import java.util.LinkedList
+import java.util.NoSuchElementException
 import java.net.URL
 import java.util.concurrent.TimeoutException
+import com.google.gson.*
+import com.github.salomonbrys.kotson.*
+import de.fabianonline.telegram_backup.*
 
 import org.apache.commons.io.FileUtils
 
 object FileManagerFactory {
-	fun getFileManager(m: TLMessage?, u: UserManager, file_base: String, settings: Settings?): AbstractMediaFileManager? {
+	fun getFileManager(m: TLMessage?, file_base: String, settings: Settings?): AbstractMediaFileManager? {
 		if (m == null) return null
-		val media = m.getMedia() ?: return null
-
-		if (media is TLMessageMediaPhoto) {
-			return PhotoFileManager(m, u, file_base)
-		} else if (media is TLMessageMediaDocument) {
-			val d = DocumentFileManager(m, u, file_base)
-			return if (d.isSticker) {
-				StickerFileManager(m, u, file_base)
-			} else d
-		} else if (media is TLMessageMediaGeo) {
-			return GeoFileManager(m, u, file_base, settings)
-		} else if (media is TLMessageMediaEmpty) {
-			return UnsupportedFileManager(m, u, file_base, "empty")
-		} else if (media is TLMessageMediaUnsupported) {
-			return UnsupportedFileManager(m, u, file_base, "unsupported")
-		} else if (media is TLMessageMediaWebPage) {
-			return UnsupportedFileManager(m, u, file_base, "webpage")
-		} else if (media is TLMessageMediaContact) {
-			return UnsupportedFileManager(m, u, file_base, "contact")
-		} else if (media is TLMessageMediaVenue) {
-			return UnsupportedFileManager(m, u, file_base, "venue")
-		} else {
-			AbstractMediaFileManager.throwUnexpectedObjectError(media)
+		val json = Gson().toJsonTree(m).obj
+		return getFileManager(json, file_base, settings)
+	}
+	            
+	fun getFileManager(message: JsonObject?, file_base: String, settings: Settings?): AbstractMediaFileManager? {
+		if (message == null) return null
+		try {
+			val media = message.get("media")?.obj ?: return null
+			
+			if (media.isA("messageMediaPhoto")) {
+				return PhotoFileManager(message, file_base)
+			} else if (media.isA("messageMediaDocument")) {
+				val d = DocumentFileManager(message, file_base)
+				return if (d.isSticker) StickerFileManager(message, file_base) else d
+			} else if (media.isA("messageMediaGeo")) {
+				return GeoFileManager(message, file_base, settings)
+			} else if (media.isA("messageMediaEmpty")) {
+				return UnsupportedFileManager(message, file_base, "empty")
+			} else if (media.isA("messageMediaUnsupported")) {
+				return UnsupportedFileManager(message, file_base, "unsupported")
+			} else if (media.isA("messageMediaWebPage")) {
+				return UnsupportedFileManager(message, file_base, "webpage")
+			} else if (media.isA("messageMediaContact")) {
+				return UnsupportedFileManager(message, file_base, "contact")
+			} else if (media.isA("messageMediaVenue")) {
+				return UnsupportedFileManager(message, file_base, "venue")
+			} else {
+				AbstractMediaFileManager.throwUnexpectedObjectError(media["_constructor"].string)
+			}
+		} catch (e: IllegalStateException) {
+			println(message.toPrettyJson())
+			throw e
+		} catch (e: NoSuchElementException) {
+			println(message.toPrettyJson())
+			throw e
 		}
+		
 		return null
 	}
 }

@@ -16,6 +16,7 @@
 
 package de.fabianonline.telegram_backup
 
+import com.github.badoualy.telegram.api.Kotlogram
 import com.github.badoualy.telegram.tl.api.*
 import com.github.badoualy.telegram.tl.core.TLVector
 import com.github.badoualy.telegram.api.TelegramClient
@@ -42,6 +43,8 @@ import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.nio.file.FileAlreadyExistsException
 import java.text.SimpleDateFormat
+import com.google.gson.*
+import com.github.salomonbrys.kotson.*
 
 import de.fabianonline.telegram_backup.mediafilemanager.AbstractMediaFileManager
 import de.fabianonline.telegram_backup.mediafilemanager.FileManagerFactory
@@ -109,14 +112,16 @@ class Database constructor(val file_base: String, val user_manager: UserManager)
 
 	fun getMessagesWithMediaCount() = queryInt("SELECT COUNT(*) FROM messages WHERE has_media=1")
 
-	fun getMessagesWithMedia(limit: Int = 0, offset: Int = 0): LinkedList<TLMessage?> {
+	fun getMessagesWithMedia(limit: Int = 0, offset: Int = 0): LinkedList<Pair<Int, JsonObject>> {
 		try {
-			val list = LinkedList<TLMessage?>()
-			var query = "SELECT data FROM messages WHERE has_media=1 ORDER BY id"
+			val list = LinkedList<Pair<Int, JsonObject>>()
+			var query = "SELECT id, json FROM messages WHERE has_media=1 AND json IS NOT NULL ORDER BY id"
 			if (limit > 0) query += " LIMIT ${limit} OFFSET ${offset}"
 			val rs = executeQuery(query)
+			val parser = JsonParser()
 			while (rs.next()) {
-				list.add(bytesToTLMessage(rs.getBytes(1)))
+				val obj = parser.parse(rs.getString(2)).obj
+				list.add(Pair<Int, JsonObject>(rs.getInt(1), obj))
 			}
 			rs.close()
 			return list
@@ -266,13 +271,10 @@ class Database constructor(val file_base: String, val user_manager: UserManager)
 
 	@Synchronized
 	fun saveMessages(all: TLVector<TLAbsMessage>, api_layer: Int, source_type: MessageSource = MessageSource.NORMAL, settings: Settings?) {
-		//"(id, dialog_id, from_id, from_type, text, time, has_media, data, sticker, type) " +
-		//"VALUES " +
-		//"(?,  ?,         ?,       ?,         ?,    ?,    ?,         ?,    ?,       ?)");
-		val columns = "(message_id, message_type, source_type, source_id, sender_id, fwd_from_id, text, time, has_media, media_type, media_file, media_size, data, api_layer) " +
+		val columns = "(message_id, message_type, source_type, source_id, sender_id, fwd_from_id, text, time, has_media, media_type, media_file, media_size, data, api_layer, json) " +
 			"VALUES " +
-			"(?,          ?,            ?,           ?,         ?,         ?,           ?,    ?,    ?,         ?,          ?,          ?,          ?,    ?)"
-		//1           2             3            4          5          6            7     8     9          10          11          12          13    14
+		              "(?,          ?,            ?,           ?,         ?,         ?,           ?,    ?,    ?,         ?,          ?,          ?,          ?,    ?,         ?)"
+		              //1           2             3            4          5          6            7     8     9          10          11          12          13    14         15
 		val ps = conn.prepareStatement("INSERT OR REPLACE INTO messages " + columns)
 		val ps_insert_or_ignore = conn.prepareStatement("INSERT OR IGNORE INTO messages " + columns)
 
@@ -327,7 +329,7 @@ class Database constructor(val file_base: String, val user_manager: UserManager)
 				}
 				ps.setString(7, text)
 				ps.setString(8, "" + msg.getDate())
-				val f = FileManagerFactory.getFileManager(msg, user_manager, file_base, settings)
+				val f = FileManagerFactory.getFileManager(msg, file_base, settings)
 				if (f == null) {
 					ps.setNull(9, Types.BOOLEAN)
 					ps.setNull(10, Types.VARCHAR)
@@ -343,6 +345,7 @@ class Database constructor(val file_base: String, val user_manager: UserManager)
 				msg.serializeBody(stream)
 				ps.setBytes(13, stream.toByteArray())
 				ps.setInt(14, api_layer)
+				ps.setString(15, msg.toJson())
 				ps.addBatch()
 			} else if (msg is TLMessageService) {
 				ps_insert_or_ignore.setInt(1, msg.getId())
@@ -381,6 +384,7 @@ class Database constructor(val file_base: String, val user_manager: UserManager)
 				ps_insert_or_ignore.setNull(12, Types.INTEGER)
 				ps_insert_or_ignore.setNull(13, Types.BLOB)
 				ps_insert_or_ignore.setInt(14, api_layer)
+				ps_insert_or_ignore.setString(15, msg.toJson())
 				ps_insert_or_ignore.addBatch()
 			} else if (msg is TLMessageEmpty) {
 				ps_insert_or_ignore.setInt(1, msg.getId())
@@ -397,6 +401,7 @@ class Database constructor(val file_base: String, val user_manager: UserManager)
 				ps_insert_or_ignore.setNull(12, Types.INTEGER)
 				ps_insert_or_ignore.setNull(13, Types.BLOB)
 				ps_insert_or_ignore.setInt(14, api_layer)
+				ps_insert_or_ignore.setNull(15, Types.VARCHAR)
 				ps_insert_or_ignore.addBatch()
 			} else {
 				throw RuntimeException("Unexpected Message type: " + msg.javaClass)
@@ -418,18 +423,23 @@ class Database constructor(val file_base: String, val user_manager: UserManager)
 	fun saveChats(all: TLVector<TLAbsChat>) {
 		val ps_insert_or_replace = conn.prepareStatement(
 			"INSERT OR REPLACE INTO chats " +
-				"(id, name, type) " +
+				"(id, name, type, json, api_layer) " +
 				"VALUES " +
-				"(?,  ?,    ?)")
+				"(?,  ?,    ?,    ?,    ?)")
 		val ps_insert_or_ignore = conn.prepareStatement(
 			"INSERT OR IGNORE INTO chats " +
-				"(id, name, type) " +
+				"(id, name, type, json, api_layer) " +
 				"VALUES " +
-				"(?,  ?,    ?)")
+				"(?,  ?,    ?,    ?,    ?)")
 
 		for (abs in all) {
 			ps_insert_or_replace.setInt(1, abs.getId())
 			ps_insert_or_ignore.setInt(1, abs.getId())
+			val json = abs.toJson()
+			ps_insert_or_replace.setString(4, json)
+			ps_insert_or_ignore.setString(4, json)
+			ps_insert_or_replace.setInt(5, Kotlogram.API_LAYER)
+			ps_insert_or_ignore.setInt(5, Kotlogram.API_LAYER)
 			if (abs is TLChatEmpty) {
 				ps_insert_or_ignore.setNull(2, Types.VARCHAR)
 				ps_insert_or_ignore.setString(3, "empty_chat")
@@ -470,14 +480,14 @@ class Database constructor(val file_base: String, val user_manager: UserManager)
 	fun saveUsers(all: TLVector<TLAbsUser>) {
 		val ps_insert_or_replace = conn.prepareStatement(
 			"INSERT OR REPLACE INTO users " +
-				"(id, first_name, last_name, username, type, phone) " +
+				"(id, first_name, last_name, username, type, phone, json, api_layer) " +
 				"VALUES " +
-				"(?,  ?,          ?,         ?,        ?,    ?)")
+				"(?,  ?,          ?,         ?,        ?,    ?,     ?,    ?)")
 		val ps_insert_or_ignore = conn.prepareStatement(
 			"INSERT OR IGNORE INTO users " +
-				"(id, first_name, last_name, username, type, phone) " +
+				"(id, first_name, last_name, username, type, phone, json, api_layer) " +
 				"VALUES " +
-				"(?,  ?,          ?,         ?,        ?,    ?)")
+				"(?,  ?,          ?,         ?,        ?,    ?,     ?,    ?)")
 		for (abs in all) {
 			if (abs is TLUser) {
 				val user = abs
@@ -487,6 +497,8 @@ class Database constructor(val file_base: String, val user_manager: UserManager)
 				ps_insert_or_replace.setString(4, user.getUsername())
 				ps_insert_or_replace.setString(5, "user")
 				ps_insert_or_replace.setString(6, user.getPhone())
+				ps_insert_or_replace.setString(7, user.toJson())
+				ps_insert_or_replace.setInt(8, Kotlogram.API_LAYER)
 				ps_insert_or_replace.addBatch()
 			} else if (abs is TLUserEmpty) {
 				ps_insert_or_ignore.setInt(1, abs.getId())
@@ -495,6 +507,8 @@ class Database constructor(val file_base: String, val user_manager: UserManager)
 				ps_insert_or_ignore.setNull(4, Types.VARCHAR)
 				ps_insert_or_ignore.setString(5, "empty_user")
 				ps_insert_or_ignore.setNull(6, Types.VARCHAR)
+				ps_insert_or_ignore.setNull(7, Types.VARCHAR)
+				ps_insert_or_ignore.setInt(8, Kotlogram.API_LAYER)
 				ps_insert_or_ignore.addBatch()
 			} else {
 				throw RuntimeException("Unexpected " + abs.javaClass)

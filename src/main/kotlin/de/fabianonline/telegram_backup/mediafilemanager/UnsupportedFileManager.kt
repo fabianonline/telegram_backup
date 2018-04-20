@@ -19,8 +19,9 @@ package de.fabianonline.telegram_backup.mediafilemanager
 import de.fabianonline.telegram_backup.UserManager
 
 import com.github.badoualy.telegram.tl.api.*
+import com.google.gson.JsonObject
 
-class UnsupportedFileManager(msg: TLMessage, user: UserManager, type: String, file_base: String) : AbstractMediaFileManager(msg, user, file_base) {
+class UnsupportedFileManager(json: JsonObject, file_base: String, type: String) : AbstractMediaFileManager(json, file_base) {
 	override var name = type
 	override val targetFilename = ""
 	override val targetPath = ""

@@ -25,9 +25,12 @@ import de.fabianonline.telegram_backup.Settings
 
 import java.io.IOException
 import java.io.File
+import com.google.gson.*
+import com.github.salomonbrys.kotson.*
+import de.fabianonline.telegram_backup.Utils
 
-class GeoFileManager(msg: TLMessage, user: UserManager, file_base: String, val settings: Settings?) : AbstractMediaFileManager(msg, user, file_base) {
-	protected lateinit var geo: TLGeoPoint
+class GeoFileManager(message: JsonObject, file_base: String, val settings: Settings?) : AbstractMediaFileManager(message, file_base) {
+	//protected lateinit var geo: TLGeoPoint
 
 	// We don't know the size, so we just guess.
 	override val size: Int
@@ -42,8 +45,11 @@ class GeoFileManager(msg: TLMessage, user: UserManager, file_base: String, val s
 	override val letter = "g"
 	override val name = "geo"
 	override val description = "Geolocation"
+	
+	val json = message["media"]["geo"].obj
 
 	init {
+		/*
 		val g = (msg.getMedia() as TLMessageMediaGeo).getGeo()
 		if (g is TLGeoPoint) {
 			this.geo = g
@@ -51,16 +57,16 @@ class GeoFileManager(msg: TLMessage, user: UserManager, file_base: String, val s
 			this.isEmpty = true
 		} else {
 			throwUnexpectedObjectError(g)
-		}
+		}*/
 	}
 
 	@Throws(IOException::class)
 	override fun download(): Boolean {
 		val url = "https://maps.googleapis.com/maps/api/staticmap?" +
-			"center=${geo.getLat()},${geo.getLong()}&" +
-			"markers=color:red|${geo.getLat()},${geo.getLong()}&" +
+			"center=${json["lat"].float},${json["_long"].float}&" +
+			"markers=color:red|${json["lat"].float},${json["_long"].float}&" +
 			"zoom=14&size=300x150&scale=2&format=png&" +
-			"key=" + (settings?.gmaps_key ?: Config.SECRET_GMAPS)
+			"key=" + (settings?.gmaps_key)
 		return DownloadManager.downloadExternalFile(targetPathAndFilename, url)
 	}
 }

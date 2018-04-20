@@ -24,44 +24,38 @@ import com.github.badoualy.telegram.tl.exception.RpcErrorException
 
 import java.io.IOException
 import java.util.concurrent.TimeoutException
+import com.google.gson.*
+import com.github.salomonbrys.kotson.*
+import de.fabianonline.telegram_backup.*
 
-open class DocumentFileManager(msg: TLMessage, user: UserManager, file_base: String) : AbstractMediaFileManager(msg, user, file_base) {
-	protected var doc: TLDocument? = null
+open class DocumentFileManager(message: JsonObject, file_base: String) : AbstractMediaFileManager(message, file_base) {
+	//protected var doc: TLDocument? = null
 	override lateinit var extension: String
 
 	open val isSticker: Boolean
-		get() {
-			if (this.isEmpty || doc == null) return false
-			return doc!!.getAttributes()?.filter { it is TLDocumentAttributeSticker }?.isNotEmpty() ?: false
-		}
+		get() = json.get("attributes")?.array?.any{it.obj.isA("documentAttributeSticker")} ?: false
 
 	override val size: Int
-		get() = if (doc != null) doc!!.getSize() else 0
+		get() = json["size"].int
 
 	open override val letter: String = "d"
 	open override val name: String = "document"
 	open override val description: String = "Document"
+	
+	private val json = message["media"]["document"].obj
 
 	init {
-		val d = (msg.getMedia() as TLMessageMediaDocument).getDocument()
-		if (d is TLDocument) {
-			this.doc = d
-		} else if (d is TLDocumentEmpty) {
-			this.isEmpty = true
-		} else {
-			throwUnexpectedObjectError(d)
-		}
 		extension = processExtension()
 	}
 
 	private fun processExtension(): String {
-		if (doc == null) return "empty"
+		//if (doc == null) return "empty"
 		var ext: String? = null
 		var original_filename: String? = null
-		if (doc!!.getAttributes() != null)
-			for (attr in doc!!.getAttributes()) {
-				if (attr is TLDocumentAttributeFilename) {
-					original_filename = attr.getFileName()
+		if (json.contains("attributes"))
+			for (attr in json["attributes"].array) {
+				if (attr.obj["_constructor"].string.startsWith("documentAttributeFilename")) {
+					original_filename = attr.obj["fileName"].string
 				}
 			}
 		if (original_filename != null) {
@@ -70,7 +64,7 @@ open class DocumentFileManager(msg: TLMessage, user: UserManager, file_base: Str
 
 		}
 		if (ext == null) {
-			ext = extensionFromMimetype(doc!!.getMimeType())
+			ext = extensionFromMimetype(json["mimeType"].string)
 		}
 
 		// Sometimes, extensions contain a trailing double quote. Remove this. Fixes #12.
@@ -81,9 +75,7 @@ open class DocumentFileManager(msg: TLMessage, user: UserManager, file_base: Str
 
 	@Throws(RpcErrorException::class, IOException::class, TimeoutException::class)
 	override fun download(): Boolean {
-		if (doc != null) {
-			DownloadManager.downloadFile(targetPathAndFilename, size, doc!!.getDcId(), doc!!.getId(), doc!!.getAccessHash())
-		}
+		DownloadManager.downloadFile(targetPathAndFilename, size, json["dcId"].int, json["id"].long, json["accessHash"].long)
 		return true
 	}
 }

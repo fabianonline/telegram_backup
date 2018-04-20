@@ -36,6 +36,7 @@ import com.github.badoualy.telegram.tl.api.request.TLRequestUploadGetFile
 import org.slf4j.LoggerFactory
 import org.slf4j.Logger
 import com.google.gson.Gson
+import com.github.salomonbrys.kotson.*
 import com.github.kittinunf.fuel.Fuel
 import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.getAs
@@ -242,20 +243,21 @@ class DownloadManager(val client: TelegramClient, val prog: DownloadProgressInte
 			if (messages.size == 0) break
 			offset += limit
 			logger.debug("Database returned {} messages with media", messages.size)
-			for (msg in messages) {
-				if (msg == null) continue
-				val m = FileManagerFactory.getFileManager(msg, user_manager, file_base, settings=settings)
+			for (pair in messages) {
+				val id = pair.first
+				val json = pair.second
+				try {
+				val m = FileManagerFactory.getFileManager(json, file_base, settings=settings)!!
 				logger.trace("message {}, {}, {}, {}, {}",
-					msg.getId(),
-					msg.getMedia().javaClass.getSimpleName().replace("TLMessageMedia", "…"),
-					m!!.javaClass.getSimpleName(),
+					id,
+					m.javaClass.getSimpleName(),
 					if (m.isEmpty) "empty" else "non-empty",
 					if (m.downloaded) "downloaded" else "not downloaded")
 				if (m.isEmpty) {
 					prog.onMediaDownloadedEmpty()
 				} else if (m.downloaded) {
 					prog.onMediaAlreadyPresent(m)
-				} else if (settings.max_file_age>0 && (System.currentTimeMillis() / 1000) - msg.date > settings.max_file_age * 24 * 60 * 60) {
+				} else if (settings.max_file_age>0 && (System.currentTimeMillis() / 1000) - json["date"].int > settings.max_file_age * 24 * 60 * 60) {
 					prog.onMediaSkipped()
 				} else if (settings.max_file_size>0 && settings.max_file_size*1024*1024 > m.size) {
 					prog.onMediaSkipped()
@@ -271,6 +273,10 @@ class DownloadManager(val client: TelegramClient, val prog: DownloadProgressInte
 						// do nothing - skip this file
 						prog.onMediaFailed()
 					}
+				}
+				} catch (e: IllegalStateException) {
+					println(json.toPrettyJson())
+					throw e
 				}
 			}
 		}

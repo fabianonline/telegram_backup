@@ -15,6 +15,8 @@ import org.slf4j.LoggerFactory
 import org.slf4j.Logger
 import de.fabianonline.telegram_backup.mediafilemanager.FileManagerFactory
 import de.fabianonline.telegram_backup.mediafilemanager.AbstractMediaFileManager
+import com.github.salomonbrys.kotson.*
+import com.google.gson.*
 
 class DatabaseUpdates(protected var conn: Connection, protected var db: Database) {
 
@@ -33,6 +35,7 @@ class DatabaseUpdates(protected var conn: Connection, protected var db: Database
 		register(DB_Update_8(conn, db))
 		register(DB_Update_9(conn, db))
 		register(DB_Update_10(conn, db))
+		register(DB_Update_11(conn, db))
 	}
 
 	fun doUpdates() {
@@ -313,7 +316,7 @@ internal class DB_Update_6(conn: Connection, db: Database) : DatabaseUpdate(conn
 			} else {
 				ps.setInt(1, msg.getFwdFrom().getFromId())
 			}
-			val f = FileManagerFactory.getFileManager(msg, db.user_manager, db.file_base, settings = null)
+			val f = FileManagerFactory.getFileManager(msg, db.file_base, settings = null)
 			if (f == null) {
 				ps.setNull(2, Types.VARCHAR)
 				ps.setNull(3, Types.VARCHAR)
@@ -449,5 +452,48 @@ internal class DB_Update_10(conn: Connection, db: Database) : DatabaseUpdate(con
 	@Throws(SQLException::class)
 	override fun _doUpdate() {
 		execute("CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT)")
+	}
+}
+
+internal class DB_Update_11(conn: Connection, db: Database) : DatabaseUpdate(conn, db) {
+	override val version = 11
+	val logger = LoggerFactory.getLogger(DB_Update_11::class.java)
+	
+	override fun _doUpdate() {
+		execute("ALTER TABLE messages ADD COLUMN json TEXT NULL")
+		execute("ALTER TABLE chats ADD COLUMN json TEXT NULL")
+		execute("ALTER TABLE chats ADD COLUMN api_layer INTEGER NULL")
+		execute("ALTER TABLE users ADD COLUMN json TEXT NULL")
+		execute("ALTER TABLE users ADD COLUMN api_layer INTEGER NULL")
+		val limit = 5000
+		var offset = 0
+		var i: Int
+		val ps = conn.prepareStatement("UPDATE messages SET json=? WHERE id=?")
+		println("    Updating messages to add their JSON representation to the database. This might take a few moments...")
+		print("    ")
+		do {
+			i = 0
+			logger.debug("Querying with limit $limit, offset is now $offset")
+			val rs = db.executeQuery("SELECT id, data FROM messages WHERE json IS NULL AND api_layer=53 LIMIT $limit")
+			while (rs.next()) {
+				i++
+				val id = rs.getInt(1)
+				val msg = Database.bytesToTLMessage(rs.getBytes(2))
+				val json = if (msg==null) Gson().toJson(null) else msg.toJson()
+				ps.setString(1, json)
+				ps.setInt(2, id)
+				ps.addBatch()
+			}
+			rs.close()
+			conn.setAutoCommit(false)
+			ps.executeBatch()
+			ps.clearBatch()
+			conn.commit()
+			conn.setAutoCommit(true)
+			offset += limit
+			print(".")
+		} while (i >= limit)
+		println()
+		ps.close()
 	}
 }

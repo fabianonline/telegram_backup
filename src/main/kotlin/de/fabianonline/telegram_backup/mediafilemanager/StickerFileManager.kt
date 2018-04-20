@@ -49,29 +49,23 @@ import java.util.concurrent.TimeoutException
 
 import org.apache.commons.io.FileUtils
 
-class StickerFileManager(msg: TLMessage, user: UserManager, file_base: String) : DocumentFileManager(msg, user, file_base) {
+import com.google.gson.*
+import com.github.salomonbrys.kotson.*
+import de.fabianonline.telegram_backup.*
+
+class StickerFileManager(message: JsonObject, file_base: String) : DocumentFileManager(message, file_base) {
 
 	override val isSticker = true
+	
+	val json = message["media"]["document"].obj
+	val sticker = json["attributes"].array.first{it.obj.isA("documentAttributeSticker")}.obj
+	override var isEmpty = sticker["stickerset"].obj.isA("inputStickerSetEmpty")
 
 	private val filenameBase: String
 		get() {
-			var sticker: TLDocumentAttributeSticker? = null
-			for (attr in doc!!.getAttributes()) {
-				if (attr is TLDocumentAttributeSticker) {
-					sticker = attr
-				}
-			}
-
-			val file = StringBuilder()
-			val set = sticker!!.getStickerset()
-			if (set is TLInputStickerSetShortName) {
-				file.append(set.getShortName())
-			} else if (set is TLInputStickerSetID) {
-				file.append(set.getId())
-			}
-			file.append("_")
-			file.append(sticker.getAlt().hashCode())
-			return file.toString()
+			val set = sticker["stickerset"].obj.get("shortName").nullString ?: sticker["stickerset"].obj.get("id").string
+			val hash = sticker["alt"].string.hashCode()
+			return "${set}_${hash}"
 		}
 
 	override val targetFilename: String
