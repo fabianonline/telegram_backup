@@ -261,6 +261,8 @@ class DownloadManager(val client: TelegramClient, val prog: DownloadProgressInte
 					prog.onMediaSkipped()
 				} else if (settings.max_file_size>0 && settings.max_file_size*1024*1024 > m.size) {
 					prog.onMediaSkipped()
+				} else if (settings.blacklist_extensions.contains(m.extension)) {
+					prog.onMediaSkipped()
 				} else {
 					try {
 						val result = m.download(prog)
