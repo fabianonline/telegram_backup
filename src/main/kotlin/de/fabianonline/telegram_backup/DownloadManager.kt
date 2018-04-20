@@ -256,18 +256,20 @@ class DownloadManager(val client: TelegramClient, val prog: DownloadProgressInte
 				} else if (m.downloaded) {
 					prog.onMediaAlreadyPresent(m)
 				} else if (settings.max_file_age>0 && (System.currentTimeMillis() / 1000) - msg.date > settings.max_file_age * 24 * 60 * 60) {
-					prog.onMediaTooOld()
+					prog.onMediaSkipped()
+				} else if (settings.max_file_size>0 && settings.max_file_size*1024*1024 > m.size) {
+					prog.onMediaSkipped()
 				} else {
 					try {
 						val result = m.download()
 						if (result) {
 							prog.onMediaDownloaded(m)
 						} else {
-							prog.onMediaSkipped()
+							prog.onMediaFailed()
 						}
 					} catch (e: TimeoutException) {
 						// do nothing - skip this file
-						prog.onMediaSkipped()
+						prog.onMediaFailed()
 					}
 				}
 			}

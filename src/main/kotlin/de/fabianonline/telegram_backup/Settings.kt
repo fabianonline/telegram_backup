@@ -28,6 +28,7 @@ class Settings(val file_base: String, val database: Database, val cli_settings: 
 	val whitelist_channels = sf.getStringList("whitelist_channels", default=LinkedList<String>())
 	val blacklist_channels = sf.getStringList("blacklist_channels", default=LinkedList<String>())
 	val max_file_age = sf.getInt("max_file_age", default=-1)
+	val max_file_size = sf.getInt("max_file_size", default=-1)
 
 	private fun get_setting_list(name: String): List<String>? {
 		return ini_settings[name]
