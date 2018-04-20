@@ -133,10 +133,18 @@ object Utils {
 						"messages and media. But be advised that just restarting me is not going to change\n" +
 						"the fact that Telegram won't talk to me until then." +
 						"\n")
+				} else {
+					print(" Waiting...")
 				}
-				hasSeenFloodWaitMessage = true
 				
 				try { TimeUnit.SECONDS.sleep(delay + 1) } catch (e: InterruptedException) { }
+				
+				if (hasSeenFloodWaitMessage) {
+					//    "  W a i t i n g . . ."
+					print("\b\b\b\b\b\b\b\b\b\b\b")
+				}
+				
+				hasSeenFloodWaitMessage = true
 			} catch (e: TimeoutException) {
 				println(
 					"\n" +
