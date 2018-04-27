@@ -40,7 +40,7 @@ class LoginManager(val app: TelegramApp, val target_dir: String, val phoneToUse:
 			val pw = getPassword()
 			verify_password(client, pw)
 		}
-		System.out.println("Everything seems fine. Please run this tool again with '--account ${phone} to use this account.")
+		System.out.println("Everything seems fine. Please run this tool again with '--account ${phone}' to use this account.")
 	}
 	
 	private fun send_code_to_phone_number(client: TelegramClient, phone: String): TLSentCode {
