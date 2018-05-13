@@ -63,11 +63,12 @@ class StickerFileManager(message: JsonObject, file_base: String) : DocumentFileM
 
 	private val filenameBase: String
 		get() {
-      val stickerSet = sticker["stickerset"].obj
+            val stickerSet = sticker["stickerset"].obj
 			val set = stickerSet.get("shortName").nullString
-        ?: stickerSet.get("id").nullString
-        ?: stickerSet.get("_constructor").nullString
-        ?: error("could not get a good name from: ${sticker["stickerset"]}")
+                ?: stickerSet.get("id").nullString
+                ?: stickerSet.get("_constructor").nullString
+                ?: error("could not get a good name from: ${sticker["stickerset"]}")
+
 			val hash = sticker["alt"].string.hashCode()
 			return "${set}_${hash}"
 		}
