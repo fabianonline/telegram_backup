@@ -269,10 +269,12 @@ class DownloadManager(val client: TelegramClient, val prog: DownloadProgressInte
 						if (result) {
 							prog.onMediaDownloaded(m)
 						} else {
+							logger.trace("onMediaFailed")
 							prog.onMediaFailed()
 						}
 					} catch (e: TimeoutException) {
 						// do nothing - skip this file
+						logger.trace("TimeoutException onMedia")
 						prog.onMediaFailed()
 					}
 				}
@@ -300,7 +302,7 @@ class DownloadManager(val client: TelegramClient, val prog: DownloadProgressInte
 			var temp: TLAbsDialogs? = null
 			logger.trace("Calling messagesGetDialogs with offset {}", offset)
 			Utils.obeyFloodWait {
-				temp = client.messagesGetDialogs(offset, 0, TLInputPeerEmpty(), limit)
+				temp = client.messagesGetDialogs(false, offset, 0, TLInputPeerEmpty(), limit)
 			}
 			val dialogs = temp!!
 			val last_message = dialogs.messages.filter{ it is TLMessage || it is TLMessageService }.last()
@@ -369,8 +371,9 @@ class DownloadManager(val client: TelegramClient, val prog: DownloadProgressInte
 		}
 
 		@Throws(RpcErrorException::class, IOException::class, TimeoutException::class)
-		fun downloadFile(targetFilename: String, size: Int, dcId: Int, id: Long, accessHash: Long, prog: DownloadProgressInterface?) {
-			val loc = TLInputDocumentFileLocation(id, accessHash)
+		fun downloadFile(targetFilename: String, size: Int, dcId: Int, id: Long, accessHash: Long, version: Int = 0, prog: DownloadProgressInterface?) {
+			val loc = TLInputDocumentFileLocation(id, accessHash, version)
+			logger.trace("TLInputDocumentFileLocation: {}", loc)
 			downloadFileFromDc(targetFilename, loc, dcId, size, prog)
 		}
 
@@ -397,14 +400,17 @@ class DownloadManager(val client: TelegramClient, val prog: DownloadProgressInte
 				if (prog != null) prog.onMediaFileDownloadStarted()
 				do {
 					logger.trace("offset: {} block_size: {} size: {}", offset, size, size)
-					val req = TLRequestUploadGetFile(loc, offset, size)
+					val req = TLRequestUploadGetFile(loc, offset, 1024*1024)
 					var resp: TLFile? = null
 					try {
 						Utils.obeyFloodWait() {
 							resp = download_client!!.executeRpcQuery(req, dcID) as TLFile
 						}
 					} catch (e: RpcErrorException) {
+						logger.trace("RpcErrorException")
+						logger.trace("{}", e.localizedMessage)
 						if (e.getCode() == 400) {
+							logger.trace("code 400")
 							// Somehow this file is broken. No idea why. Let's skip it for now.
 							return false
 						}

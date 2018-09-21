@@ -74,6 +74,8 @@ object FileManagerFactory {
 				return UnsupportedFileManager(message, file_base, "contact")
 			} else if (media.isA("messageMediaVenue")) {
 				return UnsupportedFileManager(message, file_base, "venue")
+			} else if (media.isA("messageMediaGame")) {
+				return UnsupportedFileManager(message, file_base, "game")
 			} else {
 				AbstractMediaFileManager.throwUnexpectedObjectError(media["_constructor"].string)
 			}
