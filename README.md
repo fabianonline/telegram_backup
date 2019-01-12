@@ -3,7 +3,7 @@ Copyright 2016 Fabian Schlenz
 Licensed under GPLv3
 
 ## Description
-This is a small Java app that allows you to download all your history from
+This is a small Kotlin app that allows you to download all your history from
 Telegram's servers and keep a local copy of them.
 
 ## Download
