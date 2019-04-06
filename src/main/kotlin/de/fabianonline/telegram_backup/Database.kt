@@ -1,5 +1,5 @@
 /* Telegram_Backup
- * Copyright (C) 2016 Fabian Schlenz
+ * Copyright (C) 2016 Fabian Schlenz, 2019 Bohdan Horbeshko
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -98,10 +98,17 @@ class Database private constructor(var client: TelegramClient) {
 
 		}
 
-	fun getMessagesWithMedia(): LinkedList<TLMessage?> {
+	fun getMessagesWithMedia(filters: List<MediaFilter> = LinkedList<MediaFilter>()): LinkedList<TLMessage?> {
 		try {
 			val list = LinkedList<TLMessage?>()
-			val rs = stmt!!.executeQuery("SELECT data FROM messages WHERE has_media=1")
+			var query = "SELECT data FROM messages WHERE has_media=1"
+			for (filter in filters) {
+				when (filter) {
+					MediaFilter.ONLY_MY -> query += " AND sender_id=" + user_manager.user!!.getId()
+					MediaFilter.NO_STICKERS -> query += " AND media_type<>\"sticker\""
+				}
+			}
+			val rs = stmt!!.executeQuery(query)
 			while (rs.next()) {
 				list.add(bytesToTLMessage(rs.getBytes(1)))
 			}
