@@ -1,5 +1,5 @@
 /* Telegram_Backup
-* Copyright (C) 2016 Fabian Schlenz
+* Copyright (C) 2016 Fabian Schlenz, 2019 Bohdan Horbeshko
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@ import java.io.File
 import java.io.IOException
 import java.util.Scanner
 import java.util.Vector
+import java.util.LinkedList
 import java.util.HashMap
 import org.slf4j.LoggerFactory
 import org.slf4j.Logger
@@ -133,10 +134,19 @@ class CommandLineController {
 			val d = DownloadManager(client, CommandLineDownloadProgress())
 			logger.debug("Calling DownloadManager.downloadMessages with limit {}", CommandLineOptions.val_limit_messages)
 			d.downloadMessages(CommandLineOptions.val_limit_messages)
+			logger.debug("CommandLineOptions.cmd_only_my_media: {}", CommandLineOptions.cmd_only_my_media)
 			logger.debug("CommandLineOptions.cmd_no_media: {}", CommandLineOptions.cmd_no_media)
+			logger.debug("CommandLineOptions.cmd_no_stickers: {}", CommandLineOptions.cmd_no_stickers)
 			if (!CommandLineOptions.cmd_no_media) {
 				logger.debug("Calling DownloadManager.downloadMedia")
-				d.downloadMedia()
+				var filters = LinkedList<MediaFilter>()
+				if (CommandLineOptions.cmd_only_my_media) {
+					filters.add(MediaFilter.ONLY_MY)
+				}
+				if (CommandLineOptions.cmd_no_stickers) {
+					filters.add(MediaFilter.NO_STICKERS)
+				}
+				d.downloadMedia(filters)
 			} else {
 				println("Skipping media download because --no-media is set.")
 			}
@@ -276,7 +286,9 @@ class CommandLineController {
 		println(" --trace-telegram      Shows lots of debug messages from the library used to access Telegram.")
 		println(" -A, --list-accounts   List all existing accounts ")
 		println(" --limit-messages <x>  Downloads at most the most recent <x> messages.")
+		println(" --only-my-media       Download only media files sent by this account.")
 		println(" --no-media            Do not download media files.")
+		println(" --no-stickers         Do not download stickers.")
 		println(" -t, --target <x>      Target directory for the files.")
 		println(" -e, --export <format> Export the database. Valid formats are:")
 		println("                html - Creates HTML files.")

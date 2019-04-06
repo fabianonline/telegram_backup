@@ -1,5 +1,5 @@
 /* Telegram_Backup
-* Copyright (C) 2016 Fabian Schlenz
+* Copyright (C) 2016 Fabian Schlenz, 2019 Bohdan Horbeshko
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -26,7 +26,9 @@ internal object CommandLineOptions {
 	var cmd_version = false
 	var cmd_license = false
 	var cmd_daemon = false
+	var cmd_only_my_media = false
 	var cmd_no_media = false
+	var cmd_no_stickers = false
 	var cmd_anonymize = false
 	var cmd_stats = false
 	var cmd_channels = false
@@ -86,7 +88,9 @@ internal object CommandLineOptions {
 				"--no-pagination" -> cmd_no_pagination = true
 				"--license" -> cmd_license = true
 				"-d", "--daemon" -> cmd_daemon = true
+				"--only-my-media" -> cmd_only_my_media = true
 				"--no-media" -> cmd_no_media = true
+				"--no-stickers" -> cmd_no_stickers = true
 				"--test" -> {
 					last_cmd = "--test"
 					continue@loop

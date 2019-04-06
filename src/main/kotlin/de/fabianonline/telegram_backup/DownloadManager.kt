@@ -1,5 +1,5 @@
 /* Telegram_Backup
- * Copyright (C) 2016 Fabian Schlenz
+ * Copyright (C) 2016 Fabian Schlenz, 2019 Bohdan Horbeshko
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -59,6 +59,11 @@ enum class MessageSource(val descr: String) {
 	NORMAL(""),
 	CHANNEL("channel"),
 	SUPERGROUP("supergroup")
+}
+
+enum class MediaFilter {
+	ONLY_MY,
+	NO_STICKERS
 }
 
 class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressInterface) {
@@ -308,13 +313,13 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
 	}
 
 	@Throws(RpcErrorException::class, IOException::class)
-	fun downloadMedia() {
+	fun downloadMedia(filters: List<MediaFilter> = LinkedList<MediaFilter>()) {
 		download_client = client!!.getDownloaderClient()
 		var completed: Boolean
 		do {
 			completed = true
 			try {
-				_downloadMedia()
+				_downloadMedia(filters)
 			} catch (e: RpcErrorException) {
 				if (e.getCode() == 420) { // FLOOD_WAIT
 					completed = false
@@ -336,7 +341,7 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
 	}
 
 	@Throws(RpcErrorException::class, IOException::class)
-	private fun _downloadMedia() {
+	private fun _downloadMedia(filters: List<MediaFilter>) {
 		logger.info("This is _downloadMedia")
 		logger.info("Checking if there are messages in the DB with a too old API layer")
 		val ids = db!!.getIdsFromQuery("SELECT id FROM messages WHERE has_media=1 AND api_layer<" + Kotlogram.API_LAYER)
@@ -346,18 +351,21 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
 			downloadMessages(ids, null, source_type=MessageSource.NORMAL)
 		}
 
-		val messages = this.db!!.getMessagesWithMedia()
+		val messages = this.db!!.getMessagesWithMedia(filters)
 		logger.debug("Database returned {} messages with media", messages.size)
 		prog!!.onMediaDownloadStart(messages.size)
+		var mediaStats: MutableMap<String, Int> = mutableMapOf()
 		for (msg in messages) {
 			if (msg == null) continue
 			val m = FileManagerFactory.getFileManager(msg, user!!, client!!)
+			val simpleName = m!!.javaClass.getSimpleName()
 			logger.trace("message {}, {}, {}, {}, {}",
 				msg.getId(),
 				msg.getMedia().javaClass.getSimpleName().replace("TLMessageMedia", "…"),
-				m!!.javaClass.getSimpleName(),
+				simpleName,
 				if (m.isEmpty) "empty" else "non-empty",
 				if (m.downloaded) "downloaded" else "not downloaded")
+			mediaStats.merge(simpleName, 1, Int::plus)
 			if (m.isEmpty) {
 				prog!!.onMediaDownloadedEmpty()
 			} else if (m.downloaded) {
@@ -377,6 +385,8 @@ class DownloadManager(internal var client: TelegramClient?, p: DownloadProgressI
 
 			}
 		}
+		/*for ((key, value) in mediaStats)
+			println("$key => $value")*/
 		prog!!.onMediaDownloadFinished()
 	}
 
