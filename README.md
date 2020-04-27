@@ -2,6 +2,16 @@
 Copyright 2016 Fabian Schlenz  
 Licensed under GPLv3
 
+## State of this project
+The tool is working, but not really as intended: Media files in most cases can't be downloaded, message downloads are hit with 30 second delays after every 200 messages. Some users reported getting banned by Telegram without reason after using this tool (with many users not getting banned at the same time, so this could theoretically just be a coincidence).
+
+At the same time, the official Telegram client has an official way to download one's data, which is a) officially supported and b) much, much, much faster than this tool.
+
+Fixing this tool to at least get it to work again as planned would require more or less a complete rewrite of this code. Since I'm quite happy with the possibilities given by the official clients and don't have enough free time to spare to continue developing this project, I've decided to officially archive this tool. This is not an easy step for me, because this was my most used project and quite a lot of people wrote me nice messages and thanked me. But just keeping the user's hopes up for an update without really being able to do something doesn't seem fair. So...
+
+So long, and thanks for all the fish. ;-) \
+Fabian
+
 ## Description
 This is a small Java app that allows you to download all your history from
 Telegram's servers and keep a local copy of them.
