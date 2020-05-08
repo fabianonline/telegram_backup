@@ -13,7 +13,7 @@ So long, and thanks for all the fish. ;-) \
 Fabian
 
 ## Description
-This is a small Java app that allows you to download all your history from
+This is a small Kotlin app that allows you to download all your history from
 Telegram's servers and keep a local copy of them.
 
 ## Download
