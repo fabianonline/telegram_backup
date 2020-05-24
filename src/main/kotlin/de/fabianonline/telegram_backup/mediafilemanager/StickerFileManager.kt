@@ -1,16 +1,16 @@
 /* Telegram_Backup
  * Copyright (C) 2016 Fabian Schlenz
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
@@ -56,14 +56,19 @@ import de.fabianonline.telegram_backup.*
 class StickerFileManager(message: JsonObject, file_base: String) : DocumentFileManager(message, file_base) {
 
 	override val isSticker = true
-	
+
 	val json = message["media"]["document"].obj
 	val sticker = json["attributes"].array.first{it.obj.isA("documentAttributeSticker")}.obj
 	override var isEmpty = sticker["stickerset"].obj.isA("inputStickerSetEmpty")
 
 	private val filenameBase: String
 		get() {
-			val set = sticker["stickerset"].obj.get("shortName").nullString ?: sticker["stickerset"].obj.get("id").string
+            val stickerSet = sticker["stickerset"].obj
+			val set = stickerSet.get("shortName").nullString
+                ?: stickerSet.get("id").nullString
+                ?: stickerSet.get("_constructor").nullString
+                ?: error("could not get a good name from: ${sticker["stickerset"]}")
+
 			val hash = sticker["alt"].string.hashCode()
 			return "${set}_${hash}"
 		}
