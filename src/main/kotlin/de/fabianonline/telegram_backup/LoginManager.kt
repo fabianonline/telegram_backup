@@ -27,7 +27,7 @@ class LoginManager(val app: TelegramApp, val target_dir: String, val phoneToUse:
 		
 		// We now have an account, so we can create an ApiStorage and TelegramClient.
 		val storage = ApiStorage(file_base)
-		val client = Kotlogram.getDefaultClient(app, storage, Kotlogram.PROD_DC4, null)
+		val client = Kotlogram.getDefaultClient(app, storage, null, Kotlogram.PROD_DC4)
 		
 		val sent_code = send_code_to_phone_number(client, phone)
 		println("Telegram sent you a code. Please enter it here.")

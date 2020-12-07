@@ -63,9 +63,10 @@ class StickerFileManager(message: JsonObject, file_base: String) : DocumentFileM
 
 	private val filenameBase: String
 		get() {
-			val set = sticker["stickerset"].obj.get("shortName").nullString ?: sticker["stickerset"].obj.get("id").string
+			//val set = sticker["stickerset"].obj.get("shortName").nullString ?:
 			val hash = sticker["alt"].string.hashCode()
-			return "${set}_${hash}"
+			//return "${set}_${hash}"
+			return "_${hash}"
 		}
 
 	override val targetFilename: String

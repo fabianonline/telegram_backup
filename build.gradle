@@ -31,7 +31,7 @@ compileKotlin {
 		
 
 dependencies {
-	compile('com.github.badoualy:kotlogram:666a81ef9d6707f117a3fecc2d21c91d51c7d075') {
+	compile('com.github.badoualy:kotlogram:e3c26c69c2896b6bf3fce539ba0c46debc884e0f') {
 		exclude module: 'slf4j-simple'
 	}
 	compile 'org.xerial:sqlite-jdbc:3.16.1'
@@ -41,6 +41,7 @@ dependencies {
 	compile 'com.google.code.gson:gson:2.8.0'
 	compile 'com.github.salomonbrys.kotson:kotson:2.5.0'
 	compile 'com.github.kittinunf.fuel:fuel:1.12.0'
+	compile 'commons-io:commons-io:2.5'
 	
 	testCompile 'junit:junit:4.12'
 }

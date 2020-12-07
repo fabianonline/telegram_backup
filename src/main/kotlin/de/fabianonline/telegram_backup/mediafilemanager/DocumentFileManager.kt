@@ -75,7 +75,8 @@ open class DocumentFileManager(message: JsonObject, file_base: String) : Abstrac
 
 	@Throws(RpcErrorException::class, IOException::class, TimeoutException::class)
 	override fun download(prog: DownloadProgressInterface?): Boolean {
-		DownloadManager.downloadFile(targetPathAndFilename, size, json["dcId"].int, json["id"].long, json["accessHash"].long, prog)
+		var version: Int = if (json.contains("version")) json["version"].int else 0
+		DownloadManager.downloadFile(targetPathAndFilename, size, json["dcId"].int, json["id"].long, json["accessHash"].long, version , prog)
 		return true
 	}
 }

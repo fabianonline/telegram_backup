@@ -94,7 +94,7 @@ class CommandLineController(val options: CommandLineOptions) {
 		storage = ApiStorage(file_base)
 		
 		logger.info("Creating Client")
-		client = Kotlogram.getDefaultClient(app, storage, Kotlogram.PROD_DC4, null)
+		client = Kotlogram.getDefaultClient(app, storage, null, Kotlogram.PROD_DC4)
 		
 		// From now on we have a new catch-all-block that will terminate it's TelegramClient when an exception happens.
 		try {
@@ -184,7 +184,7 @@ class CommandLineController(val options: CommandLineOptions) {
 				handler = TelegramUpdateHandler(user_manager, database, file_base, settings)
 				client.close()
 				logger.info("Creating new client")
-				client = Kotlogram.getDefaultClient(app, storage, Kotlogram.PROD_DC4, handler)
+				client = Kotlogram.getDefaultClient(app, storage, handler, Kotlogram.PROD_DC4)
 				println("DAEMON mode requested - keeping running.")
 			}
 		} catch (e: Throwable) {
